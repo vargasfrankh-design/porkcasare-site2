@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PorkCasare - Ingreso</title>
+<style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f5f9ff; /* Fondo suave azul */
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    img.logo {
+      width: 120px;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      color: #003366; /* Azul corporativo */
+      margin-bottom: 40px;
+    }
+
+    .btn {
+      display: block;
+      width: 250px;
+      padding: 15px;
+      margin: 10px auto;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: #0055cc; /* Azul fuerte */
+      color: white;
+      transition: 0.3s;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      /* Logo circular */
+.logo {
+  width: 160px;        /* tamaño del círculo */
+  height: 160px;
+  border-radius: 50%;  /* hace el círculo */
+  object-fit: cover;   /* recorta para que no se deforme */
+  display: block;
+  margin: 0 auto 20px; /* centra y da separación abajo */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* sombra opcional */
+  border: 3px solid #fff; /* borde opcional */
+}
+
+      background-color: #003d99; /* Azul más oscuro */
+    }
+    /* --- Logo circular con fondo azul y responsivo --- */
+.logo-container {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background-color: #0055cc;    /* azul corporativo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  border: 3px solid #fff;
+  overflow: hidden;
+}
+
+.logo-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Responsivo para móviles */
+@media (max-width: 480px) {
+  .logo-container {
+    width: 120px;
+    height: 120px;
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+
+  .btn {
+    width: 200px;
+    font-size: 14px;
+    padding: 12px;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="logo-container">
+  <img src="images/logo.webp" alt="Logo PorkCasare">
+</div>
+
+    <h1>Bienvenido a PorkCasare</h1>
+
+    <a href="register.html" class="btn">Registro de Cliente</a>
+    <a href="register.html" class="btn">Registro nuevo Distribuidor</a>
+    <a href="distribuidor-login.html" class="btn">Acceso del Distribuidor</a>
+    <a href="#" id="btnDescargar" class="btn btn-secondary">Descargar App</a>
+  </div>
+<script src="env.js"></script>
+<script type="module" src="main.js"></script>
+  <script>
+  document.getElementById("btnDescargar").addEventListener("click", function () {
+    Swal.fire({
+      title: '🚧 En desarrollo',
+      text: 'Esta sección estará disponible próximamente.',
+      icon: 'info',
+      confirmButtonText: 'Entendido'
+    });
+  });
+</script>
+</body>
+</html>
