@@ -93,7 +93,7 @@ async function loadPendingOrders() {
   ordersTbody.innerHTML = `<tr><td colspan="8" class="text-center small-muted">Cargando...</td></tr>`;
 
   const ordersCol = collection(db, ORDERS_COLLECTION);
-  const q = query(ordersCol, where("status", "in", ["pending_mp", "pending_cash", "pendiente_confirmacion"]));
+  const q = query(ordersCol, where("status", "in", ["pending_mp", "pending_cash", "pendiente_confirmacion", "pending_delivery"]));
   const snap = await getDocs(q);
 
   if (snap.empty) {
@@ -108,9 +108,23 @@ async function loadPendingOrders() {
   });
 
   ordersTbody.innerHTML = rows.map(o => {
-    const productosHTML = (o.items || o.productos || []).map(it => `<div><strong>${it.title || it.productName}</strong> <span class="small-muted">(${it.quantity || 1})</span></div>`).join("");
-    const puntos = (o.pointsTotal || o.puntos || (o.items?.reduce?.((a,it)=>a + (it.points||0),0) || o.productos?.reduce?.((a,it)=>a + (it.puntos||0),0) || 0));
-    const precio = o.priceTotal || o.price || o.productos?.reduce?.((a,it)=>a + (it.precio||0),0) || (o.items?.reduce?.((a,it)=>a + (it.unit_price*(it.quantity||1)),0) || 0);
+    console.log('📦 Datos de orden:', {
+      id: o.id,
+      quantity: o.quantity,
+      totalPrice: o.totalPrice,
+      totalPoints: o.totalPoints,
+      price: o.price,
+      points: o.points,
+      puntos: o.puntos,
+      productName: o.productName
+    });
+    
+    const quantity = Number(o.quantity) || 1;
+    const productName = o.productName || o.product || '';
+    const productosHTML = (o.items || o.productos || []).map(it => `<div><strong>${it.title || it.productName}</strong> <span class="small-muted">(${it.quantity || 1})</span></div>`).join("") || 
+      (productName ? `<div><strong>${productName}</strong> <span class="small-muted">(x${quantity})</span></div>` : '');
+    const puntos = Number(o.totalPoints) || Number(o.pointsTotal) || (Number(o.puntos) * quantity) || (o.items?.reduce?.((a,it)=>a + (it.points||0),0) || o.productos?.reduce?.((a,it)=>a + (it.puntos||0),0) || 0);
+    const precio = Number(o.totalPrice) || Number(o.priceTotal) || (Number(o.price) * quantity) || o.productos?.reduce?.((a,it)=>a + (it.precio||0),0) || (o.items?.reduce?.((a,it)=>a + (it.unit_price*(it.quantity||1)),0) || 0);
     const fecha = o.createdAt ? new Date(o.createdAt).toLocaleString() : (o.createdAt?.seconds ? new Date(o.createdAt.seconds*1000).toLocaleString() : "");
     return `
       <tr>
@@ -180,8 +194,19 @@ async function onConfirmClick(e) {
     if (!orderSnap.exists()) return Swal.fire('Error', 'Orden no encontrada', 'error');
 
     const order = orderSnap.data();
-    // calcular puntos totales de la orden (buscamos varios campos posibles)
-    const puntos = order.pointsTotal || order.puntos || (order.items?.reduce?.((s,i)=>s + (i.points||0),0)) || (order.productos?.reduce?.((s,p)=>s + (p.puntos||0),0)) || 0;
+    
+    console.log('📋 Datos completos de orden antes de confirmar:', {
+      id: orderId,
+      quantity: order.quantity,
+      totalPrice: order.totalPrice,
+      totalPoints: order.totalPoints,
+      price: order.price,
+      points: order.points,
+      puntos: order.puntos
+    });
+    
+    const quantity = Number(order.quantity) || 1;
+    const puntos = Number(order.totalPoints) || Number(order.pointsTotal) || (Number(order.puntos) * quantity) || (order.items?.reduce?.((s,i)=>s + (i.points||0),0)) || (order.productos?.reduce?.((s,p)=>s + (p.puntos||0),0)) || 0;
 
     // obtener comprador para historial y patrocinador
     const buyerUid = order.buyerUid;

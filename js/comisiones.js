@@ -399,15 +399,25 @@ async function cobrarPending(uid, amount = null, options = {}) {
     const newBalance = currentBalance - toWithdraw;
     const newWallet = wallet + toWithdraw;
 
-    // calcular y registrar puntos usados (si aplica)
+    // calcular y registrar puntos usados basado en el monto cobrado
+    // Cada punto equivale a $2,800 pesos
+    const POINT_VALUE_FOR_WITHDRAWAL = 2800;
     let newGroupPoints = currentGroupPoints;
     let pointsUsed = null;
+    
+    // Calcular puntos a descontar basado en el monto a cobrar
+    const calculatedPoints = Math.floor(toWithdraw / POINT_VALUE_FOR_WITHDRAWAL);
+    
     if (clearGroupPoints) {
       pointsUsed = currentGroupPoints;
       newGroupPoints = 0;
     } else if (pointsToUse !== null && !isNaN(Number(pointsToUse))) {
       pointsUsed = Number(pointsToUse);
       newGroupPoints = Math.max(0, currentGroupPoints - Number(pointsToUse));
+    } else if (calculatedPoints > 0) {
+      // Usar puntos calculados basados en el monto
+      pointsUsed = Math.min(calculatedPoints, currentGroupPoints);
+      newGroupPoints = Math.max(0, currentGroupPoints - pointsUsed);
     } else if (data.lastPoints && !isNaN(Number(data.lastPoints))) {
       pointsUsed = Number(data.lastPoints);
       newGroupPoints = Math.max(0, currentGroupPoints - Number(data.lastPoints));
@@ -500,11 +510,10 @@ onAuthStateChanged(auth, async (user) => {
       const originalText = newBtn.textContent;
       newBtn.textContent = "Procesando...";
       try {
-        // Aquí asumimos que quieres limpiar puntos grupales al cobrar:
-        // cambiamos clearGroupPoints:true para poner groupPoints a 0.
-        // Si prefieres usar una cantidad concreta, pásala como segundo parámetro.
+        // Aquí calculamos automáticamente los puntos grupales basado en el monto a cobrar
+        // (1 punto = $2,800 pesos), sin forzar clearGroupPoints
         const amt = (window.__lastUserData && typeof window.__lastUserData.balance !== 'undefined') ? Number(window.__lastUserData.balance) : null;
-        await cobrarPending(uid, amt, { clearGroupPoints: true });
+        await cobrarPending(uid, amt, { });
         console.log("Cobro realizado y puntos grupales actualizados");
       } catch (e) {
         console.error("Error cobrando:", e);
@@ -612,7 +621,7 @@ export { addEarnings, cobrarPending, attachRealtimeForUserBoth, normalizeEntry }
           newBtn.disabled = true;
           const originalText = newBtn.textContent;
           newBtn.textContent = 'Procesando...';
-          await cobrarPending(uidForAction, amount, { clearGroupPoints: true });
+          await cobrarPending(uidForAction, amount, { });
           newBtn.textContent = originalText || 'Cobrar';
           newBtn.disabled = false;
         } else {

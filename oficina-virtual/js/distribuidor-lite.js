@@ -49,15 +49,17 @@ document.addEventListener("DOMContentLoaded", () => {
       
 
       // Disparar personalPointsReady para garantizar que otros scripts (productos, alerta) reaccionen
-      const _personalPoints = Number(userData.personalPoints ?? userData.puntos ?? userData.groupPoints ?? 0);
+      const _personalPoints = Number(userData.personalPoints ?? userData.puntos ?? 0);
       document.dispatchEvent(new CustomEvent('personalPointsReady', { detail: { personalPoints: _personalPoints } }));
       
-      // Disparar pointsReady para la barra de progreso con puntos grupales
+      // Disparar pointsReady para la barra de progreso con comisiones cobradas
       const _groupPoints = Number(userData.groupPoints ?? userData.teamPoints ?? 0);
+      const _totalComisionesCobradas = Number(userData.totalComisionesCobradas ?? 0);
       document.dispatchEvent(new CustomEvent('pointsReady', { 
         detail: { 
           personalPoints: _personalPoints,
-          groupPoints: _groupPoints 
+          groupPoints: _groupPoints,
+          totalComisionesCobradas: _totalComisionesCobradas
         } 
       }));
 // Mostrar datos básicos
