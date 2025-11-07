@@ -1,12 +1,12 @@
 const TIERS = [
-  { name: 'Plata', points: 500, key: 'plata' },
-  { name: 'Oro', points: 1500, key: 'oro' },
-  { name: 'Stars', points: 3000, key: 'stars' },
-  { name: 'Diamante', points: 5000, key: 'diamante' },
-  { name: 'Corona', points: 10000, key: 'corona' }
+  { name: 'Plata', points: 500, commission: 1400000, key: 'plata' },
+  { name: 'Oro', points: 1500, commission: 4200000, key: 'oro' },
+  { name: 'Stars', points: 3000, commission: 8400000, key: 'stars' },
+  { name: 'Diamante', points: 5000, commission: 14000000, key: 'diamante' },
+  { name: 'Corona', points: 10000, commission: 28000000, key: 'corona' }
 ];
 
-function getCurrentTier(points, personalPoints) {
+function getCurrentTier(commissions, personalPoints) {
   let currentTier = null;
   let nextTier = TIERS[0];
 
@@ -14,10 +14,10 @@ function getCurrentTier(points, personalPoints) {
     return { currentTier: null, nextTier: TIERS[0] };
   }
 
-  currentTier = { name: 'Masters', points: 0, key: 'masters' };
+  currentTier = { name: 'Master', points: 0, commission: 0, key: 'master' };
 
   for (let i = 0; i < TIERS.length; i++) {
-    if (points >= TIERS[i].points) {
+    if (commissions >= TIERS[i].commission) {
       currentTier = TIERS[i];
       nextTier = TIERS[i + 1] || null;
     } else {
@@ -29,31 +29,31 @@ function getCurrentTier(points, personalPoints) {
   return { currentTier, nextTier };
 }
 
-function calculateProgress(points, personalPoints) {
-  if (points >= TIERS[TIERS.length - 1].points) {
+function calculateProgress(commissions, personalPoints) {
+  if (commissions >= TIERS[TIERS.length - 1].commission) {
     return { percentage: 100, tier: TIERS[TIERS.length - 1] };
   }
 
-  const { currentTier, nextTier } = getCurrentTier(points, personalPoints);
+  const { currentTier, nextTier } = getCurrentTier(commissions, personalPoints);
 
   if (!nextTier) {
     return { percentage: 100, tier: currentTier };
   }
 
-  const previousPoints = currentTier ? currentTier.points : 0;
-  const targetPoints = nextTier.points;
-  const range = targetPoints - previousPoints;
-  const progress = points - previousPoints;
+  const previousCommission = currentTier ? currentTier.commission : 0;
+  const targetCommission = nextTier.commission;
+  const range = targetCommission - previousCommission;
+  const progress = commissions - previousCommission;
   const percentage = (progress / range) * 100;
 
   return {
     percentage: Math.min(100, Math.max(0, percentage)),
-    tier: currentTier || { name: 'Masters', points: 0, key: 'masters' },
+    tier: currentTier || { name: 'Master', points: 0, commission: 0, key: 'master' },
     nextTier
   };
 }
 
-function updateProgressBar(groupPoints, personalPoints) {
+function updateProgressBar(commissions, personalPoints) {
   const progressBarContainer = document.getElementById('progressBarContainer');
   const activationAlert = document.getElementById('activationAlert');
   const progressBarFill = document.getElementById('progressBarFill');
@@ -66,7 +66,7 @@ function updateProgressBar(groupPoints, personalPoints) {
     return;
   }
 
-  const points = Number(groupPoints) || 0;
+  const totalCommissions = Number(commissions) || 0;
   const personalPts = Number(personalPoints) || 0;
 
   if (personalPts < 50) {
@@ -78,7 +78,7 @@ function updateProgressBar(groupPoints, personalPoints) {
   activationAlert.style.display = 'none';
   progressBarContainer.style.display = 'block';
 
-  const { percentage, tier, nextTier } = calculateProgress(points, personalPts);
+  const { percentage, tier, nextTier } = calculateProgress(totalCommissions, personalPts);
 
   if (progressBarFill) {
     const displayPercentage = nextTier 
@@ -104,8 +104,9 @@ function updateProgressBar(groupPoints, personalPoints) {
 
   if (pointsToNextValue) {
     if (nextTier) {
-      const pointsNeeded = nextTier.points - points;
-      pointsToNextValue.textContent = pointsNeeded;
+      const commissionsNeeded = nextTier.commission - totalCommissions;
+      const formatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(commissionsNeeded);
+      pointsToNextValue.textContent = formatted;
       document.getElementById('pointsToNext').style.display = 'inline';
     } else {
       document.getElementById('pointsToNext').style.display = 'none';
@@ -114,15 +115,15 @@ function updateProgressBar(groupPoints, personalPoints) {
 
   const tierMarkers = document.querySelectorAll('.tier-marker');
   tierMarkers.forEach((marker) => {
-    const tierPoints = parseInt(marker.getAttribute('data-points'));
-    if (points >= tierPoints) {
+    const tierCommission = parseInt(marker.getAttribute('data-commission'));
+    if (totalCommissions >= tierCommission) {
       marker.classList.add('achieved');
     } else {
       marker.classList.remove('achieved');
     }
   });
 
-  if (points >= TIERS[TIERS.length - 1].points) {
+  if (totalCommissions >= TIERS[TIERS.length - 1].commission) {
     setTimeout(() => {
       if (window.Swal) {
         Swal.fire({
@@ -141,8 +142,8 @@ function updateProgressBar(groupPoints, personalPoints) {
 
 document.addEventListener('pointsReady', (event) => {
   const personalPoints = event.detail.personalPoints || 0;
-  const groupPoints = event.detail.groupPoints || 0;
-  updateProgressBar(groupPoints, personalPoints);
+  const totalComisionesCobradas = event.detail.totalComisionesCobradas || 0;
+  updateProgressBar(totalComisionesCobradas, personalPoints);
 });
 
 if (typeof window !== 'undefined') {

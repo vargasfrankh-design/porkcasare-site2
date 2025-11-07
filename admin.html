@@ -75,6 +75,7 @@
       <button class="tab-button" data-tab="clients">Clientes</button>
       <button class="tab-button" data-tab="payouts">Cobros de Distribuidores</button>
       <button class="tab-button" data-tab="users">Usuarios</button>
+      <button class="tab-button" data-tab="inventory">Inventario</button>
     </div>
 
     <!-- Tab: Resumen -->
@@ -104,6 +105,10 @@
           <h3>Órdenes Rechazadas</h3>
           <div class="value" id="rejectedCount">0</div>
         </div>
+        <div class="stat-card green">
+          <h3>Inventario Total</h3>
+          <div class="value" id="inventoryCount">0</div>
+        </div>
       </div>
       
       <h2>Actividad Reciente</h2>
@@ -129,6 +134,7 @@
             <th>ID de Orden</th>
             <th>Usuario</th>
             <th>Producto</th>
+            <th>Cantidad</th>
             <th>Precio</th>
             <th>Estado</th>
             <th>Acciones</th>
@@ -228,6 +234,44 @@
       </table>
     </div>
 
+    <!-- Tab: Inventario -->
+    <div id="tab-inventory" class="tab-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">Gestión de Inventario</h2>
+        <button id="addInventoryBtn" class="btn-success">+ Agregar Unidades</button>
+      </div>
+      
+      <div class="stats-grid" style="margin-bottom:20px;">
+        <div class="stat-card blue">
+          <h3>Total en Stock</h3>
+          <div class="value" id="totalStockUnits">0</div>
+        </div>
+        <div class="stat-card green">
+          <h3>Unidades Vendidas</h3>
+          <div class="value" id="totalSoldUnits">0</div>
+        </div>
+        <div class="stat-card orange">
+          <h3>Última Actualización</h3>
+          <div class="value" id="lastInventoryUpdate" style="font-size:16px;">N/A</div>
+        </div>
+      </div>
+
+      <h3>Historial de Movimientos</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Producto</th>
+            <th>Unidades</th>
+            <th>Stock Resultante</th>
+            <th>Notas</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryHistoryTable"></tbody>
+      </table>
+    </div>
+
     <!-- Tab: Usuarios -->
     <div id="tab-users" class="tab-content">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -251,6 +295,37 @@
     </div>
   </div>
 
+  <!-- Modal para agregar inventario -->
+  <div id="inventoryModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:white;padding:30px;border-radius:8px;max-width:500px;width:90%;">
+      <h3 style="margin-top:0;">Agregar Unidades al Inventario</h3>
+      <form id="addInventoryForm">
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Producto</label>
+          <select id="inventoryProductId" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+            <option value="">Seleccionar producto...</option>
+            <option value="paquete-inicio">Paquete Inicial – 15 kg</option>
+            <option value="chuletas-3kg">Chuletas – 3 kg</option>
+            <option value="costillas-3kg">Costillitas – 3 kg</option>
+            <option value="paticas-3kg">Paticas – 3 kg</option>
+          </select>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Unidades a agregar</label>
+          <input type="number" id="inventoryUnits" required min="1" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: 50">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Notas (opcional)</label>
+          <textarea id="inventoryNotes" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: Llegada de nueva compra, proveedor XYZ"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" id="inventoryModalCancel" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-success">Agregar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal para seleccionar role -->
   <div id="roleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
     <div style="background:white;padding:30px;border-radius:8px;max-width:400px;width:90%;">
@@ -271,7 +346,7 @@
 
   <script type="module">
     import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-    import { doc, getDoc, collection, getDocs, query, where, orderBy, limit, updateDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { doc, getDoc, collection, getDocs, query, where, orderBy, limit, updateDoc, runTransaction, addDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     import { auth, db } from "/src/firebase-config.js";
 
     const loginSection = document.getElementById("loginSection");
@@ -315,18 +390,41 @@
     // Chequear estado del usuario
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-        if (!userDoc.exists() || userDoc.data().role !== "admin") {
-          alert("Acceso denegado. No eres administrador.");
-          await signOut(auth);
-          return;
-        }
+        try {
+          console.log("🔐 Usuario autenticado:", user.uid, user.email);
+          
+          const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+          if (!userDoc.exists()) {
+            console.error("❌ Documento de usuario no existe en Firestore para UID:", user.uid);
+            alert("Acceso denegado. Usuario no encontrado en la base de datos.\nUID: " + user.uid);
+            await signOut(auth);
+            return;
+          }
+          
+          const userData = userDoc.data();
+          console.log("👤 Datos del usuario:", JSON.stringify(userData, null, 2));
+          
+          const userRole = userData.role || userData.rol;
+          console.log("🎭 Rol detectado:", userRole);
+          
+          if (userRole !== "admin") {
+            console.error("❌ Usuario no es admin. Rol actual:", userRole);
+            alert("Acceso denegado. No eres administrador.\nRol actual: " + (userRole || "sin rol"));
+            await signOut(auth);
+            return;
+          }
 
-        currentUser = user;
-        loginSection.classList.add("hidden");
-        adminPanel.classList.remove("hidden");
-        
-        await loadAllData();
+          console.log("✅ Acceso admin concedido");
+          currentUser = user;
+          loginSection.classList.add("hidden");
+          adminPanel.classList.remove("hidden");
+          
+          await loadAllData();
+        } catch (error) {
+          console.error("❌ Error en verificación de usuario:", error);
+          alert("Error verificando permisos: " + error.message);
+          await signOut(auth);
+        }
       } else {
         loginSection.classList.remove("hidden");
         adminPanel.classList.add("hidden");
@@ -341,7 +439,8 @@
         loadClients(),
         loadUsers(),
         loadPayouts(),
-        loadStats()
+        loadStats(),
+        loadInventory()
       ]);
     }
 
@@ -370,7 +469,7 @@
           }
         }
         
-        const pending = orders.filter(o => o.status === 'pending');
+        const pending = orders.filter(o => o.status === 'pending' || o.status === 'pending_delivery');
         const confirmed = orders.filter(o => o.status === 'confirmed');
         const rejected = orders.filter(o => o.status === 'rejected');
         
@@ -439,7 +538,7 @@
           }
         }
         
-        const pending = orders.filter(o => o.status === 'pending').sort((a, b) => a.id.localeCompare(b.id));
+        const pending = orders.filter(o => o.status === 'pending' || o.status === 'pending_delivery').sort((a, b) => a.id.localeCompare(b.id));
         const confirmed = orders.filter(o => o.status === 'confirmed');
         const rejected = orders.filter(o => o.status === 'rejected');
         
@@ -456,20 +555,23 @@
       table.innerHTML = '';
       
       if (orders.length === 0) {
-        table.innerHTML = `<tr><td colspan="${showActions ? 6 : 6}" class="empty-state">No hay órdenes</td></tr>`;
+        table.innerHTML = `<tr><td colspan="${showActions ? 7 : 6}" class="empty-state">No hay órdenes</td></tr>`;
         return;
       }
       
       orders.forEach(order => {
         const row = document.createElement('tr');
         const date = order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
+        const quantity = Number(order.quantity) || 1;
         
         if (showActions) {
+          const totalPrice = Number(order.totalPrice) || Number(order.priceTotal) || (Number(order.price) * quantity) || 0;
           row.innerHTML = `
             <td><code>${order.id.substring(0, 12)}...</code></td>
             <td><strong>${order.buyerUsername || order.buyerUid || 'N/A'}</strong></td>
             <td>${order.productName || 'N/A'}</td>
-            <td>$${(order.price || 0).toLocaleString()}</td>
+            <td><strong>x${quantity}</strong></td>
+            <td>$${totalPrice.toLocaleString()}</td>
             <td>${order.status}</td>
             <td>
               <button class="btn-success" onclick="confirmOrder('${order.id}')">Confirmar</button>
@@ -479,24 +581,27 @@
         } else if (tableId === 'confirmedOrdersTable') {
           const userId = order.buyerUid ? order.buyerUid.substring(0, 8) + '...' : 'N/A';
           const username = order.buyerUsername || 'N/A';
+          const totalPrice = Number(order.totalPrice) || Number(order.priceTotal) || (Number(order.price) * quantity) || 0;
+          const totalPoints = Number(order.totalPoints) || Number(order.pointsTotal) || (Number(order.points) * quantity) || 0;
           row.innerHTML = `
             <td><code>${order.id.substring(0, 12)}...</code></td>
             <td><code style="font-size:0.85em;color:#666">${userId}</code></td>
             <td><strong>${username}</strong></td>
             <td>${order.productName || 'N/A'}</td>
-            <td>$${(order.price || 0).toLocaleString()}</td>
-            <td>${order.points || 0} pts</td>
+            <td>$${totalPrice.toLocaleString()}</td>
+            <td>${totalPoints} pts</td>
             <td>
               <button class="btn-danger" onclick="deleteOrder('${order.id}')">Eliminar</button>
             </td>
           `;
         } else {
+          const totalPrice = Number(order.totalPrice) || Number(order.priceTotal) || (Number(order.price) * quantity) || 0;
           row.innerHTML = `
             <td>${date}</td>
             <td>${order.id.substring(0, 8)}...</td>
             <td>${order.productName || 'N/A'}</td>
             <td>${order.buyerUsername || order.buyerUid || 'N/A'}</td>
-            <td>$${(order.price || 0).toLocaleString()}</td>
+            <td>$${totalPrice.toLocaleString()}</td>
             <td>${order.rejectionReason || 'N/A'}</td>
           `;
         }
@@ -857,6 +962,197 @@
         alert('Error actualizando role: ' + err.message);
       }
     });
+
+    // Inventory management
+    const inventoryModal = document.getElementById('inventoryModal');
+    const addInventoryBtn = document.getElementById('addInventoryBtn');
+    const inventoryModalCancel = document.getElementById('inventoryModalCancel');
+    const addInventoryForm = document.getElementById('addInventoryForm');
+
+    addInventoryBtn.addEventListener('click', () => {
+      inventoryModal.style.display = 'flex';
+    });
+
+    inventoryModalCancel.addEventListener('click', () => {
+      inventoryModal.style.display = 'none';
+      addInventoryForm.reset();
+    });
+
+    inventoryModal.addEventListener('click', (e) => {
+      if (e.target === inventoryModal) {
+        inventoryModal.style.display = 'none';
+        addInventoryForm.reset();
+      }
+    });
+
+    addInventoryForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const productId = document.getElementById('inventoryProductId').value;
+      const units = parseInt(document.getElementById('inventoryUnits').value);
+      const notes = document.getElementById('inventoryNotes').value.trim();
+
+      try {
+        const inventoryRef = doc(db, 'inventory', productId);
+        const inventorySnap = await getDoc(inventoryRef);
+        
+        let currentStock = 0;
+        if (inventorySnap.exists()) {
+          currentStock = inventorySnap.data().stock || 0;
+        }
+
+        const newStock = currentStock + units;
+
+        await setDoc(inventoryRef, {
+          productId,
+          stock: newStock,
+          lastUpdated: new Date().toISOString(),
+          updatedBy: currentUser.uid
+        }, { merge: true });
+
+        await addDoc(collection(db, 'inventoryHistory'), {
+          productId,
+          type: 'addition',
+          units,
+          stockBefore: currentStock,
+          stockAfter: newStock,
+          notes: notes || 'Adición manual de inventario',
+          createdAt: new Date().toISOString(),
+          createdBy: currentUser.uid
+        });
+
+        alert(`✅ Se agregaron ${units} unidades al inventario`);
+        inventoryModal.style.display = 'none';
+        addInventoryForm.reset();
+        await loadInventory();
+      } catch (err) {
+        console.error('Error adding inventory:', err);
+        alert('Error agregando inventario: ' + err.message);
+      }
+    });
+
+    async function loadInventory() {
+      try {
+        console.log("📦 Cargando inventario...");
+        console.log("🔍 Usuario autenticado:", currentUser?.uid);
+        console.log("🔍 Token de autenticación presente:", !!currentUser);
+        
+        const productNames = {
+          'paquete-inicio': 'Paquete Inicial – 15 kg',
+          'chuletas-3kg': 'Chuletas – 3 kg',
+          'costillas-3kg': 'Costillitas – 3 kg',
+          'paticas-3kg': 'Paticas – 3 kg'
+        };
+
+        try {
+          console.log("📦 Test 1: Intentando leer documento de usuario...");
+          const testUserDoc = await getDoc(doc(db, 'usuarios', currentUser.uid));
+          console.log("✅ Test 1 exitoso - Usuario doc existe:", testUserDoc.exists());
+          if (testUserDoc.exists()) {
+            console.log("📄 Datos del usuario:", testUserDoc.data());
+          }
+        } catch (testErr) {
+          console.error("❌ Test 1 falló:", testErr.code, testErr.message);
+        }
+
+        console.log("📦 Test 2: Leyendo colección 'inventory'...");
+        const inventorySnap = await getDocs(collection(db, 'inventory'));
+        console.log("✅ Test 2 exitoso - Inventario leído:", inventorySnap.docs.length, "productos");
+        
+        let totalStock = 0;
+        inventorySnap.docs.forEach(doc => {
+          totalStock += doc.data().stock || 0;
+        });
+
+        console.log("📦 Leyendo órdenes confirmadas...");
+        const ordersSnap = await getDocs(query(collection(db, 'orders'), where('status', '==', 'confirmed')));
+        const totalSold = ordersSnap.docs.length;
+        console.log("✅ Órdenes leídas:", totalSold);
+
+        console.log("📦 Leyendo historial de inventario...");
+        const historySnap = await getDocs(query(
+          collection(db, 'inventoryHistory'),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        ));
+        console.log("✅ Historial leído:", historySnap.docs.length, "registros");
+
+        let lastUpdate = 'N/A';
+        if (!historySnap.empty) {
+          const lastDoc = historySnap.docs[0].data();
+          const date = new Date(lastDoc.createdAt);
+          lastUpdate = date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+        }
+
+        document.getElementById('inventoryCount').textContent = totalStock;
+        document.getElementById('totalStockUnits').textContent = totalStock;
+        document.getElementById('totalSoldUnits').textContent = totalSold;
+        document.getElementById('lastInventoryUpdate').textContent = lastUpdate;
+
+        const historyTable = document.getElementById('inventoryHistoryTable');
+        historyTable.innerHTML = '';
+
+        if (historySnap.empty) {
+          historyTable.innerHTML = '<tr><td colspan="6" class="empty-state">No hay movimientos de inventario registrados</td></tr>';
+          return;
+        }
+
+        historySnap.docs.forEach(doc => {
+          const data = doc.data();
+          const row = document.createElement('tr');
+          const date = new Date(data.createdAt).toLocaleDateString('es-CO');
+          const typeText = data.type === 'addition' ? 'Entrada' : 'Venta';
+          const typeColor = data.type === 'addition' ? '#28a745' : '#dc3545';
+          
+          row.innerHTML = `
+            <td>${date}</td>
+            <td><span style="color:${typeColor};font-weight:600">${typeText}</span></td>
+            <td>${productNames[data.productId] || data.productId}</td>
+            <td>${data.units > 0 ? '+' : ''}${data.units}</td>
+            <td>${data.stockAfter || 0}</td>
+            <td>${data.notes || 'N/A'}</td>
+          `;
+          historyTable.appendChild(row);
+        });
+        
+        console.log("✅ Inventario cargado exitosamente");
+      } catch (err) {
+        console.error('❌ Error loading inventory:', err);
+        console.error('Error code:', err.code);
+        console.error('Error message:', err.message);
+        
+        if (err.code === 'permission-denied') {
+          console.error("⚠️ PROBLEMA DE PERMISOS DETECTADO:");
+          console.error("Usuario actual UID:", currentUser?.uid);
+          console.error("Email:", currentUser?.email);
+          
+          console.error("\n🔧 SOLUCIÓN:");
+          console.error("Las reglas de Firestore NO están desplegadas o son diferentes de las locales.");
+          console.error("Ejecuta: firebase deploy --only firestore:rules");
+          console.error("\nSi el problema persiste, verifica en Firebase Console:");
+          console.error("1. Ve a Firestore Database > Rules");
+          console.error("2. Verifica que la regla para 'inventory' sea: allow read: if isAuthenticated();");
+          console.error("3. Verifica que isAdmin() incluya exists() check y get() del documento usuarios");
+          
+          alert("❌ ERROR DE PERMISOS\n\n" +
+                "El usuario tiene rol 'admin' localmente pero Firestore rechaza el acceso.\n\n" +
+                "CAUSA MÁS PROBABLE:\n" +
+                "Las reglas de Firestore NO están desplegadas en Firebase.\n\n" +
+                "SOLUCIÓN:\n" +
+                "1. Abre una terminal en la raíz del proyecto\n" +
+                "2. Ejecuta: firebase deploy --only firestore:rules\n" +
+                "3. Espera confirmación de despliegue\n" +
+                "4. Recarga esta página\n\n" +
+                "Si ya desplegaste las reglas y el error persiste:\n" +
+                "- Verifica en Firebase Console > Firestore > Rules\n" +
+                "- Confirma que las reglas publicadas coincidan con firestore.rules\n\n" +
+                "Usuario UID: " + currentUser?.uid);
+        } else {
+          alert('Error cargando inventario: ' + err.message);
+        }
+      }
+    }
   </script>
 </body>
 </html>

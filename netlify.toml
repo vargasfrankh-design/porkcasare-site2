@@ -1,13 +1,13 @@
-functionsDirectory = "/opt/build/repo/netlify/functions"
+functionsDirectory = "netlify/functions"
 functionsDirectoryOrigin = "config"
 plugins = []
 headers = []
 redirects = []
 
 [build]
-publish = "/opt/build/repo"
+publish = "."
 publishOrigin = "config"
-functions = "/opt/build/repo/netlify/functions"
+functions = "netlify/functions"
 
   [build.environment]
 

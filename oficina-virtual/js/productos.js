@@ -68,6 +68,31 @@ function formatCOP(num) {
   }).format(num);
 }
 
+function onQuantityChange(e) {
+  const prodId = e.currentTarget.dataset.id;
+  const prod = productos.find((p) => p.id === prodId);
+  if (!prod) return;
+
+  const card = document.querySelector(`.product-card[data-id="${prodId}"]`);
+  const input = card.querySelector('.qty-input');
+  let quantity = parseInt(input.value) || 1;
+
+  if (e.currentTarget.classList.contains('qty-minus')) {
+    quantity = Math.max(1, quantity - 1);
+  } else if (e.currentTarget.classList.contains('qty-plus')) {
+    quantity = Math.min(99, quantity + 1);
+  } else {
+    quantity = Math.max(1, Math.min(99, quantity));
+  }
+
+  input.value = quantity;
+
+  const unitPrice = getDisplayPrice(prod);
+  const totalPrice = unitPrice * quantity;
+  const totalPriceEl = card.querySelector('.total-price');
+  totalPriceEl.innerHTML = `<strong>Total: ${formatCOP(totalPrice)}</strong>`;
+}
+
 const CLIENTE_PRICE_MULTIPLIER = 1.20; // Para clientes si no existe precioCliente
 
 function getDisplayPrice(prod){
@@ -99,19 +124,19 @@ async function distributePointsUpline(startSponsorCode, pointsEarned, buyerUsern
 
       const sponsorRef = doc(db, "usuarios", sponsor.id);
 
-      await updateDoc(sponsorRef, { teamPoints: increment(pointsEarned) });
-
       const percent = LEVEL_PERCENTS[level];
       const commissionValue = Math.round(pointsEarned * POINT_VALUE * percent);
 
       await updateDoc(sponsorRef, {
+        groupPoints: increment(pointsEarned),
         balance: increment(commissionValue),
         history: arrayUnion({
           action: `Comisión nivel ${level + 1} por compra de ${buyerUsername}`,
           amount: commissionValue,
           points: pointsEarned,
           orderId,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          originMs: Date.now()
         })
       });
 
@@ -131,10 +156,28 @@ function renderProductos() {
       <img src="${prod.imagen}" alt="${prod.nombre}">
       <h4>${prod.nombre}</h4>
       <p>${prod.descripcion}</p>
-      <p><strong>${formatCOP(getDisplayPrice(prod))}</strong></p>
+      <p class="unit-price"><strong>${formatCOP(getDisplayPrice(prod))}</strong> c/u</p>
+      <div class="quantity-selector">
+        <button class="qty-btn qty-minus" data-id="${prod.id}" aria-label="Disminuir cantidad">−</button>
+        <input type="number" class="qty-input" data-id="${prod.id}" value="1" min="1" max="99" readonly>
+        <button class="qty-btn qty-plus" data-id="${prod.id}" aria-label="Aumentar cantidad">+</button>
+      </div>
+      <p class="total-price" data-id="${prod.id}"><strong>Total: ${formatCOP(getDisplayPrice(prod))}</strong></p>
       <button class="btn small btn-buy" data-id="${prod.id}">Comprar</button>
     </div>
   `).join("");
+
+  document.querySelectorAll(".qty-minus").forEach((btn) => {
+    btn.addEventListener("click", onQuantityChange);
+  });
+  
+  document.querySelectorAll(".qty-plus").forEach((btn) => {
+    btn.addEventListener("click", onQuantityChange);
+  });
+  
+  document.querySelectorAll(".qty-input").forEach((input) => {
+    input.addEventListener("change", onQuantityChange);
+  });
 
   document.querySelectorAll(".btn-buy").forEach((btn) => {
     btn.addEventListener("click", onBuyClick);
@@ -424,6 +467,10 @@ async function onBuyClick(e) {
   const prod = productos.find((p) => p.id === prodId);
   if (!prod) return;
 
+  const card = document.querySelector(`.product-card[data-id="${prodId}"]`);
+  const quantityInput = card.querySelector('.qty-input');
+  const quantity = parseInt(quantityInput.value) || 1;
+
   const buyerUid = auth.currentUser.uid;
 
   // Intentar obtener perfil para prefill (NO crear orden aquí)
@@ -507,11 +554,18 @@ async function onBuyClick(e) {
     const buyerData = buyerDocSnap.exists() ? buyerDocSnap.data() : null;
     const buyerUsername = buyerData?.usuario || buyerData?.nombre || 'Usuario desconocido';
     
+    const unitPrice = getDisplayPrice(prod);
+    const totalPrice = unitPrice * quantity;
+    const totalPoints = prod.puntos * quantity;
+
     const orderObj = {
       productId: prod.id,
       productName: prod.nombre,
-      price: getDisplayPrice(prod),
+      price: unitPrice,
+      quantity: quantity,
+      totalPrice: totalPrice,
       points: prod.puntos,
+      totalPoints: totalPoints,
       buyerUid,
       buyerUsername,
       buyerInfo: customerData,
@@ -544,41 +598,17 @@ async function onBuyClick(e) {
     try {
       const sponsorCode = buyerData ? buyerData.patrocinador : null;
 
-      // Bono rápido si aplica
-      if (prod.id === "paquete-inicio" && sponsorCode) {
-        try {
-          const sponsor = await findUserByUsername(sponsorCode);
-          if (sponsor) {
-            const sponsorRef = doc(db, "usuarios", sponsor.id);
-            const fastStartPoints = Math.round(prod.puntos * 0.30);
-            const fastStartValue = fastStartPoints * POINT_VALUE;
-            await updateDoc(sponsorRef, {
-              balance: increment(fastStartValue),
-              history: arrayUnion({
-                action: `Bono de inicio rápido por compra de ${buyerData?.usuario || "desconocido"}`,
-                amount: fastStartValue,
-                points: fastStartPoints,
-                orderId: orderRef.id,
-                date: new Date().toISOString()
-              })
-            });
-          }
-        } catch (err) {
-          console.error("Error asignando bono de inicio rápido:", err);
-        }
-      }
-
-      // Distribuir puntos a uplines
-      await distributePointsUpline(sponsorCode, prod.puntos, buyerData?.usuario || "desconocido", orderRef.id);
-
-      // Actualizar historial del comprador
+      // NO agregamos puntos aquí - solo se agregan cuando el admin confirma la compra
+      // Solo guardamos el historial de la compra pendiente
       await updateDoc(doc(db, "usuarios", buyerUid), {
         history: arrayUnion({
-          action: `Compra ${prod.nombre}`,
-          amount: getDisplayPrice(prod),
-          points: prod.puntos,
+          action: `Compra pendiente: ${prod.nombre} (x${quantity})`,
+          amount: totalPrice,
+          points: totalPoints,
+          quantity: quantity,
           orderId: orderRef.id,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          type: "pending_purchase"
         })
       });
     } catch (err) {

@@ -74,11 +74,21 @@ if (provinciaSelect) {
 
 // ---------- Evento de envío del formulario ----------
 const form = document.getElementById("registerForm");
+const btnRegistrar = document.getElementById("btnRegistrar");
+const loadingOverlay = document.getElementById("loadingOverlay");
+
 if (form) {
   form.addEventListener("submit", async (e) => {
     // Evitar que otros listeners 'submit' se ejecuten (evita el this.submit() inline)
     e.preventDefault();
     e.stopImmediatePropagation();
+
+    // Mostrar loading y deshabilitar botón
+    if (loadingOverlay) loadingOverlay.classList.add('active');
+    if (btnRegistrar) {
+      btnRegistrar.disabled = true;
+      btnRegistrar.textContent = 'Registrando...';
+    }
 
     // Obtener datos del formulario
     const tipoRegistro = document.getElementById("tipoRegistro")?.value;
@@ -142,6 +152,13 @@ if (form) {
     }
 
     if (errores.length > 0) {
+      // Ocultar loading y rehabilitar botón
+      if (loadingOverlay) loadingOverlay.classList.remove('active');
+      if (btnRegistrar) {
+        btnRegistrar.disabled = false;
+        btnRegistrar.textContent = 'Registrar';
+      }
+      
       Swal.fire({
         icon: 'error',
         title: 'Errores en el formulario',
@@ -181,6 +198,9 @@ if (form) {
         walletBalance: 0
       });
 
+      // Ocultar loading (mantener botón deshabilitado hasta redirección)
+      if (loadingOverlay) loadingOverlay.classList.remove('active');
+      
       // Confirmación y redirección
       Swal.fire({
         icon: 'success',
@@ -194,6 +214,14 @@ if (form) {
 
     } catch (error) {
       console.error("Error en el registro:", error);
+      
+      // Ocultar loading y rehabilitar botón
+      if (loadingOverlay) loadingOverlay.classList.remove('active');
+      if (btnRegistrar) {
+        btnRegistrar.disabled = false;
+        btnRegistrar.textContent = 'Registrar';
+      }
+      
       let msg = "Error al registrar usuario.";
 
       if (error.code === "auth/email-already-in-use") {
