@@ -923,11 +923,18 @@ onAuthStateChanged(auth, async (user) => {
             body: JSON.stringify({ orderId, action: "confirm" })
           });
           const data = await resp.json();
+          console.log("Response status:", resp.status);
+          console.log("Response data:", data);
+          if (!resp.ok) {
+            console.error("Error response:", data);
+            alert(`Error al confirmar la orden: ${data.error || data.details || 'Error desconocido'}\nDetalles: ${JSON.stringify(data)}`);
+            return;
+          }
           alert(data.message || "Orden confirmada");
           await refreshTreeAndStats(rootCode, user.uid);
         } catch (err) {
-          console.error(err);
-          alert("Error al confirmar la orden");
+          console.error("Error completo:", err);
+          alert(`Error al confirmar la orden: ${err.message}`);
         }
       });
     }
