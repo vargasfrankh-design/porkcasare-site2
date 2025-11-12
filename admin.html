@@ -718,21 +718,31 @@
     // Confirmar / Rechazar
     window.confirmOrder = async function(orderId) {
       if (!currentUser) return;
-      const token = await currentUser.getIdToken();
-      const res = await fetch("/.netlify/functions/confirm-order", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ orderId, action: 'confirm' })
-      });
-      if (!res.ok) {
-        alert("Error confirmando: " + res.status);
-        return;
+      try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch("/.netlify/functions/confirm-order", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ orderId, action: 'confirm' })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          console.error("Error confirmando orden:", data);
+          alert("Error confirmando orden:\n\n" + (data.error || "Error desconocido") + 
+                (data.details ? "\n\nDetalles: " + data.details : ""));
+          return;
+        }
+        alert("Orden confirmada ✅");
+        await loadAllData();
+      } catch (err) {
+        console.error("Error en confirmOrder:", err);
+        alert("Error confirmando orden: " + err.message);
       }
-      alert("Orden confirmada ✅");
-      await loadAllData();
     };
 
     window.rejectOrder = async function(orderId) {

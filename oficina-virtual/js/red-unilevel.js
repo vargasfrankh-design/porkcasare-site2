@@ -91,7 +91,7 @@ async function buildUnilevelTree(username) {
     nombre: rootData.nombre || rootData[FIELD_USUARIO],
     active: isActiveThisMonth(rootData),
     puntos: Number(rootData.puntos || rootData.personalPoints || 0),
-    teamPoints: Number(rootData.teamPoints || 0),
+    groupPoints: Number(rootData.groupPoints || 0),
     celular: rootData.celular || "No registrado",
     children: []
   };
@@ -107,7 +107,7 @@ async function buildUnilevelTree(username) {
         nombre: data.nombre || data[FIELD_USUARIO] || data.usuario,
         active: isActiveThisMonth(data),
         puntos: Number(data.puntos || data.personalPoints || 0),
-        teamPoints: Number(data.teamPoints || 0),
+        groupPoints: Number(data.groupPoints || 0),
         celular: data.celular || "No registrado",
         children: []
       };
@@ -176,7 +176,7 @@ async function persistTeamPointsSafely(userId) {
     await runTransaction(db, async (tx) => {
       const snap = await tx.get(userRef);
       if (!snap.exists()) throw new Error("Usuario no encontrado");
-      tx.update(userRef, { teamPoints: total });
+      tx.update(userRef, { groupPoints: total });
     });
     return { ok: true, total };
   } catch (err) {
@@ -809,12 +809,12 @@ async function readAndRenderPoints(userId) {
     const d = uSnap.data();
     const personal = Number(d.personalPoints ?? d.puntos ?? 0);
 
-    let teamPersisted = (typeof d.teamPoints === "number") ? d.teamPoints : null;
+    let teamPersisted = (typeof d.groupPoints === "number") ? d.groupPoints : null;
     if (teamPersisted === null) {
       try {
         teamPersisted = await calculateTeamPoints(userId);
       } catch (e) {
-        console.warn("No se pudo calcular teamPoints en cliente:", e);
+        console.warn("No se pudo calcular groupPoints en cliente:", e);
         teamPersisted = 0;
       }
     }
@@ -885,16 +885,16 @@ onAuthStateChanged(auth, async (user) => {
     elHidden.textContent = personalPoints;
     document.dispatchEvent(new CustomEvent("personalPointsReady", { detail: { personalPoints } }));
 
-    if (typeof d.teamPoints === "number") {
+    if (typeof d.groupPoints === "number") {
       const tpEl2 = document.getElementById("teamPoints");
-      if (tpEl2) tpEl2.textContent = String(d.teamPoints);
+      if (tpEl2) tpEl2.textContent = String(d.groupPoints);
     } else {
       try {
         const totalTeamPoints = await calculateTeamPoints(user.uid);
         const tpEl2 = document.getElementById("teamPoints");
         if (tpEl2) tpEl2.textContent = String(totalTeamPoints);
       } catch (e) {
-        console.warn("No se pudo calcular teamPoints para mostrar:", e);
+        console.warn("No se pudo calcular groupPoints para mostrar:", e);
       }
     }
 

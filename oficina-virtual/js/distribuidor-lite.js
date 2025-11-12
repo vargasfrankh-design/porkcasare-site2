@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.dispatchEvent(new CustomEvent('personalPointsReady', { detail: { personalPoints: _personalPoints } }));
       
       // Disparar pointsReady para la barra de progreso con comisiones cobradas
-      const _groupPoints = Number(userData.groupPoints ?? userData.teamPoints ?? 0);
+      const _groupPoints = Number(userData.groupPoints ?? 0);
       const _totalComisionesCobradas = Number(userData.totalComisionesCobradas ?? 0);
       document.dispatchEvent(new CustomEvent('pointsReady', { 
         detail: { 
@@ -245,9 +245,9 @@ if (historyWrap) {
       const actionTxt  = h?.action || h?.tipo || "";
       const highlightedAction = highlightUserName(actionTxt);
       const pointsVal  = (h?.points ?? h?.puntos ?? null);
-      const pointsTxt  = (pointsVal !== null && pointsVal !== undefined) ? (`${pointsVal} pts`) : "";
+      const pointsTxt  = (pointsVal !== null && pointsVal !== undefined) ? (`${Number(pointsVal).toFixed(2)} pts`) : "";
       const amountVal  = (h?.amount ?? h?.monto ?? null);
-      const amountTxt  = (amountVal !== null && amountVal !== undefined) ? (`$${fmtNumber.format(Number(amountVal))}`) : "";
+      const amountTxt  = (amountVal !== null && amountVal !== undefined) ? (`$${fmtNumber.format(Math.round(Number(amountVal)))}`) : "";
       const dateVal    = h?.date || h?.fecha || h?.createdAt || null;
       const dateTxt    = dateVal ? new Date(dateVal).toLocaleString() : "";
       const orderId    = h?.orderId || h?.orderID || h?.id || "";
@@ -281,9 +281,9 @@ if (historyWrap) {
       if (puntosEl) puntosEl.textContent = String(personalPointsValue);
       if (pointsEl) pointsEl.textContent = String(personalPointsValue);
 
-      // --- Mostrar teamPoints (si está disponible) ---
+      // --- Mostrar groupPoints (puntos grupales) ---
       const teamEl = document.getElementById("teamPoints");
-      const groupPointsValue = Number(userData.groupPoints ?? userData.teamPoints ?? 0);
+      const groupPointsValue = Number(userData.groupPoints ?? 0);
       if (teamEl) {
         teamEl.textContent = String(groupPointsValue);
       }
