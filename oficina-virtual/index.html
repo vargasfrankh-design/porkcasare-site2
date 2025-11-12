@@ -254,6 +254,18 @@
         <!-- Productos -->
         <div class="history-section">
           <h2>Productos disponibles</h2>
+          <div style="margin-bottom:16px;">
+            <label for="categorySelector" style="font-weight:600;margin-right:10px;color:#333;">Filtrar por categoría:</label>
+            <select id="categorySelector" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;min-width:200px;">
+              <option value="todas">Todas las categorías</option>
+              <option value="carnes">Carnes</option>
+              <option value="bebidas">Bebidas</option>
+              <option value="alimentos">Alimentos</option>
+              <option value="aseo">Aseo</option>
+              <option value="higiene-personal">Higiene Personal</option>
+              <option value="abarrotes">Abarrotes</option>
+            </select>
+          </div>
           <div id="productGrid" class="product-grid"></div>
         </div>
 

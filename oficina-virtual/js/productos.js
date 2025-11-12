@@ -73,6 +73,30 @@ async function loadProductsFromFirestore() {
   }
 }
 
+async function loadCategoriesIntoSelector() {
+  try {
+    const categoriesSnap = await getDocs(collection(db, "categorias"));
+    const categorySelector = document.getElementById('categorySelector');
+    
+    if (!categorySelector) return;
+    
+    const categories = categoriesSnap.docs.map(d => d.data());
+    
+    categorySelector.innerHTML = '<option value="todas">Todas las categorías</option>';
+    
+    categories.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.slug;
+      option.textContent = cat.nombre;
+      categorySelector.appendChild(option);
+    });
+    
+    console.log('Categorías cargadas:', categories.length);
+  } catch (err) {
+    console.error('Error loading categories:', err);
+  }
+}
+
 function formatCOP(num) {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -128,9 +152,13 @@ function getDisplayPrice(prod){
 
 function getFilteredProducts(){
   const tipo = (window.currentTipoRegistro || 'distribuidor').toLowerCase();
+  const selectedCategory = window.selectedCategory || 'todas';
+  
   return productos.filter(prod => {
     if (!prod.availableFor) return true;
-    return prod.availableFor.includes(tipo);
+    const matchesType = prod.availableFor.includes(tipo);
+    const matchesCategory = selectedCategory === 'todas' || prod.categoria === selectedCategory;
+    return matchesType && matchesCategory;
   });
 }
 
@@ -192,6 +220,11 @@ function renderProductos() {
   const filteredProducts = getFilteredProducts();
   const tipo = (window.currentTipoRegistro || 'distribuidor').toLowerCase();
   const unitLabel = tipo === 'restaurante' ? 'kilo' : 'paquete';
+
+  if (filteredProducts.length === 0) {
+    grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">No hay productos disponibles en esta categoría.</p>';
+    return;
+  }
 
   grid.innerHTML = filteredProducts.map((prod) => {
     const isOutOfStock = prod.outOfStock || false;
@@ -693,5 +726,16 @@ document.addEventListener('personalPointsReady', async (e) => {
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadProductsFromFirestore();
+  await loadCategoriesIntoSelector();
   renderProductos();
+  
+  const categorySelector = document.getElementById('categorySelector');
+  if (categorySelector) {
+    categorySelector.addEventListener('change', (e) => {
+      window.selectedCategory = e.target.value;
+      renderProductos();
+    });
+  }
 });
+
+export { renderProductos };
