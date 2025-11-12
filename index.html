@@ -5,16 +5,89 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PorKCasare</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .hero {
+      background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
+      border-radius: 16px;
+      padding: 40px 30px !important;
+      margin-top: 20px;
+    }
+    
+    .hero h1 {
+      color: #000000;
+      font-weight: 700;
+      font-size: 32px;
+      line-height: 1.2;
+    }
+    
+    .card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(16, 24, 40, 0.12);
+    }
+    
+    .btn {
+      transition: all 0.3s ease;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(11, 94, 215, 0.3);
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(11, 94, 215, 0.4);
+    }
+    
+    .grid .card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,249,250,0.9) 100%);
+      border: 1px solid rgba(102,126,234,0.1);
+      text-align: center;
+      padding: 20px;
+      font-weight: 600;
+      color: #667eea;
+    }
+    
+    .grid .card .small {
+      color: #6c757d;
+      font-weight: 400;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    
+    section.card {
+      border-left: 4px solid #667eea;
+      margin-top: 30px;
+    }
+    
+    section.card h3 {
+      color: #667eea;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    
+    .gallery-grid img {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .footer {
+      background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 40px;
+    }
+  </style>
 </head>
 <body>
 <header class="nav">
   <div class="brand">
-    <img src="images/logo.webp" alt="logo" />
-    <div><strong>PorKCasare</strong></div>
+    <img src="images/logo.webp" alt="logo" style="height: 50px; width: 50px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+    <div><strong style="font-size: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">PorKCasare</strong></div>
   </div>
-  <div>
-    <a class="btn" href="login.html">Entrar</a>
-    <a class="btn" style="background:#06c" href="login.html">Registrarse</a>
+  <div style="display: flex; gap: 10px;">
+    <a class="btn" href="login.html" style="background: #fff; color: #667eea; border: 2px solid #667eea; box-shadow: none;">Entrar</a>
+    <a class="btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" href="login.html">Registrarse</a>
   </div>
 </header>
 <main class="container">
@@ -67,9 +140,9 @@
     <p>Convertirnos en una granja porcícola líder en la región, reconocida por la innovación, calidad genética y sostenibilidad ambiental, aportando al desarrollo del campo colombiano y garantizando un producto de confianza para nuestros clientes.</p>
   </section>
 
-  <section style="margin-top:20px">
+  <section style="margin-top:30px">
     <div class="card">
-      <h4>Galería</h4>
+      <h4 style="color: #667eea; font-size: 20px; margin-bottom: 16px;">🖼️ Galería</h4>
       <div class="gallery-grid">
         <img src="images/costillas.jpg" alt="Costillas" />
         <img src="images/chuleta.jpg" alt="Chuleta" />
@@ -80,7 +153,9 @@
   </section>
 </main>
 
-<footer class="footer">© PorKCasare by F&amp;F Asociados</footer>
+<footer class="footer">
+  <strong>© PorKCasare by F&amp;F Asociados</strong>
+</footer>
 
 <script>
   const carousel = document.getElementById('carousel');

@@ -39,18 +39,33 @@ const FIELD_PATROCINADOR_ID = "patrocinadorId";
 
 function isActiveThisMonth(uData) {
   const hist = uData?.[FIELD_HISTORY];
-  if (!Array.isArray(hist)) return !!uData?.active;
+  if (!Array.isArray(hist)) return false;
   const now = new Date();
   for (const e of hist) {
     if (!e) continue;
     const dateRaw = e.date || e.fechaCompra || e.fecha_recompra || e.createdAt || e.fecha;
     const d = dateRaw ? (typeof dateRaw.toDate === "function" ? dateRaw.toDate() : new Date(dateRaw)) : null;
     const action = (e.action || "").toLowerCase();
-    if (d && /compra|recompra|confirm/i.test(action)) {
-      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) return true;
+    const type = (e.type || "").toLowerCase();
+    
+    // Verificar si es del mes actual
+    if (!d || d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) {
+      continue;
+    }
+    
+    // Solo considerar activo si tiene una COMPRA propia confirmada (no comisiones, no bonos)
+    // Condición 1: type debe ser "purchase" Y action debe contener "compra confirmada"
+    if (type === "purchase" && /compra confirmada/i.test(action)) {
+      return true;
+    }
+    
+    // Condición 2: Para compatibilidad - si action contiene "compra confirmada" pero no tiene type
+    // (por si existen entries antiguas sin el campo type)
+    if (!type && /compra confirmada/i.test(action) && !action.includes("comisión") && !action.includes("bono")) {
+      return true;
     }
   }
-  return !!uData?.active;
+  return false;
 }
 
 function clearElement(el) {
@@ -93,6 +108,7 @@ async function buildUnilevelTree(username) {
     puntos: Number(rootData.puntos || rootData.personalPoints || 0),
     groupPoints: Number(rootData.groupPoints || 0),
     celular: rootData.celular || "No registrado",
+    tipoRegistro: rootData.tipoRegistro || rootData.role || rootData.rol || 'distribuidor',
     children: []
   };
 
@@ -109,6 +125,7 @@ async function buildUnilevelTree(username) {
         puntos: Number(data.puntos || data.personalPoints || 0),
         groupPoints: Number(data.groupPoints || 0),
         celular: data.celular || "No registrado",
+        tipoRegistro: data.tipoRegistro || data.role || data.rol || 'distribuidor',
         children: []
       };
     });
@@ -226,28 +243,32 @@ function renderTreeCore(rootNode, treeWrap, loadingIndicator) {
   if (loadingIndicator && loadingIndicator.parentNode) {
     loadingIndicator.remove();
   }
+  
+  // Clear the tree wrap completely to avoid overlapping elements
+  // This is critical to prevent tree disorganization when clicking on distributors
+  clearElement(treeWrap);
+  
+  // Reset treeWrap styles to ensure clean state
+  treeWrap.style.position = 'relative';
+  treeWrap.style.overflow = 'hidden';
+  
   // crear/actualizar breadcrumbs y botón volver
   CURRENT_ROOT = rootNode.usuario || (rootNode.data && rootNode.data.usuario) || null;
-  if (typeof window._refreshNetworkBreadcrumbs === 'function') window._refreshNetworkBreadcrumbs();
-  let bc = document.getElementById("network-breadcrumbs");
-  if (!bc) {
-    bc = document.createElement("div");
-    bc.id = "network-breadcrumbs";
-    bc.style.position = "absolute";
-    bc.style.left = "12px";
-    bc.style.top = "12px";
-    bc.style.zIndex = 9998;
-    bc.style.background = "rgba(255,255,255,0.9)";
-    bc.style.padding = "6px 10px";
-    bc.style.borderRadius = "8px";
-    bc.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
-    bc.style.fontSize = "13px";
-    bc.style.display = "flex";
-    bc.style.alignItems = "center";
-    bc.style.gap = "8px";
-    treeWrap.style.position = treeWrap.style.position || 'relative';
-    treeWrap.appendChild(bc);
-  }
+  let bc = document.createElement("div");
+  bc.id = "network-breadcrumbs";
+  bc.style.position = "absolute";
+  bc.style.left = "12px";
+  bc.style.top = "12px";
+  bc.style.zIndex = 9998;
+  bc.style.background = "rgba(255,255,255,0.9)";
+  bc.style.padding = "6px 10px";
+  bc.style.borderRadius = "8px";
+  bc.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+  bc.style.fontSize = "13px";
+  bc.style.display = "flex";
+  bc.style.alignItems = "center";
+  bc.style.gap = "8px";
+  treeWrap.appendChild(bc);
 
   function refreshBreadcrumbs(){
     bc.innerHTML = '';
@@ -293,11 +314,10 @@ function renderTreeCore(rootNode, treeWrap, loadingIndicator) {
   const width = contW - margin.left - margin.right;
   const height = contH - margin.top - margin.bottom;
 
-  // crear svg responsivo
+  // crear svg responsivo con limpieza completa
   const svg = d3g.select(treeWrap)
     .append("svg")
-  // agregar filtro de sombra para nodos
-  
+    .attr("class", "tree-svg") // Agregar clase para identificación
     .attr("viewBox", `0 0 ${contW} ${contH}`)
     .attr("preserveAspectRatio", "xMidYMin meet")
     .style("width", "100%")
@@ -410,7 +430,12 @@ function renderTreeCore(rootNode, treeWrap, loadingIndicator) {
       return Math.max(24, 36 - d.depth * 2);
     })
     .attr("filter", "url(#node-drop)")
-    .attr("fill", d => (d.data.usuario === rootNode.usuario ? "#2b9df3" : d.data.active ? "#28a745" : "#bfbfbf"))
+    .attr("fill", d => {
+      if (d.data.usuario === rootNode.usuario) return "#2b9df3";
+      const tipo = (d.data.tipoRegistro || 'distribuidor').toLowerCase();
+      if (tipo === 'restaurante') return "#FFB347";
+      return d.data.active ? "#28a745" : "#bfbfbf";
+    })
     .attr("stroke", "#ffffff")
     .attr("stroke-width", 3)
     .attr("pointer-events", "none")
@@ -610,7 +635,16 @@ function renderTreeFallback(rootNode) {
 
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("r", 30);
-    circle.setAttribute("fill", node.usuario === rootNode.usuario ? "#2b9df3" : node.active ? "#28a745" : "#bfbfbf");
+    const tipo = (node.tipoRegistro || 'distribuidor').toLowerCase();
+    let fillColor;
+    if (node.usuario === rootNode.usuario) {
+      fillColor = "#2b9df3";
+    } else if (tipo === 'restaurante') {
+      fillColor = "#FFB347";
+    } else {
+      fillColor = node.active ? "#28a745" : "#bfbfbf";
+    }
+    circle.setAttribute("fill", fillColor);
     circle.setAttribute("stroke", "#ffffff");
     circle.setAttribute("stroke-width", "3");
     circle.setAttribute("pointer-events", "none");
@@ -682,6 +716,7 @@ function createInfoCard() {
     el.innerHTML = `
       <h4 id="ic-name" style="margin:0 0 8px 0;font-size:16px;"></h4>
       <p id="ic-user" style="margin:0 0 8px 0;color:#666;font-size:13px;"></p>
+      <p style="margin:0 0 6px 0;"><strong>Tipo:</strong> <span id="ic-tipo"></span></p>
       <p style="margin:0 0 6px 0;"><strong>Estado:</strong> <span id="ic-state"></span></p>
       <p style="margin:0 0 6px 0;"><strong>Puntos:</strong> <span id="ic-points"></span></p>
       <p style="margin:0 0 6px 0;"><strong>Celular:</strong> <span id="ic-phone"></span></p>
@@ -695,17 +730,32 @@ function createInfoCard() {
     if (closeBtn) closeBtn.addEventListener("click", () => el.style.display = "none");
     const viewBtn = el.querySelector("#ic-view-network");
     if (viewBtn) {
-      viewBtn.addEventListener("click", async () => {
+      viewBtn.addEventListener("click", async (e) => {
+        // Prevent event propagation
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        
         // el.dataset.usuario será establecido por showInfoCard antes de mostrar
         const usuario = el.dataset.usuario;
         if (!usuario) return alert('Usuario no disponible');
+        
+        // Hide card immediately
+        el.style.display = 'none';
+        
         try {
           // guardar root actual en stack para poder volver
-          if (typeof CURRENT_ROOT === 'string' && CURRENT_ROOT) NAV_STACK.push(CURRENT_ROOT);
+          if (typeof CURRENT_ROOT === 'string' && CURRENT_ROOT && CURRENT_ROOT !== usuario) {
+            NAV_STACK.push(CURRENT_ROOT);
+          }
+          
+          // Small delay to ensure card is hidden and DOM is ready
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
           const newRoot = await buildUnilevelTree(usuario);
           if (newRoot) {
             renderTree(newRoot);
-            el.style.display = 'none';
           } else {
             alert('No se pudo cargar la red de ' + usuario);
           }
@@ -724,13 +774,27 @@ function showInfoCard(node, event) {
   el.style.display = "block";
   const nameEl = el.querySelector("#ic-name");
   const userEl = el.querySelector("#ic-user");
+  const tipoEl = el.querySelector("#ic-tipo");
   const stateEl = el.querySelector("#ic-state");
   const pointsEl = el.querySelector("#ic-points");
   const phoneEl = el.querySelector("#ic-phone");
   if (nameEl) nameEl.textContent = node.nombre || node.usuario || "";
-  // guardar usuario en dataset para que el botón 'Ver red' pueda usarlo
   el.dataset.usuario = node.usuario || '';
   if (userEl) userEl.textContent = `Código: ${node.usuario || ""}`;
+  if (tipoEl) {
+    const tipo = (node.tipoRegistro || 'distribuidor').toLowerCase();
+    const tipoLabels = {
+      'restaurante': 'Restaurante',
+      'distribuidor': 'Distribuidor',
+      'cliente': 'Cliente'
+    };
+    const tipoColors = {
+      'restaurante': '#FFB347',
+      'distribuidor': '#2b9df3',
+      'cliente': '#6c757d'
+    };
+    tipoEl.innerHTML = `<span style="color:${tipoColors[tipo] || '#666'}">${tipoLabels[tipo] || tipo}</span>`;
+  }
   if (stateEl) stateEl.innerHTML = node.active ? '<span style="color:#28a745">Activo</span>' : '<span style="color:#666">Inactivo</span>';
   if (pointsEl) pointsEl.textContent = `${node.puntos || 0} pts`;
   if (phoneEl) phoneEl.textContent = node.celular || "No registrado";

@@ -23,6 +23,7 @@ const productos = [
     puntos: 50,
     unit: "paquete",
     availableFor: ["distribuidor", "cliente"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -39,6 +40,7 @@ const productos = [
     puntos: 10,
     unit: "paquete",
     availableFor: ["distribuidor", "cliente"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -55,6 +57,7 @@ const productos = [
     puntos: 10,
     unit: "paquete",
     availableFor: ["distribuidor", "cliente"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -71,6 +74,7 @@ const productos = [
     puntos: 10,
     unit: "paquete",
     availableFor: ["distribuidor", "cliente"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -87,6 +91,7 @@ const productos = [
     puntos: 10,
     unit: "paquete",
     availableFor: ["distribuidor", "cliente"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -103,6 +108,7 @@ const productos = [
     puntos: 10,
     unit: "paquete",
     availableFor: ["distribuidor", "cliente"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -119,6 +125,7 @@ const productos = [
     puntos: 10,
     unit: "paquete",
     availableFor: ["distribuidor", "cliente"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -135,6 +142,7 @@ const productos = [
     puntos: 10/3,
     unit: "kilo",
     availableFor: ["restaurante"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -151,6 +159,7 @@ const productos = [
     puntos: 10/3,
     unit: "kilo",
     availableFor: ["restaurante"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -167,6 +176,7 @@ const productos = [
     puntos: 10/3,
     unit: "kilo",
     availableFor: ["restaurante"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -183,6 +193,7 @@ const productos = [
     puntos: 10/3,
     unit: "kilo",
     availableFor: ["restaurante"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -199,6 +210,7 @@ const productos = [
     puntos: 10/3,
     unit: "kilo",
     availableFor: ["restaurante"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false
@@ -215,6 +227,7 @@ const productos = [
     puntos: 10/3,
     unit: "kilo",
     availableFor: ["restaurante"],
+    categoria: "carnes",
     hidden: false,
     outOfStock: false,
     deleted: false

@@ -130,6 +130,7 @@
       <button class="tab-button" data-tab="users">Usuarios</button>
       <button class="tab-button" data-tab="inventory">Inventario</button>
       <button class="tab-button" data-tab="products">Productos</button>
+      <button class="tab-button" data-tab="categories">Categorías</button>
     </div>
 
     <!-- Tab: Resumen -->
@@ -398,6 +399,7 @@
             <th>Imagen</th>
             <th>Nombre</th>
             <th>Descripción</th>
+            <th>Categoría</th>
             <th>Precio Dist.</th>
             <th>Precio Cliente</th>
             <th>Precio Rest.</th>
@@ -406,6 +408,29 @@
           </tr>
         </thead>
         <tbody id="productsManagementTable"></tbody>
+      </table>
+    </div>
+
+    <!-- Tab: Categories -->
+    <div id="tab-categories" class="tab-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h2 style="margin:0;">Gestión de Categorías</h2>
+        <button id="addCategoryBtn" class="btn-success">+ Crear Categoría</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Slug</th>
+            <th>Productos</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="categoriesTable">
+          <!-- Categories will be rendered here -->
+        </tbody>
       </table>
     </div>
   </div>
@@ -459,6 +484,32 @@
     </div>
   </div>
 
+  <!-- Modal para crear/editar categoría -->
+  <div id="categoryModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:white;padding:30px;border-radius:8px;max-width:500px;width:90%;">
+      <h3 id="categoryModalTitle" style="margin-top:0;">Crear Categoría</h3>
+      <form id="categoryForm">
+        <input type="hidden" id="categoryEditId">
+        
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Nombre de la Categoría</label>
+          <input type="text" id="categoryName" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: Carnes, Bebidas, Alimentos">
+        </div>
+        
+        <div style="margin-bottom:20px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Slug (ID único)</label>
+          <input type="text" id="categorySlug" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: carnes, bebidas, alimentos">
+          <small style="color:#666;font-size:12px;display:block;margin-top:4px;">Use solo minúsculas, números y guiones. Este valor se usará internamente.</small>
+        </div>
+        
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" id="categoryModalCancel" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-success">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal para crear/editar producto -->
   <div id="productModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;overflow-y:auto;">
     <div style="background:white;padding:30px;border-radius:8px;max-width:700px;width:90%;margin:40px auto;">
@@ -505,7 +556,7 @@
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
           <div>
             <label style="display:block;margin-bottom:6px;font-weight:500;">Puntos</label>
             <input type="number" id="productPoints" step="0.01" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="10">
@@ -517,6 +568,18 @@
               <option value="paquete">Paquete</option>
               <option value="kilo">Kilo</option>
               <option value="unidad">Unidad</option>
+            </select>
+          </div>
+          
+          <div>
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Categoría</label>
+            <select id="productCategory" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+              <option value="carnes">Carnes</option>
+              <option value="bebidas">Bebidas</option>
+              <option value="alimentos">Alimentos</option>
+              <option value="aseo">Aseo</option>
+              <option value="higiene-personal">Higiene Personal</option>
+              <option value="abarrotes">Abarrotes</option>
             </select>
           </div>
         </div>
@@ -563,7 +626,7 @@
 
   <script type="module">
     import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-    import { doc, getDoc, collection, getDocs, query, where, orderBy, limit, updateDoc, runTransaction, addDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { doc, getDoc, collection, getDocs, query, where, orderBy, limit, updateDoc, runTransaction, addDoc, setDoc, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     import { auth, db } from "/src/firebase-config.js";
 
     const loginSection = document.getElementById("loginSection");
@@ -658,7 +721,8 @@
         loadPayouts(),
         loadStats(),
         loadInventory(),
-        loadProducts()
+        loadProducts(),
+        loadCategories()
       ]);
     }
 
@@ -1712,9 +1776,18 @@
       const table = document.getElementById('productsManagementTable');
       
       if (allProducts.length === 0) {
-        table.innerHTML = '<tr><td colspan="8" class="empty-state">No hay productos registrados</td></tr>';
+        table.innerHTML = '<tr><td colspan="9" class="empty-state">No hay productos registrados</td></tr>';
         return;
       }
+
+      const categoryNames = {
+        'carnes': 'Carnes',
+        'bebidas': 'Bebidas',
+        'alimentos': 'Alimentos',
+        'aseo': 'Aseo',
+        'higiene-personal': 'Higiene Personal',
+        'abarrotes': 'Abarrotes'
+      };
 
       table.innerHTML = allProducts.map(prod => {
         const statusBadges = [];
@@ -1727,6 +1800,7 @@
             <td><img src="${prod.imagen || '/images/productos/inicio.jpg'}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;"></td>
             <td><strong>${prod.nombre}</strong><br><small style="color:#666;">${prod.id}</small></td>
             <td style="max-width:200px;"><small>${prod.descripcion || 'N/A'}</small></td>
+            <td><span style="background:#e9ecef;padding:4px 8px;border-radius:4px;font-size:12px;">${categoryNames[prod.categoria] || prod.categoria || 'N/A'}</span></td>
             <td>${prod.precioDistribuidor ? formatCOP(prod.precioDistribuidor) : 'N/A'}</td>
             <td>${prod.precioCliente ? formatCOP(prod.precioCliente) : 'N/A'}</td>
             <td>${prod.precioRestaurante ? formatCOP(prod.precioRestaurante) : 'N/A'}</td>
@@ -1768,6 +1842,7 @@
         precio: parseFloat(document.getElementById('productPriceDistributor').value) || 0,
         puntos: parseFloat(document.getElementById('productPoints').value) || 0,
         unit: document.getElementById('productUnit').value,
+        categoria: document.getElementById('productCategory').value,
         availableFor: [],
         hidden: document.getElementById('productHidden').checked,
         outOfStock: document.getElementById('productOutOfStock').checked
@@ -1815,6 +1890,7 @@
       document.getElementById('productPriceRestaurant').value = product.precioRestaurante || '';
       document.getElementById('productPoints').value = product.puntos || '';
       document.getElementById('productUnit').value = product.unit || 'paquete';
+      document.getElementById('productCategory').value = product.categoria || 'carnes';
       
       document.getElementById('productAvailDistributor').checked = (product.availableFor || []).includes('distribuidor');
       document.getElementById('productAvailClient').checked = (product.availableFor || []).includes('cliente');
@@ -1838,6 +1914,162 @@
         alert('Error al eliminar el producto: ' + err.message);
       }
     };
+
+    // Categories Management
+    let allCategories = [];
+    
+    async function loadCategories() {
+      try {
+        const categoriesSnap = await getDocs(collection(db, "categorias"));
+        if (categoriesSnap.empty) {
+          allCategories = [
+            { id: 'carnes', nombre: 'Carnes', slug: 'carnes' },
+            { id: 'bebidas', nombre: 'Bebidas', slug: 'bebidas' },
+            { id: 'alimentos', nombre: 'Alimentos', slug: 'alimentos' },
+            { id: 'aseo', nombre: 'Aseo', slug: 'aseo' },
+            { id: 'higiene-personal', nombre: 'Higiene Personal', slug: 'higiene-personal' },
+            { id: 'abarrotes', nombre: 'Abarrotes', slug: 'abarrotes' }
+          ];
+          for (const cat of allCategories) {
+            await addDoc(collection(db, "categorias"), cat);
+          }
+        } else {
+          allCategories = categoriesSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+        }
+        renderCategoriesTable();
+        updateProductCategoryOptions();
+      } catch (err) {
+        console.error('Error loading categories:', err);
+        allCategories = [
+          { id: 'carnes', nombre: 'Carnes', slug: 'carnes' },
+          { id: 'bebidas', nombre: 'Bebidas', slug: 'bebidas' },
+          { id: 'alimentos', nombre: 'Alimentos', slug: 'alimentos' },
+          { id: 'aseo', nombre: 'Aseo', slug: 'aseo' },
+          { id: 'higiene-personal', nombre: 'Higiene Personal', slug: 'higiene-personal' },
+          { id: 'abarrotes', nombre: 'Abarrotes', slug: 'abarrotes' }
+        ];
+      }
+    }
+
+    function renderCategoriesTable() {
+      const tbody = document.getElementById('categoriesTable');
+      if (!tbody) return;
+
+      tbody.innerHTML = allCategories.map(cat => {
+        const productCount = allProducts.filter(p => p.categoria === cat.slug).length;
+        return `
+          <tr>
+            <td>${cat.id}</td>
+            <td><strong>${cat.nombre}</strong></td>
+            <td><span style="font-family:monospace;font-size:12px;color:#666;">${cat.slug}</span></td>
+            <td>${productCount} producto${productCount !== 1 ? 's' : ''}</td>
+            <td>
+              <button class="btn-primary" onclick="editCategory('${cat.docId || cat.id}')">Editar</button>
+              <button class="btn-danger" onclick="deleteCategory('${cat.docId || cat.id}', '${cat.nombre}')">Eliminar</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('addCategoryBtn')?.addEventListener('click', () => {
+      document.getElementById('categoryModalTitle').textContent = 'Crear Categoría';
+      document.getElementById('categoryEditId').value = '';
+      document.getElementById('categoryName').value = '';
+      document.getElementById('categorySlug').value = '';
+      document.getElementById('categoryModal').style.display = 'flex';
+    });
+
+    document.getElementById('categoryModalCancel')?.addEventListener('click', () => {
+      document.getElementById('categoryModal').style.display = 'none';
+    });
+
+    document.getElementById('categoryForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const editDocId = document.getElementById('categoryEditId').value;
+      const nombre = document.getElementById('categoryName').value.trim();
+      const slug = document.getElementById('categorySlug').value.trim().toLowerCase();
+
+      if (!nombre || !slug) {
+        alert('Todos los campos son obligatorios');
+        return;
+      }
+
+      if (!/^[a-z0-9-]+$/.test(slug)) {
+        alert('El slug solo puede contener letras minúsculas, números y guiones');
+        return;
+      }
+
+      const existingCategory = allCategories.find(c => c.slug === slug && c.docId !== editDocId);
+      if (existingCategory) {
+        alert('Ya existe una categoría con ese slug');
+        return;
+      }
+
+      try {
+        const categoryData = { id: slug, nombre, slug };
+
+        if (editDocId) {
+          await updateDoc(doc(db, "categorias", editDocId), categoryData);
+          alert('Categoría actualizada correctamente');
+        } else {
+          await addDoc(collection(db, "categorias"), categoryData);
+          alert('Categoría creada correctamente');
+        }
+
+        await loadCategories();
+        document.getElementById('categoryModal').style.display = 'none';
+      } catch (err) {
+        console.error('Error saving category:', err);
+        alert('Error al guardar la categoría: ' + err.message);
+      }
+    });
+
+    window.editCategory = function(docId) {
+      const category = allCategories.find(c => c.docId === docId || c.id === docId);
+      if (!category) return;
+
+      document.getElementById('categoryModalTitle').textContent = 'Editar Categoría';
+      document.getElementById('categoryEditId').value = category.docId || '';
+      document.getElementById('categoryName').value = category.nombre;
+      document.getElementById('categorySlug').value = category.slug;
+      document.getElementById('categoryModal').style.display = 'flex';
+    };
+
+    window.deleteCategory = async function(docId, categoryName) {
+      const category = allCategories.find(c => c.docId === docId || c.id === docId);
+      if (!category) return;
+
+      const productCount = allProducts.filter(p => p.categoria === category.slug).length;
+      
+      if (productCount > 0) {
+        alert(`No puedes eliminar la categoría "${categoryName}" porque tiene ${productCount} producto(s) asociado(s).`);
+        return;
+      }
+
+      if (!confirm(`¿Estás seguro de eliminar la categoría "${categoryName}"?`)) return;
+
+      try {
+        if (category.docId) {
+          await deleteDoc(doc(db, "categorias", category.docId));
+        }
+        alert('Categoría eliminada correctamente');
+        await loadCategories();
+      } catch (err) {
+        console.error('Error deleting category:', err);
+        alert('Error al eliminar la categoría: ' + err.message);
+      }
+    };
+
+    function updateProductCategoryOptions() {
+      const selector = document.getElementById('productCategory');
+      if (!selector) return;
+
+      selector.innerHTML = allCategories.map(cat => 
+        `<option value="${cat.slug}">${cat.nombre}</option>`
+      ).join('');
+    }
   </script>
 </body>
 </html>
