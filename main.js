@@ -193,7 +193,7 @@ if (form) {
         creadoEn: new Date(),
         puntos: 0,
         personalPoints: 0,
-        teamPoints: 0,
+        groupPoints: 0,
         balance: 0,
         walletBalance: 0
       });

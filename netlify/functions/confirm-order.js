@@ -2,7 +2,32 @@
 // netlify/functions/confirm-order.js
 // Reglas implementadas:
 // - POINT_VALUE = 2800 pesos
-// - Productos: $60,000 = 10 puntos | Paquete grande: $300,000 = 50 puntos
+// - Sistema base: 3 kg = 10 puntos = 60,000 COP | 1 kg = 10/3 ≈ 3.333 puntos
+// 
+// CLIENTES:
+//   * Pagan 25% más que precio distribuidor: 60,000 × 1.25 = 75,000 por 3kg
+//   * No generan puntos ni comisiones
+// 
+// DISTRIBUIDORES:
+//   * Compran paquete de 3 kg = 10 puntos = 60,000 COP
+//   * Comisiones: Cada uno de los 5 uplines recibe 1 punto
+//   * Pago por upline = 1 × 2,800 = 2,800 COP
+//   * Pago total sistema = 5 × 2,800 = 14,000 COP
+// 
+// RESTAURANTES:
+//   * Compran kilos arbitrarios (ejemplo: 2 kg)
+//   * Conversión: 2 kg × 10/3 = 6.6667 puntos
+//   * Cada upline recibe 0.05 puntos por cada punto generado
+//   * Ejemplo 2kg: 6.6667 × 0.05 = 0.3333 puntos por upline
+//   * Pago por upline = 0.3333 × 2,800 ≈ 933 COP
+//   * Pago total sistema = 5 × 933 ≈ 4,665 COP
+// 
+// FÓRMULAS UNIVERSALES:
+//   * Puntos totales = kilos × 10/3
+//   * Puntos por upline (restaurantes) = puntos_totales × 0.05
+//   * Puntos por upline (distribuidores) = 1 punto fijo
+//   * Pago por upline = puntos_por_upline × 2,800
+//   * Pago total sistema = pago_por_upline × 5
 // 
 // SISTEMA DE 25 PUNTOS PARA PRIMERA COMPRA GRANDE:
 //   * Se activa SOLO en la PRIMERA compra del usuario
@@ -16,12 +41,6 @@
 //   * Ejemplo: Primera compra de 100 puntos = $140,000 total distribuidos
 //     - Patrocinador directo: 42 × $2,800 = $117,600
 //     - 4 niveles superiores: 2 × $2,800 = $5,600 cada uno ($22,400 total)
-// 
-// COMISIÓN NORMAL (COMPRAS SUBSECUENTES O MENORES A 50 PUNTOS):
-//   * Se distribuye 1 punto por cada 10 puntos de compra
-//   * Se reparte a 5 niveles hacia arriba del comprador (incluye patrocinador directo)
-//   * Ejemplo: compra de 50 puntos = 5 niveles reciben 1 punto cada uno ($2,800 c/u = $14,000 total)
-//   * Restaurantes: 0.5 puntos por cada 10 puntos (50% de comisión)
 // 
 // - Función para Netlify / Firestore (firebase-admin).
 
@@ -38,12 +57,13 @@ const db = admin.firestore();
 
 // CONFIG
 const POINT_VALUE = 2800;
-const REBUY_POINT_PER_LEVEL = 1; // 1 punto por cada unidad (bloque de 10)
-const MAX_LEVELS_NORMAL = 5; // Para compras normales/subsecuentes
-const MAX_LEVELS_QUICK_START = 4; // Para niveles superiores en bono de inicio rápido
-const QUICK_START_DIRECT_POINTS = 21; // Puntos que recibe el patrocinador directo por cada paquete de 50
-const QUICK_START_UPPER_LEVELS_POINTS = 1; // Puntos por nivel superior (4 niveles)
-const QUICK_START_THRESHOLD = 50; // La compra debe ser de al menos 50 puntos para activar el bono
+const POINTS_PER_UPLINE_DISTRIBUTOR = 1;
+const POINTS_PER_UPLINE_RESTAURANT_RATE = 0.05;
+const MAX_LEVELS_NORMAL = 5;
+const MAX_LEVELS_QUICK_START = 4;
+const QUICK_START_DIRECT_POINTS = 21;
+const QUICK_START_UPPER_LEVELS_POINTS = 1;
+const QUICK_START_THRESHOLD = 50;
 
 // HELPERS
 async function findUserByUsername(username) {
@@ -147,21 +167,28 @@ exports.handler = async (event) => {
       const isFirstPurchasePreTx = prevPersonalPointsPreTx === 0;
       const shouldPayQuickStartBonusPreTx = isFirstPurchasePreTx && points >= QUICK_START_THRESHOLD;
       
-      console.log(`📊 Buyer data check: sponsor=${directSponsorCodePreTx}, prevPoints=${prevPersonalPointsPreTx}, isFirst=${isFirstPurchasePreTx}`);
+      console.log(`📊 Buyer data check: sponsor=${directSponsorCodePreTx}, prevPoints=${prevPersonalPointsPreTx}, isFirst=${isFirstPurchasePreTx}, shouldPayQuickStart=${shouldPayQuickStartBonusPreTx}`);
       
       // Look up sponsor before transaction if needed
       let sponsorDocId = null;
       if (shouldPayQuickStartBonusPreTx && directSponsorCodePreTx) {
+        console.log(`🔍 Buscando patrocinador: ${directSponsorCodePreTx}`);
         const sponsor = await findUserByUsername(directSponsorCodePreTx);
         if (sponsor) {
           sponsorDocId = sponsor.id;
+          console.log(`✅ Patrocinador encontrado: ${sponsor.data.usuario} (ID: ${sponsorDocId})`);
+        } else {
+          console.warn(`⚠️ Patrocinador no encontrado en BD: ${directSponsorCodePreTx}`);
         }
+      } else if (shouldPayQuickStartBonusPreTx && !directSponsorCodePreTx) {
+        console.warn(`⚠️ Se requiere Quick Start Bonus pero el comprador no tiene patrocinador registrado`);
       }
 
       // 2) Run transaction: mark order confirmed and update buyer points
       let txResult;
       try {
         txResult = await db.runTransaction(async (tx) => {
+          // ALL READS MUST HAPPEN FIRST - before any writes
           const ordSnap = await tx.get(orderRef);
           if (!ordSnap.exists) throw new Error('Orden desapareció durante la transacción');
           
@@ -173,6 +200,17 @@ exports.handler = async (event) => {
           const buyerSnap = await tx.get(buyerRef);
           if (!buyerSnap.exists) throw new Error('Comprador no encontrado en la transacción');
           
+          // Read sponsor data within transaction if we have the ID (BEFORE any writes)
+          let sponsorData = null;
+          if (sponsorDocId) {
+            const sponsorRefInTx = db.collection('usuarios').doc(sponsorDocId);
+            const sponsorDocSnap = await tx.get(sponsorRefInTx);
+            if (sponsorDocSnap.exists) {
+              sponsorData = { id: sponsorDocId, data: sponsorDocSnap.data() };
+            }
+          }
+          
+          // NOW we can process the data and do writes
           const buyerData = buyerSnap.data() || {};
           const currentPoints = Number(buyerData.personalPoints || buyerData.puntos || buyerData.points || 0);
           const newPersonalPoints = currentPoints + points;
@@ -210,16 +248,6 @@ exports.handler = async (event) => {
           // compatibility flag
           if (newPersonalPoints >= 50 && !buyerData.initialPackBought) {
             tx.update(buyerRef, { initialPackBought: true });
-          }
-
-          // Get sponsor data within transaction if we have the ID
-          let sponsorData = null;
-          if (sponsorDocId) {
-            const sponsorRefInTx = db.collection('usuarios').doc(sponsorDocId);
-            const sponsorDocSnap = await tx.get(sponsorRefInTx);
-            if (sponsorDocSnap.exists) {
-              sponsorData = { id: sponsorDocId, data: sponsorDocSnap.data() };
-            }
           }
 
           return { 
@@ -306,6 +334,8 @@ exports.handler = async (event) => {
       console.log(`   - Umbral requerido: ${QUICK_START_THRESHOLD}`);
       console.log(`   - shouldPayQuickStartBonus: ${shouldPayQuickStartBonus}`);
 
+      let quickStartBonusPaid = false;  // Flag to track if bonus was actually paid
+
       if (shouldPayQuickStartBonus && sponsorData && sponsorData.data) {
         console.log(`💰 Pagando Quick Start Bonus (sistema de 25 puntos) a patrocinador directo: ${directSponsorCode}`);
         try {
@@ -383,6 +413,7 @@ exports.handler = async (event) => {
           }
           
           console.log(`✅ Distribución de Quick Start Bonus completada: 25 puntos × ${numberOfPackages} paquetes = ${25 * numberOfPackages} puntos totales distribuidos`);
+          quickStartBonusPaid = true;  // Mark that bonus was successfully paid
           
         } catch (e) {
           console.error('❌ Error pagando bono de inicio rápido:', e);
@@ -408,8 +439,8 @@ exports.handler = async (event) => {
       // SOLO se ejecuta si NO se pagó el Quick Start Bonus
       // Si se pagó Quick Start Bonus, ya se distribuyeron los puntos arriba
       
-      if (shouldPayQuickStartBonus) {
-        console.log(`ℹ️ Quick Start Bonus aplicado - omitiendo distribución normal de puntos grupales`);
+      if (quickStartBonusPaid) {
+        console.log(`ℹ️ Quick Start Bonus pagado exitosamente - omitiendo distribución normal de puntos grupales`);
         
         // Mark order as having group points distributed
         await orderRef.update({
@@ -419,6 +450,14 @@ exports.handler = async (event) => {
         
         return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada y pagos procesados (Quick Start Bonus)' }) };
       }
+      
+      // If we reach here, it means either:
+      // 1. It's not a first purchase, OR
+      // 2. First purchase but < 50 points, OR
+      // 3. First purchase >= 50 points but Quick Start Bonus could not be paid (no sponsor found)
+      // In all cases, we should distribute normal commissions
+      
+      console.log(`ℹ️ Procediendo con distribución normal de comisiones${shouldPayQuickStartBonus ? ' (Quick Start Bonus no pudo ser pagado - distribuyendo comisión normal)' : ''}`);
       
       // Check if group points have already been distributed for this order
       const orderDoc = await orderRef.get();
@@ -435,12 +474,14 @@ exports.handler = async (event) => {
       const isRestaurante = buyerType === 'restaurante';
       
       console.log(`🌐 Iniciando distribución normal de puntos grupales: ${points} puntos de compra, tipo de comprador: ${buyerType}`);
-      console.log(`   Distribución: 1 punto por cada 10 puntos de compra, a 5 niveles (incluye patrocinador directo)`);
+      console.log(`   Distribución:`);
+      console.log(`   - Distribuidores/Clientes: 1 punto fijo por upline, a 5 niveles`);
+      console.log(`   - Restaurantes: ${points} pts × 0.05 = ${(points * 0.05).toFixed(4)} puntos por upline, a 5 niveles`);
       try {
         // Para compras normales o subsecuentes:
         // - El comprador recibe los puntos en personalPoints (ya se hizo en la transacción arriba)
-        // - Cada patrocinador en la línea ascendente (5 niveles) recibe 1 punto por cada 10 puntos de compra
-        // - Si el comprador es un Restaurante: 0.5 puntos por cada 10 puntos (en vez de 1)
+        // - DISTRIBUIDORES/CLIENTES: Cada upline recibe 1 punto fijo (no importa cuántos puntos compró)
+        // - RESTAURANTES: Cada upline recibe 0.05 puntos por cada punto generado en la compra
         
         let currentSponsorCode = directSponsorCode;
         
@@ -473,19 +514,23 @@ exports.handler = async (event) => {
 
           const sponsorRef = db.collection('usuarios').doc(sponsor.id);
 
-          // Dar puntos grupales según el tipo de comprador:
-          // - Cliente/Distribuidor: 1 punto grupal por cada 10 puntos de compra
-          // - Restaurante: 0.5 puntos grupales por cada 10 puntos de compra
-          const baseGroupPoints = Math.floor(points / 10) * REBUY_POINT_PER_LEVEL;
-          const groupPointsToAdd = isRestaurante ? baseGroupPoints * 0.5 : baseGroupPoints;
-          const groupPointsAmount = groupPointsToAdd * POINT_VALUE;
-          console.log(`📊 Nivel ${level + 1} (${sponsor.data.usuario}): Agregando ${groupPointsToAdd} puntos grupales = ${groupPointsAmount} COP (points=${points}, tipo=${buyerType})`);
+          // Calcular puntos grupales según el tipo de comprador:
+          // - Distribuidor/Cliente: 1 punto fijo por upline
+          // - Restaurante: 0.05 puntos por cada punto generado en la compra
+          let groupPointsToAdd;
+          if (isRestaurante) {
+            groupPointsToAdd = Math.round((points * POINTS_PER_UPLINE_RESTAURANT_RATE) * 100) / 100;
+          } else {
+            groupPointsToAdd = POINTS_PER_UPLINE_DISTRIBUTOR;
+          }
+          const groupPointsAmount = Math.round(groupPointsToAdd * POINT_VALUE);
+          console.log(`📊 Nivel ${level + 1} (${sponsor.data.usuario}): Agregando ${groupPointsToAdd.toFixed(4)} puntos grupales = ${groupPointsAmount.toFixed(0)} COP (points=${points}, tipo=${buyerType})`);
 
           await sponsorRef.update({
             groupPoints: admin.firestore.FieldValue.increment(groupPointsToAdd),
             balance: admin.firestore.FieldValue.increment(groupPointsAmount),
             history: admin.firestore.FieldValue.arrayUnion({
-              action: `Comisión normal (+${groupPointsToAdd} pts = ${groupPointsAmount} COP) por compra de ${buyerUsername} (${buyerType}) - Nivel ${level + 1}`,
+              action: `Comisión normal (+${groupPointsToAdd.toFixed(2)} pts = ${groupPointsAmount.toLocaleString('es-CO')} COP) por compra de ${buyerUsername} (${buyerType}) - Nivel ${level + 1}`,
               amount: groupPointsAmount,
               points: groupPointsToAdd,
               orderId,
