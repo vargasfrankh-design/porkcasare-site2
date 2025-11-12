@@ -83,6 +83,20 @@ service cloud.firestore {
       }
     }
 
+    // ========== Productos Collection ==========
+    match /productos/{productId} {
+      allow read: if true;
+      
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ========== Inventory Collection ==========
+    match /inventory/{inventoryId} {
+      allow read: if isAuthenticated();
+      
+      allow create, update, delete: if isAdmin();
+    }
+
     // ========== Denegar todo lo demás ==========
     match /{document=**} {
       allow read, write: if false;

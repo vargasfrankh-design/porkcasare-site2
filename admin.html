@@ -41,6 +41,59 @@
     /* Header */
     .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
     .empty-state { text-align: center; padding: 40px; color: #6c757d; }
+    
+    /* Product Cards */
+    .product-card-preview { 
+      background: white; 
+      border-radius: 12px; 
+      padding: 16px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+    .product-card-preview:hover { 
+      transform: translateY(-4px); 
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15); 
+    }
+    .product-card-preview img { 
+      width: 100%; 
+      height: 180px; 
+      object-fit: cover; 
+      border-radius: 8px; 
+      margin-bottom: 12px; 
+    }
+    .product-card-preview h4 { 
+      margin: 0 0 8px 0; 
+      font-size: 16px; 
+      font-weight: 600; 
+      color: #333; 
+    }
+    .product-card-preview p { 
+      margin: 0 0 8px 0; 
+      font-size: 13px; 
+      color: #666; 
+      line-height: 1.4; 
+    }
+    .product-card-preview .price { 
+      font-size: 18px; 
+      font-weight: 700; 
+      color: #28a745; 
+      margin-bottom: 8px; 
+    }
+    .product-badge { 
+      position: absolute; 
+      top: 24px; 
+      right: 24px; 
+      background: #dc3545; 
+      color: white; 
+      padding: 4px 8px; 
+      border-radius: 4px; 
+      font-size: 11px; 
+      font-weight: 600; 
+      text-transform: uppercase; 
+    }
+    .product-badge.hidden { background: #6c757d; }
+    .product-badge.outofstock { background: #fd7e14; }
   </style>
 </head>
 <body>
@@ -76,6 +129,7 @@
       <button class="tab-button" data-tab="payouts">Cobros de Distribuidores</button>
       <button class="tab-button" data-tab="users">Usuarios</button>
       <button class="tab-button" data-tab="inventory">Inventario</button>
+      <button class="tab-button" data-tab="products">Productos</button>
     </div>
 
     <!-- Tab: Resumen -->
@@ -183,7 +237,10 @@
 
     <!-- Tab: Distribuidores -->
     <div id="tab-distributors" class="tab-content">
-      <h2>Distribuidores Registrados</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap;">
+        <h2 style="margin:0;">Distribuidores Registrados</h2>
+        <input type="text" id="distributorSearchInput" placeholder="Buscar por nombre, usuario o cédula..." style="padding:10px 16px;border:1px solid #ddd;border-radius:6px;font-size:14px;min-width:300px;flex:1;max-width:400px;">
+      </div>
       <table>
         <thead>
           <tr>
@@ -191,12 +248,29 @@
             <th>Nombre</th>
             <th>Email</th>
             <th>Celular</th>
-            <th>Puntos</th>
+            <th>Puntos Personales</th>
+            <th>Puntos Grupales</th>
             <th>Registro</th>
+            <th>Detalles</th>
           </tr>
         </thead>
         <tbody id="distributorsTable"></tbody>
       </table>
+      
+      <!-- Distributor Details Panel -->
+      <div id="distributorDetailsPanel" style="display:none;position:fixed;top:0;right:-600px;width:600px;height:100vh;background:white;box-shadow:-4px 0 20px rgba(0,0,0,0.15);z-index:2000;transition:right 0.3s ease;overflow-y:auto;">
+        <div style="padding:24px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <h2 style="margin:0;font-size:20px;">Detalles del Distribuidor</h2>
+            <button id="closeDistributorPanel" style="background:transparent;border:none;font-size:28px;cursor:pointer;color:#666;line-height:1;">&times;</button>
+          </div>
+          
+          <div id="distributorDetailsContent"></div>
+        </div>
+      </div>
+      
+      <!-- Overlay for distributor panel -->
+      <div id="distributorPanelOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:1999;"></div>
     </div>
 
     <!-- Tab: Clientes -->
@@ -293,6 +367,47 @@
         <tbody id="usersTable"></tbody>
       </table>
     </div>
+
+    <!-- Tab: Productos -->
+    <div id="tab-products" class="tab-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <h2 style="margin:0;">Gestión de Productos</h2>
+        <button id="addProductBtn" class="btn-success">+ Crear Producto</button>
+      </div>
+
+      <!-- Preview Selector -->
+      <div style="background:white;padding:16px;border-radius:8px;margin-bottom:20px;">
+        <label style="font-weight:600;margin-right:12px;">Vista previa para:</label>
+        <select id="previewTypeSelector" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+          <option value="distribuidor">Distribuidores</option>
+          <option value="restaurante">Restaurantes</option>
+          <option value="cliente">Clientes</option>
+        </select>
+      </div>
+
+      <!-- Products Grid Preview -->
+      <div id="productsPreviewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-bottom:30px;">
+        <!-- Product cards will be rendered here -->
+      </div>
+
+      <!-- Products Management Table -->
+      <h3>Administración de Productos</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Imagen</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Precio Dist.</th>
+            <th>Precio Cliente</th>
+            <th>Precio Rest.</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="productsManagementTable"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Modal para agregar inventario -->
@@ -341,6 +456,108 @@
         <button id="roleModalCancel" class="btn-secondary">Cancelar</button>
         <button id="roleModalConfirm" class="btn-primary">Confirmar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal para crear/editar producto -->
+  <div id="productModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;overflow-y:auto;">
+    <div style="background:white;padding:30px;border-radius:8px;max-width:700px;width:90%;margin:40px auto;">
+      <h3 id="productModalTitle" style="margin-top:0;">Crear Producto</h3>
+      <form id="productForm">
+        <input type="hidden" id="productEditId">
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div>
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Nombre del Producto *</label>
+            <input type="text" id="productName" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: Chuletas - 3 kg">
+          </div>
+          
+          <div>
+            <label style="display:block;margin-bottom:6px;font-weight:500;">ID del Producto *</label>
+            <input type="text" id="productId" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: chuletas-3kg">
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Descripción</label>
+          <textarea id="productDescription" rows="2" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Descripción del producto"></textarea>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">URL de la Imagen</label>
+          <input type="text" id="productImage" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="/images/productos/producto.jpg">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div>
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Precio Distribuidor</label>
+            <input type="number" id="productPriceDistributor" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="60000">
+          </div>
+          
+          <div>
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Precio Cliente</label>
+            <input type="number" id="productPriceClient" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="75000">
+          </div>
+          
+          <div>
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Precio Restaurante</label>
+            <input type="number" id="productPriceRestaurant" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="20000">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div>
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Puntos</label>
+            <input type="number" id="productPoints" step="0.01" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="10">
+          </div>
+          
+          <div>
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Unidad</label>
+            <select id="productUnit" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+              <option value="paquete">Paquete</option>
+              <option value="kilo">Kilo</option>
+              <option value="unidad">Unidad</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Disponible para:</label>
+          <div style="display:flex;gap:16px;">
+            <label style="display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="productAvailDistributor" value="distribuidor">
+              <span>Distribuidores</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="productAvailClient" value="cliente">
+              <span>Clientes</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="productAvailRestaurant" value="restaurante">
+              <span>Restaurantes</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="productHidden">
+            <span style="font-weight:500;">Ocultar producto (no visible para usuarios)</span>
+          </label>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="productOutOfStock">
+            <span style="font-weight:500;">Marcar como agotado</span>
+          </label>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" id="productModalCancel" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-success">Guardar Producto</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -440,9 +657,12 @@
         loadUsers(),
         loadPayouts(),
         loadStats(),
-        loadInventory()
+        loadInventory(),
+        loadProducts()
       ]);
     }
+
+    let allProducts = [];
 
     // Cargar estadísticas
     async function loadStats() {
@@ -610,38 +830,86 @@
       });
     }
 
+    let allDistributors = [];
+    
     // Cargar distribuidores
     async function loadDistributors() {
       try {
         const usersSnap = await getDocs(collection(db, "usuarios"));
-        const distributors = usersSnap.docs
+        allDistributors = usersSnap.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(u => (u.role === 'distribuidor' || u.tipoRegistro === 'distribuidor' || (!u.role && !u.tipoRegistro)));
         
-        const table = document.getElementById('distributorsTable');
-        table.innerHTML = '';
+        renderDistributorsTable(allDistributors);
         
-        if (distributors.length === 0) {
-          table.innerHTML = '<tr><td colspan="6" class="empty-state">No hay distribuidores</td></tr>';
-          return;
+        // Attach search event listener after loading distributors
+        const searchInput = document.getElementById('distributorSearchInput');
+        if (searchInput && !searchInput.dataset.listenerAttached) {
+          searchInput.dataset.listenerAttached = 'true';
+          searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            
+            if (!searchTerm) {
+              renderDistributorsTable(allDistributors);
+              return;
+            }
+            
+            const filtered = allDistributors.filter(dist => {
+              const nombre = (dist.nombre || '').toLowerCase();
+              const usuario = (dist.usuario || '').toLowerCase();
+              const cedula = (dist.cedula || '').toLowerCase();
+              const email = (dist.email || '').toLowerCase();
+              
+              return nombre.includes(searchTerm) || 
+                     usuario.includes(searchTerm) || 
+                     cedula.includes(searchTerm) ||
+                     email.includes(searchTerm);
+            });
+            
+            renderDistributorsTable(filtered);
+          });
         }
-        
-        distributors.forEach(dist => {
-          const row = document.createElement('tr');
-          const date = dist.createdAt ? new Date(dist.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
-          row.innerHTML = `
-            <td>${dist.usuario || 'N/A'}</td>
-            <td>${dist.nombre || 'N/A'}</td>
-            <td>${dist.email || 'N/A'}</td>
-            <td>${dist.celular || 'N/A'}</td>
-            <td>${dist.puntos || dist.personalPoints || 0}</td>
-            <td>${date}</td>
-          `;
-          table.appendChild(row);
-        });
       } catch (err) {
         console.error('Error loading distributors:', err);
       }
+    }
+    
+    function renderDistributorsTable(distributors) {
+      const table = document.getElementById('distributorsTable');
+      table.innerHTML = '';
+      
+      if (distributors.length === 0) {
+        table.innerHTML = '<tr><td colspan="8" class="empty-state">No hay distribuidores</td></tr>';
+        return;
+      }
+      
+      const referralCounts = {};
+      allDistributors.forEach(dist => {
+        const sponsor = dist.patrocinador;
+        if (sponsor) {
+          referralCounts[sponsor] = (referralCounts[sponsor] || 0) + 1;
+        }
+      });
+      
+      distributors.forEach(dist => {
+        const row = document.createElement('tr');
+        const date = dist.createdAt ? new Date(dist.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
+        const personalPoints = dist.personalPoints || dist.puntos || 0;
+        const groupPoints = dist.groupPoints || 0;
+        const referralCount = referralCounts[dist.usuario] || 0;
+        
+        row.innerHTML = `
+          <td>${dist.usuario || 'N/A'}</td>
+          <td>${dist.nombre || 'N/A'}</td>
+          <td>${dist.email || 'N/A'}</td>
+          <td>${dist.celular || 'N/A'}</td>
+          <td><strong>${personalPoints}</strong></td>
+          <td><strong>${groupPoints}</strong></td>
+          <td>${date}</td>
+          <td><button class="btn-primary" onclick="showDistributorDetails('${dist.id}')">Ver <span style="font-size:16px;">→</span></button></td>
+        `;
+        table.appendChild(row);
+      });
     }
 
     // Cargar clientes
@@ -973,6 +1241,201 @@
       }
     });
 
+    // Distributor details panel management
+    window.showDistributorDetails = async function(distributorId) {
+      try {
+        const distDoc = await getDoc(doc(db, 'usuarios', distributorId));
+        if (!distDoc.exists()) {
+          alert('Distribuidor no encontrado');
+          return;
+        }
+        
+        const dist = distDoc.data();
+        const personalPoints = dist.personalPoints || dist.puntos || 0;
+        const groupPoints = dist.groupPoints || 0;
+        const balance = dist.balance || 0;
+        const walletBalance = dist.walletBalance || 0;
+        const totalComisionesCobradas = dist.totalComisionesCobradas || 0;
+        
+        // Count referrals
+        const usersSnap = await getDocs(collection(db, 'usuarios'));
+        const referrals = usersSnap.docs.filter(d => {
+          const userData = d.data();
+          return userData.patrocinador === dist.usuario;
+        });
+        
+        // Get orders history
+        const ordersSnap = await getDocs(query(
+          collection(db, 'orders'),
+          where('buyerUid', '==', distributorId)
+        ));
+        const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        // Get history from user document
+        const history = dist.history || [];
+        
+        const contentDiv = document.getElementById('distributorDetailsContent');
+        contentDiv.innerHTML = `
+          <div style="background:#f8f9fa;padding:16px;border-radius:8px;margin-bottom:20px;">
+            <h3 style="margin:0 0 12px 0;font-size:18px;color:#333;">${dist.nombre || dist.usuario || 'Sin nombre'}</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:14px;">
+              <div><strong>Código:</strong> ${dist.usuario || 'N/A'}</div>
+              <div><strong>Email:</strong> ${dist.email || 'N/A'}</div>
+              <div><strong>Celular:</strong> ${dist.celular || 'N/A'}</div>
+              <div><strong>Patrocinador:</strong> ${dist.patrocinador || 'Ninguno'}</div>
+            </div>
+          </div>
+          
+          <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:12px;margin-bottom:24px;">
+            <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:16px;border-radius:8px;">
+              <div style="font-size:12px;opacity:0.9;margin-bottom:4px;">Puntos Personales</div>
+              <div style="font-size:28px;font-weight:700;">${personalPoints}</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:white;padding:16px;border-radius:8px;">
+              <div style="font-size:12px;opacity:0.9;margin-bottom:4px;">Puntos Grupales</div>
+              <div style="font-size:28px;font-weight:700;">${groupPoints}</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);color:white;padding:16px;border-radius:8px;">
+              <div style="font-size:12px;opacity:0.9;margin-bottom:4px;">Balance Disponible</div>
+              <div style="font-size:24px;font-weight:700;">$${balance.toLocaleString()}</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%);color:white;padding:16px;border-radius:8px;">
+              <div style="font-size:12px;opacity:0.9;margin-bottom:4px;">Total Referidos</div>
+              <div style="font-size:28px;font-weight:700;">${referrals.length}</div>
+            </div>
+          </div>
+          
+          <div style="margin-bottom:20px;">
+            <h4 style="margin:0 0 12px 0;font-size:16px;color:#333;border-bottom:2px solid #e9ecef;padding-bottom:8px;">Referidos Directos (${referrals.length})</h4>
+            ${referrals.length === 0 ? '<p style="color:#6c757d;font-size:14px;">No tiene referidos directos</p>' : `
+              <div style="max-height:200px;overflow-y:auto;">
+                <table style="width:100%;font-size:13px;">
+                  <thead style="background:#f8f9fa;">
+                    <tr>
+                      <th style="padding:8px;">Código</th>
+                      <th style="padding:8px;">Nombre</th>
+                      <th style="padding:8px;">Email</th>
+                      <th style="padding:8px;">Puntos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${referrals.map(ref => {
+                      const refData = ref.data();
+                      return `
+                        <tr style="border-bottom:1px solid #e9ecef;">
+                          <td style="padding:8px;">${refData.usuario || 'N/A'}</td>
+                          <td style="padding:8px;">${refData.nombre || 'N/A'}</td>
+                          <td style="padding:8px;">${refData.email || 'N/A'}</td>
+                          <td style="padding:8px;"><strong>${refData.personalPoints || refData.puntos || 0}</strong></td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+          
+          <div style="margin-bottom:20px;">
+            <h4 style="margin:0 0 12px 0;font-size:16px;color:#333;border-bottom:2px solid #e9ecef;padding-bottom:8px;">Órdenes de Compra (${orders.length})</h4>
+            ${orders.length === 0 ? '<p style="color:#6c757d;font-size:14px;">No tiene órdenes registradas</p>' : `
+              <div style="max-height:250px;overflow-y:auto;">
+                <table style="width:100%;font-size:13px;">
+                  <thead style="background:#f8f9fa;">
+                    <tr>
+                      <th style="padding:8px;">Fecha</th>
+                      <th style="padding:8px;">Producto</th>
+                      <th style="padding:8px;">Total</th>
+                      <th style="padding:8px;">Puntos</th>
+                      <th style="padding:8px;">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${orders.map(order => {
+                      const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A';
+                      const statusColors = {
+                        confirmed: '#28a745',
+                        pending: '#fd7e14',
+                        pending_delivery: '#fd7e14',
+                        rejected: '#dc3545'
+                      };
+                      return `
+                        <tr style="border-bottom:1px solid #e9ecef;">
+                          <td style="padding:8px;">${date}</td>
+                          <td style="padding:8px;">${order.productName || 'N/A'}</td>
+                          <td style="padding:8px;">$${(order.totalPrice || order.price || 0).toLocaleString()}</td>
+                          <td style="padding:8px;"><strong>${order.totalPoints || order.points || 0}</strong></td>
+                          <td style="padding:8px;"><span style="color:${statusColors[order.status] || '#6c757d'};font-weight:600;">${order.status}</span></td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+          
+          <div>
+            <h4 style="margin:0 0 12px 0;font-size:16px;color:#333;border-bottom:2px solid #e9ecef;padding-bottom:8px;">Historial de Comisiones (${history.filter(h => h.type !== 'purchase' && !(h.action || '').includes('Compra confirmada')).length})</h4>
+            ${history.filter(h => h.type !== 'purchase' && !(h.action || '').includes('Compra confirmada')).length === 0 ? '<p style="color:#6c757d;font-size:14px;">No hay historial de comisiones</p>' : `
+              <div style="max-height:300px;overflow-y:auto;">
+                <table style="width:100%;font-size:13px;">
+                  <thead style="background:#f8f9fa;position:sticky;top:0;">
+                    <tr>
+                      <th style="padding:8px;">Fecha</th>
+                      <th style="padding:8px;">Acción</th>
+                      <th style="padding:8px;">Monto</th>
+                      <th style="padding:8px;">Puntos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${history.filter(h => h.type !== 'purchase' && !(h.action || '').includes('Compra confirmada')).slice().reverse().slice(0, 50).map(h => {
+                      const date = h.date ? new Date(h.date).toLocaleDateString() : 'N/A';
+                      return `
+                        <tr style="border-bottom:1px solid #e9ecef;">
+                          <td style="padding:8px;">${date}</td>
+                          <td style="padding:8px;">${h.action || 'N/A'}</td>
+                          <td style="padding:8px;">$${(h.amount || 0).toLocaleString()}</td>
+                          <td style="padding:8px;"><strong>${h.points || 0}</strong></td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+        `;
+        
+        // Show panel
+        const panel = document.getElementById('distributorDetailsPanel');
+        const overlay = document.getElementById('distributorPanelOverlay');
+        overlay.style.display = 'block';
+        panel.style.display = 'block';
+        setTimeout(() => {
+          panel.style.right = '0';
+        }, 10);
+      } catch (err) {
+        console.error('Error loading distributor details:', err);
+        alert('Error cargando detalles del distribuidor: ' + err.message);
+      }
+    };
+    
+    // Close distributor panel
+    document.getElementById('closeDistributorPanel').addEventListener('click', () => {
+      const panel = document.getElementById('distributorDetailsPanel');
+      const overlay = document.getElementById('distributorPanelOverlay');
+      panel.style.right = '-600px';
+      setTimeout(() => {
+        panel.style.display = 'none';
+        overlay.style.display = 'none';
+      }, 300);
+    });
+    
+    document.getElementById('distributorPanelOverlay').addEventListener('click', () => {
+      document.getElementById('closeDistributorPanel').click();
+    });
+
     // Inventory management
     const inventoryModal = document.getElementById('inventoryModal');
     const addInventoryBtn = document.getElementById('addInventoryBtn');
@@ -1077,8 +1540,28 @@
 
         console.log("📦 Leyendo órdenes confirmadas...");
         const ordersSnap = await getDocs(query(collection(db, 'orders'), where('status', '==', 'confirmed')));
-        const totalSold = ordersSnap.docs.length;
-        console.log("✅ Órdenes leídas:", totalSold);
+        
+        // Calculate total units sold based on product type and quantity
+        let totalSoldUnits = 0;
+        ordersSnap.docs.forEach(doc => {
+          const orderData = doc.data();
+          const quantity = Number(orderData.quantity) || 1;
+          const productId = orderData.productId || '';
+          
+          // Calculate units based on product
+          if (productId === 'paquete-inicio') {
+            // Paquete de 300,000 = 10 unidades
+            totalSoldUnits += quantity * 10;
+          } else if (['chuletas-3kg', 'costillas-3kg', 'paticas-3kg', 'panceta-3kg', 'pulpa-3kg', 'goulast-3kg'].includes(productId)) {
+            // Paquetes de 60,000 = 2 unidades
+            totalSoldUnits += quantity * 2;
+          } else {
+            // Default: count as sold quantity
+            totalSoldUnits += quantity;
+          }
+        });
+        
+        console.log("✅ Órdenes leídas:", ordersSnap.docs.length, "| Unidades vendidas:", totalSoldUnits);
 
         console.log("📦 Leyendo historial de inventario...");
         const historySnap = await getDocs(query(
@@ -1097,7 +1580,7 @@
 
         document.getElementById('inventoryCount').textContent = totalStock;
         document.getElementById('totalStockUnits').textContent = totalStock;
-        document.getElementById('totalSoldUnits').textContent = totalSold;
+        document.getElementById('totalSoldUnits').textContent = totalSoldUnits;
         document.getElementById('lastInventoryUpdate').textContent = lastUpdate;
 
         const historyTable = document.getElementById('inventoryHistoryTable');
@@ -1163,6 +1646,198 @@
         }
       }
     }
+
+    async function loadProducts() {
+      try {
+        const productsSnap = await getDocs(collection(db, "productos"));
+        allProducts = productsSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
+        
+        renderProductsPreview();
+        renderProductsManagementTable();
+      } catch (err) {
+        console.error('Error loading products:', err);
+        allProducts = [];
+      }
+    }
+
+    function formatCOP(num) {
+      return new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        minimumFractionDigits: 0
+      }).format(num);
+    }
+
+    function renderProductsPreview() {
+      const previewGrid = document.getElementById('productsPreviewGrid');
+      const previewType = document.getElementById('previewTypeSelector').value;
+      
+      const filteredProducts = allProducts.filter(prod => {
+        if (prod.hidden) return false;
+        if (!prod.availableFor || prod.availableFor.length === 0) return true;
+        return prod.availableFor.includes(previewType);
+      });
+
+      if (filteredProducts.length === 0) {
+        previewGrid.innerHTML = '<div class="empty-state">No hay productos disponibles para este tipo de usuario</div>';
+        return;
+      }
+
+      previewGrid.innerHTML = filteredProducts.map(prod => {
+        let price = prod.precio || 0;
+        if (previewType === 'distribuidor' && prod.precioDistribuidor) {
+          price = prod.precioDistribuidor;
+        } else if (previewType === 'cliente' && prod.precioCliente) {
+          price = prod.precioCliente;
+        } else if (previewType === 'restaurante' && prod.precioRestaurante) {
+          price = prod.precioRestaurante;
+        }
+
+        const badge = prod.outOfStock ? '<span class="product-badge outofstock">Agotado</span>' : '';
+
+        return `
+          <div class="product-card-preview">
+            ${badge}
+            <img src="${prod.imagen || '/images/productos/inicio.jpg'}" alt="${prod.nombre}">
+            <h4>${prod.nombre}</h4>
+            <p>${prod.descripcion || ''}</p>
+            <div class="price">${formatCOP(price)}</div>
+            <p style="font-size:12px;color:#999;">por ${prod.unit || 'paquete'}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderProductsManagementTable() {
+      const table = document.getElementById('productsManagementTable');
+      
+      if (allProducts.length === 0) {
+        table.innerHTML = '<tr><td colspan="8" class="empty-state">No hay productos registrados</td></tr>';
+        return;
+      }
+
+      table.innerHTML = allProducts.map(prod => {
+        const statusBadges = [];
+        if (prod.hidden) statusBadges.push('<span style="background:#6c757d;color:white;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">OCULTO</span>');
+        if (prod.outOfStock) statusBadges.push('<span style="background:#fd7e14;color:white;padding:2px 6px;border-radius:3px;font-size:11px;">AGOTADO</span>');
+        const statusHtml = statusBadges.length > 0 ? statusBadges.join('') : '<span style="color:#28a745;">✓ Activo</span>';
+
+        return `
+          <tr>
+            <td><img src="${prod.imagen || '/images/productos/inicio.jpg'}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;"></td>
+            <td><strong>${prod.nombre}</strong><br><small style="color:#666;">${prod.id}</small></td>
+            <td style="max-width:200px;"><small>${prod.descripcion || 'N/A'}</small></td>
+            <td>${prod.precioDistribuidor ? formatCOP(prod.precioDistribuidor) : 'N/A'}</td>
+            <td>${prod.precioCliente ? formatCOP(prod.precioCliente) : 'N/A'}</td>
+            <td>${prod.precioRestaurante ? formatCOP(prod.precioRestaurante) : 'N/A'}</td>
+            <td>${statusHtml}</td>
+            <td>
+              <button class="btn-primary" onclick="editProduct('${prod.docId}')">Editar</button>
+              <button class="btn-danger" onclick="deleteProduct('${prod.docId}', '${prod.nombre}')">Eliminar</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('previewTypeSelector').addEventListener('change', renderProductsPreview);
+
+    document.getElementById('addProductBtn').addEventListener('click', () => {
+      document.getElementById('productModalTitle').textContent = 'Crear Producto';
+      document.getElementById('productForm').reset();
+      document.getElementById('productEditId').value = '';
+      document.getElementById('productModal').style.display = 'flex';
+    });
+
+    document.getElementById('productModalCancel').addEventListener('click', () => {
+      document.getElementById('productModal').style.display = 'none';
+    });
+
+    document.getElementById('productForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const editId = document.getElementById('productEditId').value;
+      const productData = {
+        id: document.getElementById('productId').value.trim(),
+        nombre: document.getElementById('productName').value.trim(),
+        descripcion: document.getElementById('productDescription').value.trim(),
+        imagen: document.getElementById('productImage').value.trim(),
+        precioDistribuidor: parseFloat(document.getElementById('productPriceDistributor').value) || 0,
+        precioCliente: parseFloat(document.getElementById('productPriceClient').value) || 0,
+        precioRestaurante: parseFloat(document.getElementById('productPriceRestaurant').value) || 0,
+        precio: parseFloat(document.getElementById('productPriceDistributor').value) || 0,
+        puntos: parseFloat(document.getElementById('productPoints').value) || 0,
+        unit: document.getElementById('productUnit').value,
+        availableFor: [],
+        hidden: document.getElementById('productHidden').checked,
+        outOfStock: document.getElementById('productOutOfStock').checked
+      };
+
+      if (document.getElementById('productAvailDistributor').checked) {
+        productData.availableFor.push('distribuidor');
+      }
+      if (document.getElementById('productAvailClient').checked) {
+        productData.availableFor.push('cliente');
+      }
+      if (document.getElementById('productAvailRestaurant').checked) {
+        productData.availableFor.push('restaurante');
+      }
+
+      try {
+        if (editId) {
+          await updateDoc(doc(db, "productos", editId), productData);
+          alert('Producto actualizado correctamente');
+        } else {
+          await addDoc(collection(db, "productos"), productData);
+          alert('Producto creado correctamente');
+        }
+        
+        document.getElementById('productModal').style.display = 'none';
+        await loadProducts();
+      } catch (err) {
+        console.error('Error saving product:', err);
+        alert('Error al guardar el producto: ' + err.message);
+      }
+    });
+
+    window.editProduct = async function(docId) {
+      const product = allProducts.find(p => p.docId === docId);
+      if (!product) return;
+
+      document.getElementById('productModalTitle').textContent = 'Editar Producto';
+      document.getElementById('productEditId').value = docId;
+      document.getElementById('productId').value = product.id || '';
+      document.getElementById('productName').value = product.nombre || '';
+      document.getElementById('productDescription').value = product.descripcion || '';
+      document.getElementById('productImage').value = product.imagen || '';
+      document.getElementById('productPriceDistributor').value = product.precioDistribuidor || '';
+      document.getElementById('productPriceClient').value = product.precioCliente || '';
+      document.getElementById('productPriceRestaurant').value = product.precioRestaurante || '';
+      document.getElementById('productPoints').value = product.puntos || '';
+      document.getElementById('productUnit').value = product.unit || 'paquete';
+      
+      document.getElementById('productAvailDistributor').checked = (product.availableFor || []).includes('distribuidor');
+      document.getElementById('productAvailClient').checked = (product.availableFor || []).includes('cliente');
+      document.getElementById('productAvailRestaurant').checked = (product.availableFor || []).includes('restaurante');
+      
+      document.getElementById('productHidden').checked = product.hidden || false;
+      document.getElementById('productOutOfStock').checked = product.outOfStock || false;
+
+      document.getElementById('productModal').style.display = 'flex';
+    };
+
+    window.deleteProduct = async function(docId, productName) {
+      if (!confirm(`¿Estás seguro de eliminar el producto "${productName}"?`)) return;
+
+      try {
+        await updateDoc(doc(db, "productos", docId), { deleted: true });
+        alert('Producto eliminado correctamente');
+        await loadProducts();
+      } catch (err) {
+        console.error('Error deleting product:', err);
+        alert('Error al eliminar el producto: ' + err.message);
+      }
+    };
   </script>
 </body>
 </html>
