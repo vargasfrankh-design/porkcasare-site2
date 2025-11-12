@@ -351,8 +351,8 @@ exports.handler = async (event) => {
           
           console.log(`💰 Bono calculado: ${bonusPoints} puntos = ${bonusAmount} COP (${numberOfPackages} paquetes × 21 puntos)`);
           
-          // Recreate sponsor ref outside transaction
           const sponsorRef = db.collection('usuarios').doc(sponsorData.id);
+          const now = Date.now();
           
           await sponsorRef.update({
             balance: admin.firestore.FieldValue.increment(bonusAmount),
@@ -363,6 +363,8 @@ exports.handler = async (event) => {
               points: bonusPoints,
               orderId,
               date: new Date().toISOString(),
+              timestamp: now,
+              originMs: now,
               type: 'quick_start_bonus',
               fromUser: buyerUsername
             })
@@ -389,11 +391,12 @@ exports.handler = async (event) => {
             
             const upperSponsorRef = db.collection('usuarios').doc(upperSponsor.id);
             
-            // 1 punto por cada paquete de 50
             const upperLevelPoints = numberOfPackages * QUICK_START_UPPER_LEVELS_POINTS;
             const upperLevelAmount = upperLevelPoints * POINT_VALUE;
             
             console.log(`📊 Nivel superior ${level + 1} (${upperSponsor.data.usuario}): Agregando ${upperLevelPoints} puntos grupales (${numberOfPackages} paquetes × 1 punto)`);
+            
+            const now = Date.now();
             
             await upperSponsorRef.update({
               groupPoints: admin.firestore.FieldValue.increment(upperLevelPoints),
@@ -404,6 +407,8 @@ exports.handler = async (event) => {
                 points: upperLevelPoints,
                 orderId,
                 date: new Date().toISOString(),
+                timestamp: now,
+                originMs: now,
                 type: 'quick_start_upper_level',
                 fromUser: buyerUsername
               })
@@ -515,9 +520,6 @@ exports.handler = async (event) => {
 
           const sponsorRef = db.collection('usuarios').doc(sponsor.id);
 
-          // Calcular puntos grupales según el tipo de comprador:
-          // - Distribuidor/Cliente: 1 punto fijo por upline
-          // - Restaurante: 0.05 puntos por cada punto generado en la compra
           let groupPointsToAdd;
           if (isRestaurante) {
             groupPointsToAdd = Math.round((points * POINTS_PER_UPLINE_RESTAURANT_RATE) * 100) / 100;
@@ -526,6 +528,8 @@ exports.handler = async (event) => {
           }
           const groupPointsAmount = Math.round(groupPointsToAdd * POINT_VALUE);
           console.log(`📊 Nivel ${level + 1} (${sponsor.data.usuario}): Agregando ${groupPointsToAdd.toFixed(4)} puntos grupales = ${groupPointsAmount.toFixed(0)} COP (points=${points}, tipo=${buyerType})`);
+
+          const now = Date.now();
 
           await sponsorRef.update({
             groupPoints: admin.firestore.FieldValue.increment(groupPointsToAdd),
@@ -536,6 +540,8 @@ exports.handler = async (event) => {
               points: groupPointsToAdd,
               orderId,
               date: new Date().toISOString(),
+              timestamp: now,
+              originMs: now,
               type: 'group_points'
             })
           });
