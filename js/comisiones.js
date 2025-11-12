@@ -226,34 +226,30 @@ const uRef = doc(db, "usuarios", uid);
     if (elGroupPoints) elGroupPoints.textContent = (data.groupPoints !== undefined) ? String(data.groupPoints) : (data.puntosGrupales !== undefined ? String(data.puntosGrupales) : '0');
 
     renderCombinedHistory();
-    // --- Recomputar puntos grupales a partir del history y groupPointsConsumedAt para evitar recontar puntos ya cobrados ---
+    // --- Actualización automática de puntos grupales basada en el historial ---
+    // Este proceso se ejecuta automáticamente cada vez que se actualiza el documento del usuario
+    // y calcula los puntos comisionables disponibles SIN mezclar los ya cobrados
     try {
       const consumedAt = data.groupPointsConsumedAt ? (data.groupPointsConsumedAt.toMillis ? data.groupPointsConsumedAt.toMillis() : (typeof data.groupPointsConsumedAt === 'number' ? data.groupPointsConsumedAt : null)) : null;
       let computedGroupPoints = 0;
+      
       if (Array.isArray(userHistoryArray)) {
         for (const e of userHistoryArray) {
           const pts = e && (e.points ?? e.pointsUsed) ? Number(e.points ?? e.pointsUsed) : 0;
           if (!pts || pts <= 0) continue;
           
-          // Determinar el tipo de entrada
           const entryType = e.type || '';
           const isWithdraw = entryType === 'withdraw';
           const isPurchase = entryType === 'purchase' || (!entryType && e.orderId && e.action && e.action.includes('Compra'));
           
-          // IMPORTANTE: Solo contar comisiones en groupPoints, NO compras personales
-          // Los tipos válidos de comisión son: 'group_points', 'quick_start_bonus', 'quick_start_upper_level', 'earning'
           const isCommission = entryType === 'group_points' || entryType === 'quick_start_bonus' || entryType === 'quick_start_upper_level' || entryType === 'earning';
           
-          // Si es una compra personal, saltarla (no debe sumarse a groupPoints)
           if (isPurchase) continue;
           
-          // Determinar timestamp del entry en ms
           let entryTs = null;
-          // Prefer originMs si existe
           if (e.originMs !== undefined && e.originMs !== null) {
             entryTs = Number(e.originMs);
           } else if (e.timestamp !== undefined && e.timestamp !== null) {
-            // timestamp podría ser número (ms) o Date objeto convertido
             if (typeof e.timestamp === 'number') entryTs = Number(e.timestamp);
             else if (e.timestamp && typeof e.timestamp.getTime === 'function') entryTs = e.timestamp.getTime();
             else if (typeof e.timestamp === 'string') {
@@ -264,19 +260,16 @@ const uRef = doc(db, "usuarios", uid);
             const parsed = Date.parse(e.date);
             if (!isNaN(parsed)) entryTs = parsed;
           }
-          // Si existe consumedAt: solo sumar si entryTs > consumedAt
+          
           if (consumedAt) {
             if (entryTs && entryTs > consumedAt) {
-              // Restar puntos si es withdraw, sumar si es comisión
               if (isWithdraw) {
                 computedGroupPoints -= pts;
               } else if (isCommission) {
                 computedGroupPoints += pts;
               }
             }
-            // si entryTs no está disponible, no sumamos (no podemos asegurar que fue posterior)
           } else {
-            // Si no hay consumedAt, sumar/restar todo según el tipo (comportamiento legacy)
             if (isWithdraw) {
               computedGroupPoints -= pts;
             } else if (isCommission) {
@@ -285,27 +278,29 @@ const uRef = doc(db, "usuarios", uid);
           }
         }
       }
-      // Normalizar valor en DB solo si difiere (y solo si computedGroupPoints es diferente)
+      
+      computedGroupPoints = Math.max(0, computedGroupPoints);
+      
       const dbGroupPoints = Number(data.groupPoints ?? data.puntosGrupales ?? 0);
-      if (dbGroupPoints !== computedGroupPoints) {
+      if (Math.abs(dbGroupPoints - computedGroupPoints) > 0.01) {
         try {
           await runTransaction(db, async (tx) => {
             const s = await tx.get(uRef);
             if (!s.exists()) return;
             const d = s.data();
             const currentDbGroup = Number(d.groupPoints ?? d.puntosGrupales ?? 0);
-            if (currentDbGroup !== computedGroupPoints) {
+            if (Math.abs(currentDbGroup - computedGroupPoints) > 0.01) {
               tx.update(uRef, { groupPoints: computedGroupPoints });
+              console.log(`✅ groupPoints actualizado automáticamente: ${currentDbGroup} → ${computedGroupPoints}`);
             }
           });
         } catch (e) {
-          console.warn("No se pudo normalizar groupPoints:", e);
+          console.warn("No se pudo actualizar groupPoints automáticamente:", e);
         }
       }
     } catch (e) {
-      console.warn("Error al recomputar puntos grupales:", e);
+      console.warn("Error al calcular puntos grupales:", e);
     }
-    // --- fin recomputo ---
     
   }, (err) => console.error("onSnapshot usuarios error:", err));
 
@@ -332,23 +327,22 @@ async function addEarnings(uid, amount = 0, meta = {}) {
 
   const uRef = doc(db, "usuarios", uid);
   const earningId = (uid || 'u') + '-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+  const now = Date.now();
   const entry = {
     earningId,
     type: "earning",
     amount,
-    timestamp: Date.now(),
-    originMs: meta && meta.originMs ? Number(meta.originMs) : Date.now(),
+    timestamp: now,
+    originMs: meta && meta.originMs ? Number(meta.originMs) : now,
     meta,
     note: meta.action || "",
     by: meta.by || (auth.currentUser ? auth.currentUser.uid : "system"),
     points: meta.points ?? null
   };
 
-  // Transaction: actualizar balances y push a history[] (y ajustar groupPoints si aplica)
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(uRef);
     const data = snap.exists() ? snap.data() : {};
-    // guardar snapshot para que listeners usen la fuente de verdad
     window.__lastUserData = data;
     const oldBalance = Number(data.balance ?? 0);
     const oldTotal = Number(data.totalCommissions ?? 0);
@@ -357,13 +351,12 @@ async function addEarnings(uid, amount = 0, meta = {}) {
     const newBalance = oldBalance + amount;
     const newTotal = oldTotal + amount;
     let newGroupPoints = oldGroupPoints;
-    // Si se provee meta.originMs (timestamp en ms) y ya existe un groupPointsConsumedAt posterior
-    // entonces no sumamos estos puntos al acumulado grupal (evita recontar puntos ya cobrados).
+    
     const consumedAt = data.groupPointsConsumedAt ? (data.groupPointsConsumedAt.toMillis ? data.groupPointsConsumedAt.toMillis() : null) : null;
-    const originMs = meta && meta.originMs ? Number(meta.originMs) : null;
+    const originMs = entry.originMs;
+    
     if (entry.points && !isNaN(Number(entry.points))) {
       if (consumedAt && originMs && originMs <= consumedAt) {
-        // No sumar: este earning corresponde a antes del último cobro grupal
         newGroupPoints = oldGroupPoints;
       } else {
         newGroupPoints = oldGroupPoints + Number(entry.points);
@@ -378,13 +371,13 @@ async function addEarnings(uid, amount = 0, meta = {}) {
     });
   });
 
-  // Crear documento en subcolección transactions
   const txCol = collection(db, "usuarios", uid, "transactions");
   await addDoc(txCol, {
     earningId: earningId,
     type: "earning",
     amount,
     timestamp: serverTimestamp(),
+    originMs: now,
     meta,
     ownerUid: uid,
     points: meta.points ?? null
