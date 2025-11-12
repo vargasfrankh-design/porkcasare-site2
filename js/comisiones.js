@@ -234,6 +234,19 @@ const uRef = doc(db, "usuarios", uid);
         for (const e of userHistoryArray) {
           const pts = e && (e.points ?? e.pointsUsed) ? Number(e.points ?? e.pointsUsed) : 0;
           if (!pts || pts <= 0) continue;
+          
+          // Determinar el tipo de entrada
+          const entryType = e.type || '';
+          const isWithdraw = entryType === 'withdraw';
+          const isPurchase = entryType === 'purchase' || (!entryType && e.orderId && e.action && e.action.includes('Compra'));
+          
+          // IMPORTANTE: Solo contar comisiones en groupPoints, NO compras personales
+          // Los tipos válidos de comisión son: 'group_points', 'quick_start_bonus', 'quick_start_upper_level', 'earning'
+          const isCommission = entryType === 'group_points' || entryType === 'quick_start_bonus' || entryType === 'quick_start_upper_level' || entryType === 'earning';
+          
+          // Si es una compra personal, saltarla (no debe sumarse a groupPoints)
+          if (isPurchase) continue;
+          
           // Determinar timestamp del entry en ms
           let entryTs = null;
           // Prefer originMs si existe
@@ -254,12 +267,21 @@ const uRef = doc(db, "usuarios", uid);
           // Si existe consumedAt: solo sumar si entryTs > consumedAt
           if (consumedAt) {
             if (entryTs && entryTs > consumedAt) {
-              computedGroupPoints += pts;
+              // Restar puntos si es withdraw, sumar si es comisión
+              if (isWithdraw) {
+                computedGroupPoints -= pts;
+              } else if (isCommission) {
+                computedGroupPoints += pts;
+              }
             }
             // si entryTs no está disponible, no sumamos (no podemos asegurar que fue posterior)
           } else {
-            // Si no hay consumedAt, sumar todo (comportamiento legacy)
-            computedGroupPoints += pts;
+            // Si no hay consumedAt, sumar/restar todo según el tipo (comportamiento legacy)
+            if (isWithdraw) {
+              computedGroupPoints -= pts;
+            } else if (isCommission) {
+              computedGroupPoints += pts;
+            }
           }
         }
       }

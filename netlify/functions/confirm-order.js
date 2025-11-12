@@ -231,6 +231,7 @@ exports.handler = async (event) => {
             personalPoints: admin.firestore.FieldValue.increment(points),
             puntos: admin.firestore.FieldValue.increment(points),
             history: admin.firestore.FieldValue.arrayUnion({
+              type: 'purchase',
               action: `Compra confirmada: ${productName}${quantity > 1 ? ` (x${quantity})` : ''}`,
               amount: orderAmount,
               points: points,
