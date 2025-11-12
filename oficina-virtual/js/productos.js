@@ -57,162 +57,21 @@ const POINTS_PER_UPLINE_DISTRIBUTOR = 1;
 const POINTS_PER_UPLINE_RESTAURANT_RATE = 0.05;
 const MAX_UPLINE_LEVELS = 5;
 
-const productos = [
-  // Productos para Clientes y Distribuidores (paquetes)
-  {
-    id: "paquete-inicio",
-    nombre: "Paquete Inicial – 15 kg",
-    descripcion: "Incluye 15 kilos de chuletas, costillas y paticas empacadas al vacío.",
-    imagen: "../images/productos/inicio.jpg",
-    precioDistribuidor: 300000,
-    precioCliente: 375000,
-    precio: 300000,
-    puntos: 50,
-    unit: "paquete",
-    availableFor: ["distribuidor", "cliente"]
-  },
-  {
-    id: "chuletas-3kg",
-    nombre: "Chuletas – 3 kg",
-    descripcion: "Chuletas frescas y jugosas, empacadas al vacío.",
-    imagen: "../images/productos/chuleta.jpg",
-    precioDistribuidor: 60000,
-    precioCliente: 75000,
-    precio: 60000,
-    puntos: 10,
-    unit: "paquete",
-    availableFor: ["distribuidor", "cliente"]
-  },
-  {
-    id: "costillas-3kg",
-    nombre: "Costillitas – 3 kg",
-    descripcion: "Costillitas tiernas y llenas de sabor.",
-    imagen: "../images/productos/costillas.jpg",
-    precioDistribuidor: 60000,
-    precioCliente: 75000,
-    precio: 60000,
-    puntos: 10,
-    unit: "paquete",
-    availableFor: ["distribuidor", "cliente"]
-  },
-  {
-    id: "paticas-3kg",
-    nombre: "Paticas – 3 kg",
-    descripcion: "Paticas perfectas para caldos y guisos.",
-    imagen: "../images/productos/paticas.jpg",
-    precioDistribuidor: 60000,
-    precioCliente: 75000,
-    precio: 60000,
-    puntos: 10,
-    unit: "paquete",
-    availableFor: ["distribuidor", "cliente"]
-  },
-  {
-    id: "panceta-3kg",
-    nombre: "Panceta – 3 kg",
-    descripcion: "Panceta fresca empacada al vacío.",
-    imagen: "../images/productos/inicio.jpg",
-    precioDistribuidor: 60000,
-    precioCliente: 75000,
-    precio: 60000,
-    puntos: 10,
-    unit: "paquete",
-    availableFor: ["distribuidor", "cliente"]
-  },
-  {
-    id: "pulpa-3kg",
-    nombre: "Pulpa – 3 kg",
-    descripcion: "Pulpa de cerdo empacada al vacío.",
-    imagen: "../images/productos/inicio.jpg",
-    precioDistribuidor: 60000,
-    precioCliente: 75000,
-    precio: 60000,
-    puntos: 10,
-    unit: "paquete",
-    availableFor: ["distribuidor", "cliente"]
-  },
-  {
-    id: "goulast-3kg",
-    nombre: "Goulast – 3 kg",
-    descripcion: "Goulast de cerdo empacado al vacío.",
-    imagen: "../images/productos/inicio.jpg",
-    precioDistribuidor: 60000,
-    precioCliente: 75000,
-    precio: 60000,
-    puntos: 10,
-    unit: "paquete",
-    availableFor: ["distribuidor", "cliente"]
-  },
-  // Productos para Restaurantes (por kilo)
-  // Base: 3kg = 60,000 COP → 1kg = 20,000 COP (sin markup adicional)
-  // Puntos: 3kg = 10 pts → 1kg = 10/3 = 3.333333 pts
-  {
-    id: "chuleta-kilo",
-    nombre: "Chuleta por Kilo",
-    descripcion: "Chuletas frescas, vendidas por kilo.",
-    imagen: "../images/productos/chuleta.jpg",
-    precioRestaurante: 20000,
-    precio: 20000,
-    puntos: 10/3,
-    unit: "kilo",
-    availableFor: ["restaurante"]
-  },
-  {
-    id: "costilla-kilo",
-    nombre: "Costilla por Kilo",
-    descripcion: "Costillas tiernas, vendidas por kilo.",
-    imagen: "../images/productos/costillas.jpg",
-    precioRestaurante: 20000,
-    precio: 20000,
-    puntos: 10/3,
-    unit: "kilo",
-    availableFor: ["restaurante"]
-  },
-  {
-    id: "paticas-kilo",
-    nombre: "Paticas por Kilo",
-    descripcion: "Paticas perfectas para caldos, vendidas por kilo.",
-    imagen: "../images/productos/paticas.jpg",
-    precioRestaurante: 20000,
-    precio: 20000,
-    puntos: 10/3,
-    unit: "kilo",
-    availableFor: ["restaurante"]
-  },
-  {
-    id: "panceta-kilo",
-    nombre: "Panceta por Kilo",
-    descripcion: "Panceta fresca, vendida por kilo.",
-    imagen: "../images/productos/inicio.jpg",
-    precioRestaurante: 20000,
-    precio: 20000,
-    puntos: 10/3,
-    unit: "kilo",
-    availableFor: ["restaurante"]
-  },
-  {
-    id: "pulpa-kilo",
-    nombre: "Pulpa por Kilo",
-    descripcion: "Pulpa de cerdo, vendida por kilo.",
-    imagen: "../images/productos/inicio.jpg",
-    precioRestaurante: 20000,
-    precio: 20000,
-    puntos: 10/3,
-    unit: "kilo",
-    availableFor: ["restaurante"]
-  },
-  {
-    id: "goulast-kilo",
-    nombre: "Goulast por Kilo",
-    descripcion: "Goulast de cerdo, vendido por kilo.",
-    imagen: "../images/productos/inicio.jpg",
-    precioRestaurante: 20000,
-    precio: 20000,
-    puntos: 10/3,
-    unit: "kilo",
-    availableFor: ["restaurante"]
+let productos = [];
+
+async function loadProductsFromFirestore() {
+  try {
+    const productsSnap = await getDocs(collection(db, "productos"));
+    productos = productsSnap.docs
+      .map(d => ({ docId: d.id, ...d.data() }))
+      .filter(p => !p.deleted && !p.hidden);
+    
+    console.log('Productos cargados desde Firestore:', productos.length);
+  } catch (err) {
+    console.error('Error loading products from Firestore:', err);
+    productos = [];
   }
-];
+}
 
 function formatCOP(num) {
   return new Intl.NumberFormat("es-CO", {
@@ -334,21 +193,29 @@ function renderProductos() {
   const tipo = (window.currentTipoRegistro || 'distribuidor').toLowerCase();
   const unitLabel = tipo === 'restaurante' ? 'kilo' : 'paquete';
 
-  grid.innerHTML = filteredProducts.map((prod) => `
-    <div class="product-card" data-id="${prod.id}">
-      <img src="${prod.imagen}" alt="${prod.nombre}">
-      <h4>${prod.nombre}</h4>
-      <p>${prod.descripcion}</p>
-      <p class="unit-price"><strong>${formatCOP(getDisplayPrice(prod))}</strong> por ${prod.unit || 'paquete'}</p>
-      <div class="quantity-selector">
-        <button class="qty-btn qty-minus" data-id="${prod.id}" aria-label="Disminuir cantidad">−</button>
-        <input type="number" class="qty-input" data-id="${prod.id}" value="1" min="1" max="99" readonly>
-        <button class="qty-btn qty-plus" data-id="${prod.id}" aria-label="Aumentar cantidad">+</button>
+  grid.innerHTML = filteredProducts.map((prod) => {
+    const isOutOfStock = prod.outOfStock || false;
+    const outOfStockBadge = isOutOfStock ? '<span style="position:absolute;top:12px;right:12px;background:#fd7e14;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">AGOTADO</span>' : '';
+    const disabledStyle = isOutOfStock ? 'opacity:0.6;pointer-events:none;' : '';
+    const buttonText = isOutOfStock ? 'No Disponible' : 'Comprar';
+    
+    return `
+      <div class="product-card" data-id="${prod.id}" style="position:relative;${disabledStyle}">
+        ${outOfStockBadge}
+        <img src="${prod.imagen}" alt="${prod.nombre}">
+        <h4>${prod.nombre}</h4>
+        <p>${prod.descripcion}</p>
+        <p class="unit-price"><strong>${formatCOP(getDisplayPrice(prod))}</strong> por ${prod.unit || 'paquete'}</p>
+        <div class="quantity-selector">
+          <button class="qty-btn qty-minus" data-id="${prod.id}" aria-label="Disminuir cantidad" ${isOutOfStock ? 'disabled' : ''}>−</button>
+          <input type="number" class="qty-input" data-id="${prod.id}" value="1" min="1" max="99" readonly ${isOutOfStock ? 'disabled' : ''}>
+          <button class="qty-btn qty-plus" data-id="${prod.id}" aria-label="Aumentar cantidad" ${isOutOfStock ? 'disabled' : ''}>+</button>
+        </div>
+        <p class="total-price" data-id="${prod.id}"><strong>Total: ${formatCOP(getDisplayPrice(prod))}</strong></p>
+        <button class="btn small btn-buy" data-id="${prod.id}" ${isOutOfStock ? 'disabled' : ''}>${buttonText}</button>
       </div>
-      <p class="total-price" data-id="${prod.id}"><strong>Total: ${formatCOP(getDisplayPrice(prod))}</strong></p>
-      <button class="btn small btn-buy" data-id="${prod.id}">Comprar</button>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 
   document.querySelectorAll(".qty-minus").forEach((btn) => {
     btn.addEventListener("click", onQuantityChange);
@@ -813,11 +680,10 @@ async function onBuyClick(e) {
 
 
 // Asegurar que los productos se rendericen también cuando se dispare personalPointsReady
-document.addEventListener('personalPointsReady', (e) => {
+document.addEventListener('personalPointsReady', async (e) => {
   try {
-    // Si la página ya cargó, refrescamos la renderización (especialmente útil si el tipo de usuario cambió)
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      // re-renderizar para asegurar precios correctos
+      await loadProductsFromFirestore();
       renderProductos();
     }
   } catch (err) {
@@ -825,6 +691,7 @@ document.addEventListener('personalPointsReady', (e) => {
   }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadProductsFromFirestore();
   renderProductos();
 });

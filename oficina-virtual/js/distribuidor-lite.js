@@ -194,10 +194,13 @@ if (historyWrap) {
 
   historyWrap.innerHTML = "";
 
-  if (history.length === 0) {
+  // Filtrar solo las comisiones, excluyendo las compras propias (por tipo y por texto de acción)
+  const commissionHistory = history.filter(h => h.type !== 'purchase' && !(h.action || '').includes('Compra confirmada'));
+
+  if (commissionHistory.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'hist-empty';
-    empty.textContent = 'No hay registros.';
+    empty.textContent = 'No hay registros de comisiones.';
     historyWrap.appendChild(empty);
   } else {
     // formateadores (miles y fecha)
@@ -233,11 +236,11 @@ if (historyWrap) {
     // Función para determinar si es un ingreso (comisión, bono, etc.)
     function isIncome(historyItem) {
       const actionTxt = (historyItem?.action || historyItem?.tipo || '').toLowerCase();
-      const incomeKeywords = ['comisión', 'comision', 'bono', 'ingreso', 'cobro', 'ganancia', 'compra'];
+      const incomeKeywords = ['comisión', 'comision', 'bono', 'ingreso', 'ganancia'];
       return incomeKeywords.some(keyword => actionTxt.includes(keyword));
     }
     
-    history.forEach(h => {
+    commissionHistory.forEach(h => {
       const li = document.createElement("div");
       const isIncomeEntry = isIncome(h);
       li.className = isIncomeEntry ? "hist-item income" : "hist-item";
