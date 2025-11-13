@@ -795,7 +795,9 @@ function showInfoCard(node, event) {
     };
     tipoEl.innerHTML = `<span style="color:${tipoColors[tipo] || '#666'}">${tipoLabels[tipo] || tipo}</span>`;
   }
-  if (stateEl) stateEl.innerHTML = node.active ? '<span style="color:#28a745">Activo</span>' : '<span style="color:#666">Inactivo</span>';
+  if (stateEl) stateEl.innerHTML = node.active 
+    ? '<span style="color:#28a745;font-weight:600">✓ Activo este mes</span>' 
+    : '<span style="color:#ef4444;font-weight:600">⚠ Inactivo este mes</span>';
   if (pointsEl) pointsEl.textContent = `${node.puntos || 0} pts`;
   if (phoneEl) phoneEl.textContent = node.celular || "No registrado";
 
