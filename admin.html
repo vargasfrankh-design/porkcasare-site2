@@ -249,6 +249,7 @@
             <th>Nombre</th>
             <th>Email</th>
             <th>Celular</th>
+            <th>Estado</th>
             <th>Puntos Personales</th>
             <th>Puntos Grupales</th>
             <th>Registro</th>
@@ -943,7 +944,7 @@
       table.innerHTML = '';
       
       if (distributors.length === 0) {
-        table.innerHTML = '<tr><td colspan="8" class="empty-state">No hay distribuidores</td></tr>';
+        table.innerHTML = '<tr><td colspan="9" class="empty-state">No hay distribuidores</td></tr>';
         return;
       }
       
@@ -962,11 +963,17 @@
         const groupPoints = dist.groupPoints || 0;
         const referralCount = referralCounts[dist.usuario] || 0;
         
+        const isActive = checkIfUserActiveThisMonth(dist);
+        const statusBadge = isActive 
+          ? '<span style="background:#10b981;color:white;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600;">✓ Activo</span>'
+          : '<span style="background:#ef4444;color:white;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600;">⚠ Inactivo</span>';
+        
         row.innerHTML = `
           <td>${dist.usuario || 'N/A'}</td>
           <td>${dist.nombre || 'N/A'}</td>
           <td>${dist.email || 'N/A'}</td>
           <td>${dist.celular || 'N/A'}</td>
+          <td>${statusBadge}</td>
           <td><strong>${personalPoints}</strong></td>
           <td><strong>${groupPoints}</strong></td>
           <td>${date}</td>
@@ -1338,10 +1345,77 @@
         // Get history from user document
         const history = dist.history || [];
         
+        // Calculate current month commissions
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const monthStart = new Date(currentYear, currentMonth, 1);
+        const monthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
+        
+        // Total earned this month from transaction history
+        const commissionHistory = history.filter(h => 
+          h.type !== 'purchase' && 
+          !(h.action || '').includes('Compra confirmada') &&
+          h.date
+        );
+        
+        let totalEarnedThisMonth = 0;
+        let earnedPointsThisMonth = 0;
+        const thisMonthTransactions = [];
+        
+        commissionHistory.forEach(h => {
+          const transactionDate = new Date(h.date);
+          if (transactionDate >= monthStart && transactionDate <= monthEnd) {
+            totalEarnedThisMonth += (h.amount || 0);
+            earnedPointsThisMonth += (h.points || 0);
+            thisMonthTransactions.push(h);
+          }
+        });
+        
+        // Already collected this month from payouts
+        const payoutsSnap = await getDocs(query(
+          collection(db, 'payouts'),
+          where('userId', '==', distributorId),
+          where('status', '==', 'paid')
+        ));
+        
+        let alreadyCollectedThisMonth = 0;
+        let collectedPayoutsCount = 0;
+        
+        payoutsSnap.docs.forEach(doc => {
+          const payout = doc.data();
+          let paidDate = null;
+          
+          if (payout.paidAt) {
+            if (typeof payout.paidAt === 'string') {
+              paidDate = new Date(payout.paidAt);
+            } else if (payout.paidAt.seconds) {
+              paidDate = new Date(payout.paidAt.seconds * 1000);
+            }
+          }
+          
+          if (paidDate && paidDate >= monthStart && paidDate <= monthEnd) {
+            alreadyCollectedThisMonth += (payout.amount || 0);
+            collectedPayoutsCount++;
+          }
+        });
+        
+        // Pending amount from balance field
+        const pendingAmount = balance;
+        
+        // Check if user is active this month
+        const isActiveThisMonth = checkIfUserActiveThisMonth(dist);
+        const activeStatusBadge = isActiveThisMonth 
+          ? '<span style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:white;padding:4px 12px;border-radius:16px;font-size:12px;font-weight:600;">✓ Activo este mes</span>'
+          : '<span style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);color:white;padding:4px 12px;border-radius:16px;font-size:12px;font-weight:600;">⚠ Inactivo este mes</span>';
+        
         const contentDiv = document.getElementById('distributorDetailsContent');
         contentDiv.innerHTML = `
           <div style="background:#f8f9fa;padding:16px;border-radius:8px;margin-bottom:20px;">
-            <h3 style="margin:0 0 12px 0;font-size:18px;color:#333;">${dist.nombre || dist.usuario || 'Sin nombre'}</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <h3 style="margin:0;font-size:18px;color:#333;">${dist.nombre || dist.usuario || 'Sin nombre'}</h3>
+              ${activeStatusBadge}
+            </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:14px;">
               <div><strong>Código:</strong> ${dist.usuario || 'N/A'}</div>
               <div><strong>Email:</strong> ${dist.email || 'N/A'}</div>
@@ -1367,6 +1441,60 @@
               <div style="font-size:12px;opacity:0.9;margin-bottom:4px;">Total Referidos</div>
               <div style="font-size:28px;font-weight:700;">${referrals.length}</div>
             </div>
+          </div>
+          
+          <div style="background:linear-gradient(135deg,#ffecd2 0%,#fcb69f 100%);padding:20px;border-radius:12px;margin-bottom:24px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+            <h4 style="margin:0 0 16px 0;font-size:18px;color:#c44536;font-weight:700;">Comisiones del Mes en Curso</h4>
+            
+            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-bottom:16px;">
+              <div style="background:white;padding:16px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                <div style="font-size:12px;color:#666;margin-bottom:6px;font-weight:600;">Total Ganado</div>
+                <div style="font-size:24px;font-weight:700;color:#2c3e50;margin-bottom:4px;">$${totalEarnedThisMonth.toLocaleString()}</div>
+                <div style="font-size:11px;color:#999;">${earnedPointsThisMonth.toFixed(2)} puntos</div>
+              </div>
+              
+              <div style="background:white;padding:16px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                <div style="font-size:12px;color:#666;margin-bottom:6px;font-weight:600;">Ya Cobrado</div>
+                <div style="font-size:24px;font-weight:700;color:#27ae60;margin-bottom:4px;">$${alreadyCollectedThisMonth.toLocaleString()}</div>
+                <div style="font-size:11px;color:#999;">${collectedPayoutsCount} cobro${collectedPayoutsCount !== 1 ? 's' : ''}</div>
+              </div>
+              
+              <div style="background:white;padding:16px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:2px solid #e74c3c;">
+                <div style="font-size:12px;color:#666;margin-bottom:6px;font-weight:600;">Pendiente</div>
+                <div style="font-size:24px;font-weight:700;color:#e74c3c;margin-bottom:4px;">$${pendingAmount.toLocaleString()}</div>
+                <div style="font-size:11px;color:#999;">Disponible para retiro</div>
+              </div>
+            </div>
+            
+            ${thisMonthTransactions.length > 0 ? `
+              <div style="background:white;padding:12px;border-radius:8px;max-height:200px;overflow-y:auto;">
+                <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:8px;">Transacciones del mes (${thisMonthTransactions.length})</div>
+                <table style="width:100%;font-size:12px;border-collapse:collapse;">
+                  <thead style="position:sticky;top:0;background:white;">
+                    <tr style="border-bottom:1px solid #e0e0e0;">
+                      <th style="padding:6px;text-align:left;color:#666;font-weight:600;">Fecha</th>
+                      <th style="padding:6px;text-align:left;color:#666;font-weight:600;">Descripción</th>
+                      <th style="padding:6px;text-align:right;color:#666;font-weight:600;">Monto</th>
+                      <th style="padding:6px;text-align:right;color:#666;font-weight:600;">Puntos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${thisMonthTransactions.slice().reverse().map(t => {
+                      const date = new Date(t.date);
+                      const formattedDate = date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+                      return `
+                        <tr style="border-bottom:1px solid #f5f5f5;">
+                          <td style="padding:6px;color:#555;">${formattedDate}</td>
+                          <td style="padding:6px;color:#333;font-size:11px;">${t.action || 'N/A'}</td>
+                          <td style="padding:6px;text-align:right;color:#27ae60;font-weight:600;">$${(t.amount || 0).toLocaleString()}</td>
+                          <td style="padding:6px;text-align:right;color:#3498db;font-weight:600;">${(t.points || 0).toFixed(2)}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            ` : '<div style="background:white;padding:12px;border-radius:8px;text-align:center;color:#999;font-size:13px;">No hay transacciones este mes</div>'}
           </div>
           
           <div style="margin-bottom:20px;">
@@ -2069,6 +2197,37 @@
       selector.innerHTML = allCategories.map(cat => 
         `<option value="${cat.slug}">${cat.nombre}</option>`
       ).join('');
+    }
+
+    // Helper function to check if user is active this month
+    function checkIfUserActiveThisMonth(userData) {
+      const hist = userData?.history;
+      if (!Array.isArray(hist)) return false;
+      
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      
+      for (const e of hist) {
+        if (!e) continue;
+        const dateRaw = e.date || e.fechaCompra || e.fecha_recompra || e.createdAt || e.fecha;
+        const d = dateRaw ? (typeof dateRaw.toDate === "function" ? dateRaw.toDate() : new Date(dateRaw)) : null;
+        const action = (e.action || "").toLowerCase();
+        const type = (e.type || "").toLowerCase();
+        
+        if (!d || d.getFullYear() !== currentYear || d.getMonth() !== currentMonth) {
+          continue;
+        }
+        
+        if (type === "purchase" && /compra confirmada/i.test(action)) {
+          return true;
+        }
+        
+        if (!type && /compra confirmada/i.test(action) && !action.includes("comisión") && !action.includes("bono")) {
+          return true;
+        }
+      }
+      return false;
     }
   </script>
 </body>

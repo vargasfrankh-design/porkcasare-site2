@@ -62,6 +62,11 @@ document.addEventListener("DOMContentLoaded", () => {
           totalComisionesCobradas: _totalComisionesCobradas
         } 
       }));
+
+      // Check if user is active this month
+      const isActiveThisMonth = checkIfActiveThisMonth(userData);
+      window.currentUserIsActive = isActiveThisMonth;
+
 // Mostrar datos básicos
       const nombreEl = document.getElementById("nombre");
       const usuarioEl = document.getElementById("usuario");
@@ -77,6 +82,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (userData.fotoURL) profileImg.src = userData.fotoURL.startsWith("http") ? userData.fotoURL : `../${userData.fotoURL}`;
         else profileImg.src = `../images/avatars/avatar_${(Math.floor(Math.random()*6)+1)}.png`;
       }
+
+      // Display active/inactive status below avatar
+      displayActiveStatus(isActiveThisMonth);
+
+      // Show notification for inactive users
+      showInactiveNotification(isActiveThisMonth);
 
       if (refInput && copyBtn && userData.usuario) {
         const link = `${window.location.origin}/register.html?patrocinador=${encodeURIComponent(userData.usuario)}`;
@@ -372,4 +383,113 @@ function escapeHtml(str = "") {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function checkIfActiveThisMonth(userData) {
+  const hist = userData?.history;
+  if (!Array.isArray(hist)) return false;
+  
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  
+  for (const e of hist) {
+    if (!e) continue;
+    const dateRaw = e.date || e.fechaCompra || e.fecha_recompra || e.createdAt || e.fecha;
+    const d = dateRaw ? (typeof dateRaw.toDate === "function" ? dateRaw.toDate() : new Date(dateRaw)) : null;
+    const action = (e.action || "").toLowerCase();
+    const type = (e.type || "").toLowerCase();
+    
+    if (!d || d.getFullYear() !== currentYear || d.getMonth() !== currentMonth) {
+      continue;
+    }
+    
+    if (type === "purchase" && /compra confirmada/i.test(action)) {
+      return true;
+    }
+    
+    if (!type && /compra confirmada/i.test(action) && !action.includes("comisión") && !action.includes("bono")) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function displayActiveStatus(isActive) {
+  const changeAvatarBtn = document.getElementById('changeAvatarBtn');
+  if (!changeAvatarBtn) return;
+  
+  let statusBadge = document.getElementById('user-status-badge');
+  if (!statusBadge) {
+    statusBadge = document.createElement('div');
+    statusBadge.id = 'user-status-badge';
+    statusBadge.className = 'status-badge';
+    changeAvatarBtn.parentNode.insertBefore(statusBadge, changeAvatarBtn.nextSibling);
+  }
+  
+  if (isActive) {
+    statusBadge.textContent = '✓ Activo este mes';
+    statusBadge.style.cssText = `
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 8px;
+      display: inline-block;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    `;
+  } else {
+    statusBadge.textContent = '⚠ Inactivo este mes';
+    statusBadge.style.cssText = `
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 8px;
+      display: inline-block;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    `;
+  }
+}
+
+function showInactiveNotification(isActive) {
+  if (isActive) return;
+  
+  const existingNotification = document.getElementById('monthlyActivationNotification');
+  if (existingNotification) {
+    existingNotification.style.display = 'block';
+    return;
+  }
+  
+  const alertEl = document.getElementById("activationAlert");
+  if (!alertEl) return;
+  
+  const notification = document.createElement('div');
+  notification.id = 'monthlyActivationNotification';
+  notification.style.cssText = `
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-left: 4px solid #dc2626;
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: #991b1b;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  `;
+  notification.innerHTML = `
+    <span style="font-size: 20px;">⚠️</span>
+    <span>Debes activarte este mes, o no recibirás bonos y comisiones del mes en curso.</span>
+  `;
+  
+  alertEl.parentNode.insertBefore(notification, alertEl.nextSibling);
 }
