@@ -938,13 +938,6 @@ onAuthStateChanged(auth, async (user) => {
     const alertEl = document.getElementById("activationAlert");
     if (alertEl) alertEl.style.display = (Number(d.personalPoints ?? d.puntos ?? 0) < 50 && !d.initialPackBought) ? "block" : "none";
 
-    // Check if user is inactive in current month and show inactivity alert
-    const inactivityAlertEl = document.getElementById("inactivityAlert");
-    if (inactivityAlertEl) {
-      const isActive = isActiveThisMonth(d);
-      inactivityAlertEl.style.display = isActive ? "none" : "block";
-    }
-
     const personalPoints = calculatePersonalPoints(d[FIELD_HISTORY] || []);
     let elHidden = document.getElementById("personalPointsValue");
     if (!elHidden) {
