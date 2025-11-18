@@ -232,6 +232,11 @@ function renderProductos() {
     const disabledStyle = isOutOfStock ? 'opacity:0.6;pointer-events:none;' : '';
     const buttonText = isOutOfStock ? 'No Disponible' : 'Comprar';
     
+    // Display points value in small gray text if product has points
+    const pointsDisplay = (prod.puntos && prod.puntos > 0) 
+      ? `<p style="font-size:11px;color:#999;margin:4px 0 8px 0;">${prod.puntos} punto${prod.puntos !== 1 ? 's' : ''}</p>` 
+      : '';
+    
     return `
       <div class="product-card" data-id="${prod.id}" style="position:relative;${disabledStyle}">
         ${outOfStockBadge}
@@ -239,6 +244,7 @@ function renderProductos() {
         <h4>${prod.nombre}</h4>
         <p>${prod.descripcion}</p>
         <p class="unit-price"><strong>${formatCOP(getDisplayPrice(prod))}</strong> por ${prod.unit || 'paquete'}</p>
+        ${pointsDisplay}
         <div class="quantity-selector">
           <button class="qty-btn qty-minus" data-id="${prod.id}" aria-label="Disminuir cantidad" ${isOutOfStock ? 'disabled' : ''}>−</button>
           <input type="number" class="qty-input" data-id="${prod.id}" value="1" min="1" max="99" readonly ${isOutOfStock ? 'disabled' : ''}>

@@ -57,8 +57,7 @@ const db = admin.firestore();
 
 // CONFIG
 const POINT_VALUE = 2800;
-const POINTS_PER_UPLINE_DISTRIBUTOR = 1;
-const POINTS_PER_UPLINE_RESTAURANT_RATE = 0.05;
+const COMMISSION_RATE = 0.10; // 10% commission
 const MAX_LEVELS_NORMAL = 5;
 const MAX_LEVELS_QUICK_START = 4;
 const QUICK_START_DIRECT_POINTS = 21;
@@ -476,18 +475,22 @@ exports.handler = async (event) => {
       // Check buyer type to determine commission rate
       const buyerDoc = await db.collection('usuarios').doc(buyerUid).get();
       const buyerDataForType = buyerDoc.exists ? buyerDoc.data() : {};
-      const buyerType = buyerDataForType?.tipoRegistro || buyerDataForType?.tipo || 'distribuidor';
-      const isRestaurante = buyerType === 'restaurante';
       
-      console.log(`🌐 Iniciando distribución normal de puntos grupales: ${points} puntos de compra, tipo de comprador: ${buyerType}`);
-      console.log(`   Distribución:`);
-      console.log(`   - Distribuidores/Clientes: 1 punto fijo por upline, a 5 niveles`);
-      console.log(`   - Restaurantes: ${points} pts × 0.05 = ${(points * 0.05).toFixed(4)} puntos por upline, a 5 niveles`);
+      // NEW LOGIC: Calculate commission as 10% of (points × 2800)
+      // Each upline receives 10% of the total value, regardless of buyer type
+      const totalPointValue = points * POINT_VALUE; // e.g., 2.5 × 2800 = 7000
+      const commissionPerUpline = totalPointValue * COMMISSION_RATE; // e.g., 7000 × 0.10 = 700
+      const pointsPerUpline = commissionPerUpline / POINT_VALUE; // Convert back to points for tracking
+      
+      console.log(`🌐 Iniciando distribución de comisiones:`);
+      console.log(`   - Puntos del producto: ${points}`);
+      console.log(`   - Valor total: ${totalPointValue.toLocaleString('es-CO')} COP`);
+      console.log(`   - Comisión por upline (10%): ${commissionPerUpline.toLocaleString('es-CO')} COP = ${pointsPerUpline.toFixed(4)} puntos`);
+      console.log(`   - Distribuyendo a 5 niveles hacia arriba (sin incluir al comprador)`);
       try {
-        // Para compras normales o subsecuentes:
-        // - El comprador recibe los puntos en personalPoints (ya se hizo en la transacción arriba)
-        // - DISTRIBUIDORES/CLIENTES: Cada upline recibe 1 punto fijo (no importa cuántos puntos compró)
-        // - RESTAURANTES: Cada upline recibe 0.05 puntos por cada punto generado en la compra
+        // Nueva lógica de distribución:
+        // - El comprador recibe los puntos completos en personalPoints y groupPoints (ya se hizo en la transacción)
+        // - Cada uno de los 5 uplines recibe el 10% del valor total (puntos × 2800)
         
         let currentSponsorCode = directSponsorCode;
         
@@ -506,7 +509,7 @@ exports.handler = async (event) => {
         
         console.log(`🔼 Comenzando desde patrocinador directo: ${directSponsorCode}`);
 
-        // Recorrer 5 niveles hacia arriba y dar puntos grupales a cada sponsor
+        // Recorrer 5 niveles hacia arriba y dar comisión del 10% a cada sponsor
         for (let level = 0; level < MAX_LEVELS_NORMAL; level++) {
           if (!currentSponsorCode) {
             console.log(`⏹️ Detenido en nivel ${level + 1}: no hay más patrocinadores`);
@@ -520,14 +523,11 @@ exports.handler = async (event) => {
 
           const sponsorRef = db.collection('usuarios').doc(sponsor.id);
 
-          let groupPointsToAdd;
-          if (isRestaurante) {
-            groupPointsToAdd = Math.round((points * POINTS_PER_UPLINE_RESTAURANT_RATE) * 100) / 100;
-          } else {
-            groupPointsToAdd = POINTS_PER_UPLINE_DISTRIBUTOR;
-          }
-          const groupPointsAmount = Math.round(groupPointsToAdd * POINT_VALUE);
-          console.log(`📊 Nivel ${level + 1} (${sponsor.data.usuario}): Agregando ${groupPointsToAdd.toFixed(4)} puntos grupales = ${groupPointsAmount.toFixed(0)} COP (points=${points}, tipo=${buyerType})`);
+          // Todos los uplines reciben la misma comisión: 10% del valor total
+          const groupPointsToAdd = Math.round(pointsPerUpline * 100) / 100;
+          const groupPointsAmount = Math.round(commissionPerUpline);
+          
+          console.log(`📊 Nivel ${level + 1} (${sponsor.data.usuario}): Agregando ${groupPointsToAdd.toFixed(4)} puntos grupales = ${groupPointsAmount.toFixed(0)} COP (10% de ${totalPointValue.toFixed(0)} COP)`);
 
           const now = Date.now();
 
@@ -535,7 +535,7 @@ exports.handler = async (event) => {
             groupPoints: admin.firestore.FieldValue.increment(groupPointsToAdd),
             balance: admin.firestore.FieldValue.increment(groupPointsAmount),
             history: admin.firestore.FieldValue.arrayUnion({
-              action: `Comisión normal (+${groupPointsToAdd.toFixed(2)} pts = ${groupPointsAmount.toLocaleString('es-CO')} COP) por compra de ${buyerUsername} (${buyerType}) - Nivel ${level + 1}`,
+              action: `Comisión 10% (+${groupPointsToAdd.toFixed(2)} pts = ${groupPointsAmount.toLocaleString('es-CO')} COP) por compra de ${buyerUsername} - Nivel ${level + 1}`,
               amount: groupPointsAmount,
               points: groupPointsToAdd,
               orderId,
@@ -558,9 +558,9 @@ exports.handler = async (event) => {
           groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp()
         });
         
-        console.log(`✅ Distribución normal de puntos grupales completada`);
+        console.log(`✅ Distribución de comisiones completada`);
       } catch (e) {
-        console.error('❌ Error durante la distribución normal de puntos grupales:', e);
+        console.error('❌ Error durante la distribución de comisiones:', e);
         console.error('  Error name:', e.name);
         console.error('  Error message:', e.message);
         console.error('  Error stack:', e.stack);
