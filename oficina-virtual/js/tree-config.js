@@ -1,5 +1,6 @@
 export const TREE_CONFIG = {
-  DEPTH_LIMIT: 6,
+  DEPTH_LIMIT: 5,
+  FRONTLINES_PER_PAGE: 5,
   
   SPACING: {
     minNodeSeparation: 80,
@@ -50,6 +51,7 @@ export const TREE_CONFIG = {
     showChildrenCount: true,
     animatedEntrance: true,
     zoomPan: true,
+    frontlinesPagination: true,
   },
   
   TEXT: {

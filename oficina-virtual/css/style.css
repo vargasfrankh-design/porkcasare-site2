@@ -651,14 +651,51 @@ body {
   flex-wrap: wrap;
 }
 
-/* Productos: mayor anchura y grid más fluido */
+/* Productos: mayor anchura y grid más fluido - ajustado para 4 productos por fila */
 .product-grid {
   width: 100%;
   margin-top: 18px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, 1fr);  /* Exactly 4 products per row */
   gap: 20px;
   box-sizing: border-box;
+}
+
+.product-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition: transform 0.18s;
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+}
+
+.product-card h4 {
+  font-size: 15px;
+  margin: 8px 0;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.product-card > p:not(.unit-price):not(.total-price) {
+  font-size: 13px;
+  color: #666;
+  min-height: 36px;
+  margin: 4px 0;
+}
+
+/* Responsive adjustment: 2 columns on tablets, 1 column on mobile */
+@media (max-width: 1024px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* Historial: ocupe toda la fila y tenga margen superior claro */
