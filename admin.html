@@ -560,7 +560,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
           <div>
             <label style="display:block;margin-bottom:6px;font-weight:500;">Puntos</label>
-            <input type="number" id="productPoints" step="0.01" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="10">
+            <input type="number" id="productPoints" step="any" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="2.5">
           </div>
           
           <div>
@@ -1498,7 +1498,17 @@
           </div>
           
           <div style="margin-bottom:20px;">
-            <h4 style="margin:0 0 12px 0;font-size:16px;color:#333;border-bottom:2px solid #e9ecef;padding-bottom:8px;">Referidos Directos (${referrals.length})</h4>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:2px solid #e9ecef;padding-bottom:8px;">
+              <h4 style="margin:0;font-size:16px;color:#333;">Referidos Directos (${referrals.length})</h4>
+              <button 
+                onclick="recalculateDistributor('${distributorId}')" 
+                class="btn-primary" 
+                style="padding:8px 16px;font-size:13px;display:flex;align-items:center;gap:6px;"
+              >
+                <span style="font-size:16px;">🔄</span>
+                Recalcular Puntos y Comisiones
+              </button>
+            </div>
             ${referrals.length === 0 ? '<p style="color:#6c757d;font-size:14px;">No tiene referidos directos</p>' : `
               <div style="max-height:200px;overflow-y:auto;">
                 <table style="width:100%;font-size:13px;">
@@ -2229,6 +2239,87 @@
       }
       return false;
     }
+
+    // Recalculate distributor points and commissions
+    window.recalculateDistributor = async function(distributorId) {
+      if (!currentUser) {
+        alert('Error: Usuario no autenticado');
+        return;
+      }
+
+      const confirmRecalc = confirm(
+        '¿Recalcular los puntos y comisiones de este distribuidor?\n\n' +
+        'Esta acción:\n' +
+        '• Analizará todo el historial del distribuidor\n' +
+        '• Recalculará los puntos grupales correctos\n' +
+        '• Actualizará el balance basándose en comisiones reales\n' +
+        '• Excluirá compras personales de los puntos grupales\n\n' +
+        '¿Deseas continuar?'
+      );
+
+      if (!confirmRecalc) return;
+
+      try {
+        const token = await currentUser.getIdToken();
+        
+        // Mostrar indicador de carga
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span style="font-size:16px;">⏳</span> Recalculando...';
+
+        const res = await fetch('/.netlify/functions/recalculate-distributor', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ distributorId })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Error desconocido');
+        }
+
+        // Restaurar botón
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+
+        // Mostrar resultados
+        const changes = data.changes;
+        const changesSummary = [
+          `Puntos Grupales: ${data.before.groupPoints} → ${data.after.groupPoints} (${changes.groupPoints >= 0 ? '+' : ''}${changes.groupPoints})`,
+          `Balance: $${data.before.balance.toLocaleString()} → $${data.after.balance.toLocaleString()} (${changes.balance >= 0 ? '+' : ''}$${changes.balance.toLocaleString()})`
+        ].join('\n');
+
+        alert(
+          '✅ Recalculación completada exitosamente\n\n' +
+          'Cambios realizados:\n' +
+          changesSummary
+        );
+
+        // Recargar datos del panel
+        await loadAllData();
+        
+        // Recargar detalles del distribuidor si el panel está abierto
+        const panel = document.getElementById('distributorDetailsPanel');
+        if (panel && panel.style.display === 'block') {
+          await showDistributorDetails(distributorId);
+        }
+
+      } catch (err) {
+        console.error('Error recalculando distribuidor:', err);
+        alert('Error recalculando distribuidor:\n' + err.message);
+        
+        // Restaurar botón en caso de error
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
+    };
   </script>
 </body>
 </html>
