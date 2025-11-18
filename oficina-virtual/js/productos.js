@@ -64,7 +64,12 @@ async function loadProductsFromFirestore() {
     const productsSnap = await getDocs(collection(db, "productos"));
     productos = productsSnap.docs
       .map(d => ({ docId: d.id, ...d.data() }))
-      .filter(p => !p.deleted && !p.hidden);
+      .filter(p => !p.deleted && !p.hidden)
+      .sort((a, b) => {
+        if (a.featured && !b.featured) return -1;
+        if (!a.featured && b.featured) return 1;
+        return 0;
+      });
     
     console.log('Productos cargados desde Firestore:', productos.length);
   } catch (err) {
@@ -159,6 +164,10 @@ function getFilteredProducts(){
     const matchesType = prod.availableFor.includes(tipo);
     const matchesCategory = selectedCategory === 'todas' || prod.categoria === selectedCategory;
     return matchesType && matchesCategory;
+  }).sort((a, b) => {
+    if (a.featured && !b.featured) return -1;
+    if (!a.featured && b.featured) return 1;
+    return 0;
   });
 }
 
@@ -213,6 +222,9 @@ async function distributePointsUpline(startSponsorCode, pointsEarned, buyerUsern
   }
 }
 
+let currentProductPage = 1;
+const PRODUCTS_PER_PAGE = 4;
+
 function renderProductos() {
   const grid = document.getElementById("productGrid");
   if (!grid) return;
@@ -223,10 +235,18 @@ function renderProductos() {
 
   if (filteredProducts.length === 0) {
     grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">No hay productos disponibles en esta categoría.</p>';
+    // Remove pagination if exists
+    const existingPagination = document.getElementById('productPagination');
+    if (existingPagination) existingPagination.remove();
     return;
   }
+  
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+  const startIdx = (currentProductPage - 1) * PRODUCTS_PER_PAGE;
+  const endIdx = startIdx + PRODUCTS_PER_PAGE;
+  const productsToShow = filteredProducts.slice(startIdx, endIdx);
 
-  grid.innerHTML = filteredProducts.map((prod) => {
+  grid.innerHTML = productsToShow.map((prod) => {
     const isOutOfStock = prod.outOfStock || false;
     const outOfStockBadge = isOutOfStock ? '<span style="position:absolute;top:12px;right:12px;background:#fd7e14;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">AGOTADO</span>' : '';
     const disabledStyle = isOutOfStock ? 'opacity:0.6;pointer-events:none;' : '';
@@ -241,8 +261,8 @@ function renderProductos() {
       <div class="product-card" data-id="${prod.id}" style="position:relative;${disabledStyle}">
         ${outOfStockBadge}
         <img src="${prod.imagen}" alt="${prod.nombre}">
-        <h4>${prod.nombre}</h4>
-        <p>${prod.descripcion}</p>
+        <h4 style="font-size:15px;margin:8px 0;min-height:40px;">${prod.nombre}</h4>
+        <p style="font-size:13px;color:#666;min-height:36px;margin:4px 0;">${prod.descripcion}</p>
         <p class="unit-price"><strong>${formatCOP(getDisplayPrice(prod))}</strong> por ${prod.unit || 'paquete'}</p>
         ${pointsDisplay}
         <div class="quantity-selector">
@@ -271,6 +291,65 @@ function renderProductos() {
   document.querySelectorAll(".btn-buy").forEach((btn) => {
     btn.addEventListener("click", onBuyClick);
   });
+  
+  renderProductPagination(totalPages);
+}
+
+function renderProductPagination(totalPages) {
+  const grid = document.getElementById("productGrid");
+  if (!grid || totalPages <= 1) return;
+  
+  let paginationEl = document.getElementById('productPagination');
+  if (!paginationEl) {
+    paginationEl = document.createElement('div');
+    paginationEl.id = 'productPagination';
+    paginationEl.style.display = 'flex';
+    paginationEl.style.justifyContent = 'center';
+    paginationEl.style.alignItems = 'center';
+    paginationEl.style.gap = '10px';
+    paginationEl.style.marginTop = '20px';
+    paginationEl.style.padding = '10px';
+    grid.parentElement.appendChild(paginationEl);
+  }
+  
+  paginationEl.innerHTML = '';
+  
+  const prevBtn = document.createElement('button');
+  prevBtn.textContent = '← Anterior';
+  prevBtn.className = 'btn small';
+  prevBtn.disabled = currentProductPage === 1;
+  prevBtn.style.opacity = currentProductPage === 1 ? '0.5' : '1';
+  prevBtn.style.cursor = currentProductPage === 1 ? 'not-allowed' : 'pointer';
+  prevBtn.addEventListener('click', () => {
+    if (currentProductPage > 1) {
+      currentProductPage--;
+      renderProductos();
+      window.scrollTo({ top: document.getElementById('productGrid').offsetTop - 100, behavior: 'smooth' });
+    }
+  });
+  
+  const pageInfo = document.createElement('span');
+  pageInfo.textContent = `Página ${currentProductPage} de ${totalPages}`;
+  pageInfo.style.fontWeight = '600';
+  pageInfo.style.color = '#333';
+  
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = 'Siguiente →';
+  nextBtn.className = 'btn small';
+  nextBtn.disabled = currentProductPage === totalPages;
+  nextBtn.style.opacity = currentProductPage === totalPages ? '0.5' : '1';
+  nextBtn.style.cursor = currentProductPage === totalPages ? 'not-allowed' : 'pointer';
+  nextBtn.addEventListener('click', () => {
+    if (currentProductPage < totalPages) {
+      currentProductPage++;
+      renderProductos();
+      window.scrollTo({ top: document.getElementById('productGrid').offsetTop - 100, behavior: 'smooth' });
+    }
+  });
+  
+  paginationEl.appendChild(prevBtn);
+  paginationEl.appendChild(pageInfo);
+  paginationEl.appendChild(nextBtn);
 }
 
 // --- Modal grande para que el cliente edite y confirme sus datos ---
@@ -739,6 +818,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (categorySelector) {
     categorySelector.addEventListener('change', (e) => {
       window.selectedCategory = e.target.value;
+      currentProductPage = 1;
       renderProductos();
     });
   }

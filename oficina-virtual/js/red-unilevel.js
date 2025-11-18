@@ -26,6 +26,9 @@ function resolveAvatarPath(p) {
   return '/' + p.replace(/^\/+/, '');
 }
 const DEPTH_LIMIT = TREE_CONFIG.DEPTH_LIMIT;
+const FRONTLINES_PER_PAGE = TREE_CONFIG.FRONTLINES_PER_PAGE;
+
+let currentFrontlinePage = 1;
 
 // navegación de redes (stack para volver)
 let NAV_STACK = [];
@@ -109,13 +112,15 @@ async function buildUnilevelTree(username) {
     groupPoints: Number(rootData.groupPoints || 0),
     celular: rootData.celular || "No registrado",
     tipoRegistro: rootData.tipoRegistro || rootData.role || rootData.rol || 'distribuidor',
-    children: []
+    children: [],
+    allChildren: [],
+    fullTree: null
   };
 
-  async function addChildren(node, level = 1) {
+  async function addChildren(node, level = 1, isFullTree = false) {
     if (level > DEPTH_LIMIT) return;
     const childDocs = await getChildrenForParent(node);
-    node.children = childDocs.map(d => {
+    const allChildren = childDocs.map(d => {
       const data = d.data();
       return {
         id: d.id,
@@ -126,13 +131,67 @@ async function buildUnilevelTree(username) {
         groupPoints: Number(data.groupPoints || 0),
         celular: data.celular || "No registrado",
         tipoRegistro: data.tipoRegistro || data.role || data.rol || 'distribuidor',
-        children: []
+        children: [],
+        allChildren: []
       };
     });
-    for (const c of node.children) await addChildren(c, level + 1);
+    
+    if (level === 1 && !isFullTree) {
+      node.allChildren = allChildren;
+      const startIdx = (currentFrontlinePage - 1) * FRONTLINES_PER_PAGE;
+      const endIdx = startIdx + FRONTLINES_PER_PAGE;
+      node.children = allChildren.slice(startIdx, endIdx);
+    } else {
+      node.allChildren = allChildren;
+      node.children = allChildren;
+    }
+    
+    for (const c of node.children) await addChildren(c, level + 1, isFullTree);
   }
 
-  await addChildren(rootNode, 1);
+  await addChildren(rootNode, 1, false);
+  
+  const fullTreeRoot = {
+    id: rootNode.id,
+    usuario: rootNode.usuario,
+    nombre: rootNode.nombre,
+    active: rootNode.active,
+    puntos: rootNode.puntos,
+    groupPoints: rootNode.groupPoints,
+    celular: rootNode.celular,
+    tipoRegistro: rootNode.tipoRegistro,
+    children: [],
+    allChildren: rootNode.allChildren
+  };
+  
+  async function addAllChildren(node, level = 1) {
+    if (level > DEPTH_LIMIT) return;
+    const childDocs = await getChildrenForParent(node);
+    const allChildren = childDocs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        usuario: data[FIELD_USUARIO] || data.usuario,
+        nombre: data.nombre || data[FIELD_USUARIO] || data.usuario,
+        active: isActiveThisMonth(data),
+        puntos: Number(data.puntos || data.personalPoints || 0),
+        groupPoints: Number(data.groupPoints || 0),
+        celular: data.celular || "No registrado",
+        tipoRegistro: data.tipoRegistro || data.role || data.rol || 'distribuidor',
+        children: [],
+        allChildren: []
+      };
+    });
+    
+    node.children = allChildren;
+    node.allChildren = allChildren;
+    
+    for (const c of node.children) await addAllChildren(c, level + 1);
+  }
+  
+  await addAllChildren(fullTreeRoot, 1);
+  rootNode.fullTree = fullTreeRoot;
+  
   return rootNode;
 }
 
@@ -202,6 +261,50 @@ async function persistTeamPointsSafely(userId) {
   }
 }
 
+/* -------------------- TREE LOADING INDICATOR -------------------- */
+
+function showTreeLoading() {
+  const treeWrap = document.getElementById("treeWrap");
+  if (!treeWrap) return;
+  
+  let loadingOverlay = document.getElementById('tree-loading-overlay');
+  if (!loadingOverlay) {
+    loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'tree-loading-overlay';
+    loadingOverlay.style.cssText = `
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      border-radius: 6px;
+    `;
+    loadingOverlay.innerHTML = `
+      <div style="text-align: center;">
+        <div style="width: 48px; height: 48px; border: 5px solid #f3f3f3; border-top: 5px solid #2b9df3; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px;"></div>
+        <div style="color: #333; font-size: 15px; font-weight: 600;">Cargando árbol...</div>
+      </div>
+    `;
+    
+    if (treeWrap.style.position !== 'relative') {
+      treeWrap.style.position = 'relative';
+    }
+    
+    treeWrap.appendChild(loadingOverlay);
+  } else {
+    loadingOverlay.style.display = 'flex';
+  }
+}
+
+function hideTreeLoading() {
+  const loadingOverlay = document.getElementById('tree-loading-overlay');
+  if (loadingOverlay) {
+    loadingOverlay.style.display = 'none';
+  }
+}
+
 /* -------------------- RENDER DEL ÁRBOL (D3 + viewBox + iOS repaint hack) -------------------- */
 
 /**
@@ -216,6 +319,8 @@ function renderTree(rootNode) {
   const treeWrap = document.getElementById("treeWrap");
   clearElement(treeWrap);
   if (!rootNode) return;
+  
+  showTreeLoading();
   
   const loadingIndicator = document.createElement('div');
   loadingIndicator.className = 'tree-loading';
@@ -282,8 +387,13 @@ function renderTreeCore(rootNode, treeWrap, loadingIndicator) {
         const last = NAV_STACK.pop();
         if (!last) return;
         try{
+          showTreeLoading();
+          currentFrontlinePage = 1;
           const root = await buildUnilevelTree(last);
-          if (root) renderTree(root);
+          if (root) {
+            renderTree(root);
+            updateStatsFromTree(root);
+          }
         }catch(e){ console.error(e); alert('Error al volver'); }
       });
       bc.appendChild(back);
@@ -296,6 +406,8 @@ function renderTreeCore(rootNode, treeWrap, loadingIndicator) {
   refreshBreadcrumbs();
   // exponer para uso futuro
   window._refreshNetworkBreadcrumbs = refreshBreadcrumbs;
+  
+  renderFrontlinesPagination(rootNode);
 
 
 
@@ -559,6 +671,7 @@ function renderTreeCore(rootNode, treeWrap, loadingIndicator) {
       
       // Hide loading overlay after tree is fully rendered
       setTimeout(() => {
+        hideTreeLoading();
         if (typeof window.hidePageLoading === 'function') {
           try { window.hidePageLoading(); } catch(e) { console.warn('hidePageLoading failed', e); }
         }
@@ -567,11 +680,82 @@ function renderTreeCore(rootNode, treeWrap, loadingIndicator) {
   } catch (err) {
     // ignore but still try to hide loading
     setTimeout(() => {
+      hideTreeLoading();
       if (typeof window.hidePageLoading === 'function') {
         try { window.hidePageLoading(); } catch(e) {}
       }
     }, 300);
   }
+}
+
+function renderFrontlinesPagination(rootNode) {
+  const treeWrap = document.getElementById("treeWrap");
+  if (!treeWrap || !rootNode || !rootNode.allChildren || rootNode.allChildren.length <= FRONTLINES_PER_PAGE) return;
+  
+  let pagerEl = document.getElementById('treePager');
+  if (!pagerEl) {
+    pagerEl = document.createElement('div');
+    pagerEl.id = 'treePager';
+    pagerEl.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:12px;margin-top:16px;padding:12px;background:#f8f9fa;border-radius:8px;';
+    const mapContainer = document.getElementById('mapContainer');
+    if (mapContainer) {
+      const existingPager = document.getElementById('treePager');
+      if (existingPager) existingPager.remove();
+      mapContainer.insertBefore(pagerEl, mapContainer.firstChild.nextSibling);
+    }
+  }
+  
+  const totalFrontlines = rootNode.allChildren.length;
+  const totalPages = Math.ceil(totalFrontlines / FRONTLINES_PER_PAGE);
+  
+  pagerEl.innerHTML = '';
+  
+  const prevBtn = document.createElement('button');
+  prevBtn.textContent = '← Anterior';
+  prevBtn.className = 'btn small';
+  prevBtn.disabled = currentFrontlinePage === 1;
+  prevBtn.style.opacity = currentFrontlinePage === 1 ? '0.5' : '1';
+  prevBtn.style.cursor = currentFrontlinePage === 1 ? 'not-allowed' : 'pointer';
+  prevBtn.addEventListener('click', async () => {
+    if (currentFrontlinePage > 1) {
+      currentFrontlinePage--;
+      const rootCode = rootNode.usuario;
+      showTreeLoading();
+      const tree = await buildUnilevelTree(rootCode);
+      if (tree) {
+        renderTree(tree);
+        updateStatsFromTree(tree);
+      }
+    }
+  });
+  
+  const pageInfo = document.createElement('span');
+  pageInfo.innerHTML = `<strong>Frontales:</strong> Grupo ${currentFrontlinePage} de ${totalPages} <span style="color:#666;font-size:13px;">(${totalFrontlines} total)</span>`;
+  pageInfo.style.fontWeight = '600';
+  pageInfo.style.color = '#333';
+  
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = 'Siguiente →';
+  nextBtn.className = 'btn small';
+  nextBtn.disabled = currentFrontlinePage === totalPages;
+  nextBtn.style.opacity = currentFrontlinePage === totalPages ? '0.5' : '1';
+  nextBtn.style.cursor = currentFrontlinePage === totalPages ? 'not-allowed' : 'pointer';
+  nextBtn.addEventListener('click', async () => {
+    if (currentFrontlinePage < totalPages) {
+      currentFrontlinePage++;
+      const rootCode = rootNode.usuario;
+      showTreeLoading();
+      const tree = await buildUnilevelTree(rootCode);
+      if (tree) {
+        renderTree(tree);
+        updateStatsFromTree(tree);
+      }
+    }
+  });
+  
+  pagerEl.appendChild(prevBtn);
+  pagerEl.appendChild(pageInfo);
+  pagerEl.appendChild(nextBtn);
 }
 
 /* Fallback simple si D3 no está disponible (mantiene comportamiento anterior) */
@@ -681,6 +865,7 @@ function renderTreeFallback(rootNode) {
       
       // Hide loading overlay after tree is fully rendered
       setTimeout(() => {
+        hideTreeLoading();
         if (typeof window.hidePageLoading === 'function') {
           try { window.hidePageLoading(); } catch(e) {}
         }
@@ -689,6 +874,7 @@ function renderTreeFallback(rootNode) {
   } catch (e) {
     // Still try to hide loading
     setTimeout(() => {
+      hideTreeLoading();
       if (typeof window.hidePageLoading === 'function') {
         try { window.hidePageLoading(); } catch(e) {}
       }
@@ -731,31 +917,30 @@ function createInfoCard() {
     const viewBtn = el.querySelector("#ic-view-network");
     if (viewBtn) {
       viewBtn.addEventListener("click", async (e) => {
-        // Prevent event propagation
         if (e) {
           e.preventDefault();
           e.stopPropagation();
         }
         
-        // el.dataset.usuario será establecido por showInfoCard antes de mostrar
         const usuario = el.dataset.usuario;
         if (!usuario) return alert('Usuario no disponible');
         
-        // Hide card immediately
         el.style.display = 'none';
         
         try {
-          // guardar root actual en stack para poder volver
           if (typeof CURRENT_ROOT === 'string' && CURRENT_ROOT && CURRENT_ROOT !== usuario) {
             NAV_STACK.push(CURRENT_ROOT);
           }
           
-          // Small delay to ensure card is hidden and DOM is ready
+          currentFrontlinePage = 1;
+          
           await new Promise(resolve => setTimeout(resolve, 50));
           
+          showTreeLoading();
           const newRoot = await buildUnilevelTree(usuario);
           if (newRoot) {
             renderTree(newRoot);
+            updateStatsFromTree(newRoot);
           } else {
             alert('No se pudo cargar la red de ' + usuario);
           }
@@ -828,27 +1013,56 @@ function showInfoCard(node, event) {
 
 function updateStatsFromTree(tree) {
   if (!tree) return;
-  let total = 0, activos = 0, inactivos = 0, puntos = 0;
-  (function walk(n) {
-    total++;
-    if (n.active) activos++; else inactivos++;
-    puntos += n.puntos || 0;
-    (n.children || []).forEach(walk);
+  
+  let totalCompleto = 0, activosCompleto = 0;
+  if (tree.fullTree) {
+    (function walkFull(n) {
+      totalCompleto++;
+      if (n.active) activosCompleto++;
+      (n.children || []).forEach(walkFull);
+    })(tree.fullTree);
+  } else {
+    (function walkFull(n) {
+      totalCompleto++;
+      if (n.active) activosCompleto++;
+      (n.children || []).forEach(walkFull);
+    })(tree);
+  }
+  
+  let totalGrupo = 0, activosGrupo = 0;
+  (function walkGroup(n) {
+    totalGrupo++;
+    if (n.active) activosGrupo++;
+    (n.children || []).forEach(walkGroup);
   })(tree);
 
-  // frontales (primer nivel)
-  const frontales = (tree.children || []).length;
+  const totalFrontales = (tree.allChildren || tree.children || []).length;
+  const frontalesEnGrupo = (tree.children || []).length;
 
-  // actualizar spans del header (si existen)
-  const elFront = document.getElementById("statFrontales");
+  const elFrontTotal = document.getElementById("statFrontalesTotal");
+  const elFrontGrupo = document.getElementById("statFrontalesGrupo");
   const elTotal = document.getElementById("statTotal");
+  const elTotalGrupo = document.getElementById("statTotalGrupo");
   const elRecompra = document.getElementById("statRecompra");
+  const elRecompraGrupo = document.getElementById("statRecompraGrupo");
 
-  if (elFront) elFront.textContent = String(frontales);
-  if (elTotal) elTotal.textContent = String(total);
-  if (elRecompra) elRecompra.textContent = String(activos);
+  if (elFrontTotal) elFrontTotal.textContent = String(totalFrontales);
+  if (elFrontGrupo) elFrontGrupo.textContent = String(frontalesEnGrupo);
+  if (elTotal) elTotal.textContent = String(totalCompleto);
+  if (elTotalGrupo) elTotalGrupo.textContent = String(totalGrupo);
+  if (elRecompra) elRecompra.textContent = String(activosCompleto);
+  if (elRecompraGrupo) elRecompraGrupo.textContent = String(activosGrupo);
 
-  // ocultar/limpiar el resumen inferior si existe
+  const currentGroupInfo = document.getElementById("currentGroupInfo");
+  if (currentGroupInfo && totalFrontales > FRONTLINES_PER_PAGE) {
+    const totalPages = Math.ceil(totalFrontales / FRONTLINES_PER_PAGE);
+    const startIdx = (currentFrontlinePage - 1) * FRONTLINES_PER_PAGE + 1;
+    const endIdx = Math.min(currentFrontlinePage * FRONTLINES_PER_PAGE, totalFrontales);
+    currentGroupInfo.textContent = `Grupo ${currentFrontlinePage} de ${totalPages} - Mostrando frontales ${startIdx} a ${endIdx} de ${totalFrontales} totales`;
+  } else if (currentGroupInfo) {
+    currentGroupInfo.textContent = `Mostrando todos los ${totalFrontales} frontales`;
+  }
+
   const bottom = document.getElementById("statsInfo");
   if (bottom) {
     bottom.textContent = "";
@@ -901,6 +1115,7 @@ async function readAndRenderPoints(userId) {
 /* -------------------- REFRESH / UI / AUTH -------------------- */
 
 async function refreshTreeAndStats(rootCode, userId) {
+  showTreeLoading();
   const tree = await buildUnilevelTree(rootCode);
   renderTree(tree);
   updateStatsFromTree(tree);
@@ -964,6 +1179,7 @@ onAuthStateChanged(auth, async (user) => {
       }
     }
 
+    showTreeLoading();
     const tree = await buildUnilevelTree(rootCode);
     renderTree(tree);
     updateStatsFromTree(tree);

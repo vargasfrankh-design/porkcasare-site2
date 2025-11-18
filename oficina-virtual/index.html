@@ -278,17 +278,32 @@
         <!-- Red -->
         <div class="history-section">
           <h2>Mi Red</h2>
-          <div id="network-controls" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-            <div><strong>Total frontales:</strong> <span id="statFrontales">0</span></div>
-            <div><strong>Total en red (6 niveles):</strong> <span id="statTotal">0</span></div>
-            <div><strong>Activos este mes:</strong> <span id="statRecompra">0</span></div>
+          <div id="network-controls" style="display:flex;gap:16px;align-items:start;flex-wrap:wrap;margin-bottom:10px;">
+            <div style="display:flex;flex-direction:column;gap:4px;padding:10px;background:#f8f9fa;border-radius:6px;min-width:180px;">
+              <div style="font-size:13px;color:#666;">Total frontales</div>
+              <div style="font-size:20px;font-weight:700;color:#2b9df3;"><span id="statFrontalesTotal">0</span></div>
+              <div style="font-size:12px;color:#666;margin-top:2px;">Del grupo actual: <strong id="statFrontalesGrupo" style="color:#333;">0</strong></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding:10px;background:#f8f9fa;border-radius:6px;min-width:180px;">
+              <div style="font-size:13px;color:#666;">Total en Red</div>
+              <div style="font-size:20px;font-weight:700;color:#28a745;"><span id="statTotal">0</span></div>
+              <div style="font-size:12px;color:#666;margin-top:2px;">Del grupo actual: <strong id="statTotalGrupo" style="color:#333;">0</strong></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding:10px;background:#f8f9fa;border-radius:6px;min-width:180px;">
+              <div style="font-size:13px;color:#666;">Activos este mes</div>
+              <div style="font-size:20px;font-weight:700;color:#ff6b35;"><span id="statRecompra">0</span></div>
+              <div style="font-size:12px;color:#666;margin-top:2px;">Del grupo actual: <strong id="statRecompraGrupo" style="color:#333;">0</strong></div>
+            </div>
             <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
-              <label for="pageSize" style="font-size:13px;color:#444;margin-right:6px;">Frontales por página:</label>
+              <label for="pageSize" style="font-size:13px;color:#444;margin-right:6px;">Frontales por grupo:</label>
               <select id="pageSize" style="padding:6px;border-radius:6px;border:1px solid #ddd;">
                 <option value="5" selected>5</option>
               </select>
               <button id="btnRefreshMap" class="btn small">Actualizar mapa</button>
             </div>
+          </div>
+          <div id="network-group-info" style="margin-bottom:10px;padding:10px;background:#e3f2fd;border-radius:6px;font-size:14px;color:#0d47a1;border-left:4px solid #2196f3;">
+            <strong>Visualizando:</strong> <span id="currentGroupInfo">Todos los frontales</span>
           </div>
           <div id="mapContainer">
             <div id="treeWrap" style="width:100%;height:460px;border:1px solid #eee;border-radius:6px;overflow:auto;background:#fff"></div>

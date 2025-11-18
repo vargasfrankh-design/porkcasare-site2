@@ -404,6 +404,7 @@
             <th>Precio Dist.</th>
             <th>Precio Cliente</th>
             <th>Precio Rest.</th>
+            <th>Destacado</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -614,6 +615,13 @@
           <label style="display:flex;align-items:center;gap:8px;">
             <input type="checkbox" id="productOutOfStock">
             <span style="font-weight:500;">Marcar como agotado</span>
+          </label>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="productFeatured">
+            <span style="font-weight:500;">⭐ Destacar (aparece de primero en oficina virtual)</span>
           </label>
         </div>
 
@@ -1932,6 +1940,8 @@
         if (prod.hidden) statusBadges.push('<span style="background:#6c757d;color:white;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">OCULTO</span>');
         if (prod.outOfStock) statusBadges.push('<span style="background:#fd7e14;color:white;padding:2px 6px;border-radius:3px;font-size:11px;">AGOTADO</span>');
         const statusHtml = statusBadges.length > 0 ? statusBadges.join('') : '<span style="color:#28a745;">✓ Activo</span>';
+        
+        const featuredHtml = prod.featured ? '<span style="font-size:20px;" title="Producto destacado">⭐</span>' : '<span style="color:#ccc;">—</span>';
 
         return `
           <tr>
@@ -1942,6 +1952,7 @@
             <td>${prod.precioDistribuidor ? formatCOP(prod.precioDistribuidor) : 'N/A'}</td>
             <td>${prod.precioCliente ? formatCOP(prod.precioCliente) : 'N/A'}</td>
             <td>${prod.precioRestaurante ? formatCOP(prod.precioRestaurante) : 'N/A'}</td>
+            <td style="text-align:center;">${featuredHtml}</td>
             <td>${statusHtml}</td>
             <td>
               <button class="btn-primary" onclick="editProduct('${prod.docId}')">Editar</button>
@@ -1983,7 +1994,8 @@
         categoria: document.getElementById('productCategory').value,
         availableFor: [],
         hidden: document.getElementById('productHidden').checked,
-        outOfStock: document.getElementById('productOutOfStock').checked
+        outOfStock: document.getElementById('productOutOfStock').checked,
+        featured: document.getElementById('productFeatured').checked || false
       };
 
       if (document.getElementById('productAvailDistributor').checked) {
@@ -2036,6 +2048,7 @@
       
       document.getElementById('productHidden').checked = product.hidden || false;
       document.getElementById('productOutOfStock').checked = product.outOfStock || false;
+      document.getElementById('productFeatured').checked = product.featured || false;
 
       document.getElementById('productModal').style.display = 'flex';
     };
