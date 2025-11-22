@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal de Proveedores - PorKCasare</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .user-info {
+      background: #f8f9fa;
+      padding: 20px 30px;
+      border-bottom: 2px solid #e9ecef;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .user-info .welcome {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .user-info .logout-btn {
+      padding: 10px 25px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .user-info .logout-btn:hover {
+      background: #c82333;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    .main-content {
+      padding: 30px;
+    }
+
+    .filters {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .filters label {
+      font-weight: 600;
+      color: #495057;
+      margin-right: 10px;
+    }
+
+    .filters select, .filters input {
+      padding: 10px 15px;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s;
+      min-width: 200px;
+    }
+
+    .filters select:focus, .filters input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-card h3 {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .products-section {
+      margin-top: 30px;
+    }
+
+    .products-section h2 {
+      font-size: 1.5rem;
+      color: #2d3748;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #667eea;
+    }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .product-card {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .product-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      border-color: #667eea;
+    }
+
+    .product-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+
+    .product-card-body {
+      padding: 20px;
+    }
+
+    .product-card h3 {
+      font-size: 1.2rem;
+      color: #2d3748;
+      margin-bottom: 10px;
+    }
+
+    .product-card .category {
+      display: inline-block;
+      background: #e9ecef;
+      color: #495057;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .product-card .stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #e9ecef;
+    }
+
+    .product-card .stat-item {
+      text-align: center;
+    }
+
+    .product-card .stat-item .label {
+      font-size: 0.8rem;
+      color: #6c757d;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .product-card .stat-item .value {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .product-card .stat-item.sold .value {
+      color: #28a745;
+    }
+
+    .product-card .status-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .product-card .status-badge.in-stock {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .product-card .status-badge.out-of-stock {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6c757d;
+    }
+
+    .empty-state svg {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 20px;
+      opacity: 0.3;
+    }
+
+    .empty-state h3 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      font-size: 1.2rem;
+      color: #667eea;
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 1.5rem;
+      }
+
+      .filters {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filters select, .filters input {
+        width: 100%;
+      }
+
+      .user-info {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+      }
+
+      .products-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Portal de Proveedores</h1>
+      <p>Consulta en tiempo real el inventario y ventas de tus productos</p>
+    </header>
+
+    <div class="user-info">
+      <div class="welcome">
+        Bienvenido, <span id="providerName">Proveedor</span>
+      </div>
+      <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+    </div>
+
+    <div class="main-content">
+      <!-- Statistics -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Productos</h3>
+          <div class="value" id="totalProducts">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Productos en Stock</h3>
+          <div class="value" id="productsInStock">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Total Vendidos</h3>
+          <div class="value" id="totalSold">0</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <div>
+          <label for="categoryFilter">Filtrar por categoría:</label>
+          <select id="categoryFilter">
+            <option value="">Todas las categorías</option>
+            <option value="carnes">Carnes</option>
+            <option value="bebidas">Bebidas</option>
+            <option value="alimentos">Alimentos</option>
+            <option value="aseo">Aseo</option>
+            <option value="higiene-personal">Higiene Personal</option>
+            <option value="abarrotes">Abarrotes</option>
+          </select>
+        </div>
+        <div>
+          <label for="searchFilter">Buscar producto:</label>
+          <input type="text" id="searchFilter" placeholder="Nombre del producto...">
+        </div>
+      </div>
+
+      <!-- Products Section -->
+      <div class="products-section">
+        <h2>Mis Productos</h2>
+        <div id="productsContainer" class="products-grid">
+          <div class="loading">Cargando productos...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+    import { getFirestore, collection, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyA" + "jj3AluF19BBbPfafimJoK7SJbdMrvhWY",
+      authDomain: "porkcasare-915ff.firebaseapp.com",
+      projectId: "porkcasare-915ff",
+      storageBucket: "porkcasare-915ff.firebasestorage.app",
+      messagingSenderId: "147157887309",
+      appId: "1:147157887309:web:5c6db76a20474f172def04",
+      measurementId: "G-X0DJ5Y1S6X"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let allProducts = [];
+    let currentUser = null;
+
+    // Category name mapping
+    const categoryNames = {
+      'carnes': 'Carnes',
+      'bebidas': 'Bebidas',
+      'alimentos': 'Alimentos',
+      'aseo': 'Aseo',
+      'higiene-personal': 'Higiene Personal',
+      'abarrotes': 'Abarrotes'
+    };
+
+    // Auth check
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+
+        // Check if user is a supplier
+        const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+
+          // Check if user has supplier role
+          if (userData.rol !== 'proveedor' && userData.role !== 'proveedor') {
+            alert('Acceso denegado. Este portal es solo para proveedores.');
+            window.location.href = '/';
+            return;
+          }
+
+          document.getElementById('providerName').textContent = userData.nombre || userData.usuario || 'Proveedor';
+          await loadProducts();
+        } else {
+          alert('Usuario no encontrado');
+          window.location.href = '/';
+        }
+      } else {
+        window.location.href = '/login-proveedor.html';
+      }
+    });
+
+    async function loadProducts() {
+      try {
+        // Load all products
+        const productsSnap = await getDocs(collection(db, "productos"));
+        allProducts = productsSnap.docs
+          .map(d => ({ docId: d.id, ...d.data() }))
+          .filter(p => !p.deleted && !p.hidden);
+
+        // Calculate units sold for each product
+        await calculateUnitsSold();
+
+        // Update statistics
+        updateStatistics();
+
+        // Render products
+        renderProducts();
+      } catch (err) {
+        console.error('Error loading products:', err);
+        document.getElementById('productsContainer').innerHTML = `
+          <div class="empty-state">
+            <h3>Error al cargar productos</h3>
+            <p>${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    async function calculateUnitsSold() {
+      try {
+        // Get all orders
+        const ordersSnap = await getDocs(collection(db, "orders"));
+        const allOrders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        console.log(`📊 Total de órdenes en la base de datos: ${allOrders.length}`);
+
+        // Filter only confirmed orders
+        const confirmedOrders = allOrders.filter(order => order.status === 'confirmed');
+
+        console.log(`✅ Órdenes confirmadas: ${confirmedOrders.length}`);
+
+        // Fetch buyer information to filter out test users
+        const usersCache = new Map();
+        const filteredOrders = [];
+
+        for (const order of confirmedOrders) {
+          if (order.buyerUid) {
+            // Get user data from cache or fetch it
+            if (!usersCache.has(order.buyerUid)) {
+              try {
+                const userDoc = await getDoc(doc(db, "usuarios", order.buyerUid));
+                if (userDoc.exists()) {
+                  const userData = userDoc.data();
+                  usersCache.set(order.buyerUid, {
+                    nombre: userData.nombre || '',
+                    usuario: userData.usuario || ''
+                  });
+                }
+              } catch (err) {
+                console.warn('Error fetching user for order:', order.id, err);
+              }
+            }
+
+            // Check if user is a test user (starts with "prueba")
+            const userData = usersCache.get(order.buyerUid);
+            if (userData) {
+              const isTestUser = userData.nombre.toLowerCase().startsWith('prueba') ||
+                                userData.usuario.toLowerCase().startsWith('prueba');
+
+              if (!isTestUser) {
+                filteredOrders.push(order);
+              } else {
+                console.log(`🧪 Orden excluida de usuario de prueba: ${userData.usuario || userData.nombre}`);
+              }
+            } else {
+              // If we couldn't fetch user data, include the order to avoid data loss
+              filteredOrders.push(order);
+            }
+          } else {
+            // If no buyerUid, include the order
+            filteredOrders.push(order);
+          }
+        }
+
+        console.log(`✅ Órdenes confirmadas (sin usuarios de prueba): ${filteredOrders.length}`);
+
+        // Calculate units sold per product
+        const unitsSoldMap = {};
+        filteredOrders.forEach(order => {
+          const productId = order.productId;
+          const quantity = order.quantity || 0;
+
+          if (!unitsSoldMap[productId]) {
+            unitsSoldMap[productId] = 0;
+          }
+          unitsSoldMap[productId] += quantity;
+        });
+
+        // Get inventory data from the 'inventory' collection
+        console.log(`📦 Obteniendo inventario desde colección 'inventory'...`);
+        const inventorySnap = await getDocs(collection(db, "inventory"));
+        const inventoryByProduct = {};
+
+        inventorySnap.docs.forEach(doc => {
+          const data = doc.data();
+          inventoryByProduct[data.productId] = data.stock || 0;
+        });
+
+        console.log(`✅ Inventario obtenido: ${inventorySnap.docs.length} productos con stock registrado`);
+
+        // Update each product with units sold and remaining inventory
+        allProducts.forEach(product => {
+          const unitsSold = unitsSoldMap[product.id] || 0;
+          const totalStock = inventoryByProduct[product.id] || 0;
+          const remainingInventory = totalStock - unitsSold;
+
+          product.unitsSold = unitsSold;
+          product.totalStock = totalStock;
+          product.inventory = Math.max(0, remainingInventory); // Ensure it's never negative
+
+          console.log(`📊 Producto: ${product.nombre} | Stock Total: ${totalStock} | Vendidos: ${unitsSold} | Restante: ${remainingInventory}`);
+        });
+      } catch (err) {
+        console.error('Error calculating units sold:', err);
+      }
+    }
+
+    function updateStatistics() {
+      const totalProducts = allProducts.length;
+      const productsInStock = allProducts.filter(p => !p.outOfStock).length;
+      const totalSold = allProducts.reduce((sum, p) => sum + (p.unitsSold || 0), 0);
+
+      document.getElementById('totalProducts').textContent = totalProducts;
+      document.getElementById('productsInStock').textContent = productsInStock;
+      document.getElementById('totalSold').textContent = totalSold;
+    }
+
+    function renderProducts() {
+      const container = document.getElementById('productsContainer');
+      const categoryFilter = document.getElementById('categoryFilter').value;
+      const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+
+      let filteredProducts = allProducts;
+
+      // Apply category filter
+      if (categoryFilter) {
+        filteredProducts = filteredProducts.filter(p => p.categoria === categoryFilter);
+      }
+
+      // Apply search filter
+      if (searchFilter) {
+        filteredProducts = filteredProducts.filter(p =>
+          p.nombre.toLowerCase().includes(searchFilter) ||
+          (p.descripcion && p.descripcion.toLowerCase().includes(searchFilter))
+        );
+      }
+
+      if (filteredProducts.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <h3>No se encontraron productos</h3>
+            <p>Intenta ajustar los filtros de búsqueda</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filteredProducts.map(product => {
+        const category = categoryNames[product.categoria] || product.categoria || 'Sin categoría';
+        const stockStatus = product.outOfStock ? 'out-of-stock' : 'in-stock';
+        const stockText = product.outOfStock ? 'Agotado' : 'En Stock';
+        const unitsSold = product.unitsSold || 0;
+        const inventory = product.inventory || 0;
+
+        return `
+          <div class="product-card">
+            <img src="${product.imagen || '/images/productos/inicio.jpg'}" alt="${product.nombre}">
+            <div class="product-card-body">
+              <h3>${product.nombre}</h3>
+              <span class="category">${category}</span>
+              <div class="stats">
+                <div class="stat-item">
+                  <div class="label">En Inventario</div>
+                  <div class="value">${inventory}</div>
+                </div>
+                <div class="stat-item sold">
+                  <div class="label">Vendidas</div>
+                  <div class="value">${unitsSold}</div>
+                </div>
+              </div>
+              <span class="status-badge ${stockStatus}">${stockText}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Event listeners for filters
+    document.getElementById('categoryFilter').addEventListener('change', renderProducts);
+    document.getElementById('searchFilter').addEventListener('input', renderProducts);
+
+    // Logout function
+    window.logout = async function() {
+      try {
+        await signOut(auth);
+        window.location.href = '/login-proveedor.html';
+      } catch (err) {
+        console.error('Error signing out:', err);
+        alert('Error al cerrar sesión');
+      }
+    };
+  </script>
+</body>
+</html>

@@ -206,13 +206,20 @@ const uRef = doc(db, "usuarios", uid);
 
     // Actualiza balances visibles si existen
     if (elPending) elPending.textContent = formatCurrency(Number(data.balance ?? 0));
-    // Actualizar estado del botón Cobrar: si hay balance positivo mostrar botón y quitar tooltip; si no, deshabilitar y mostrar tooltip.
+    // Actualizar estado del botón Cobrar: verificar balance, y si es Master o tiene 50+ puntos personales
     try {
       const pendingAmountNumber = Number(data.balance ?? 0);
+      const personalPoints = Number(data.personalPoints ?? data.puntos ?? 0);
+      const isMaster = !data.patrocinador || data.patrocinador === '' || data.patrocinador === null;
+      const canWithdraw = isMaster || personalPoints >= 50;
+
       if (btnCobrar) {
-        if (pendingAmountNumber > 0) {
+        if (pendingAmountNumber > 0 && canWithdraw) {
           btnCobrar.removeAttribute('title');
           btnCobrar.disabled = false;
+        } else if (pendingAmountNumber > 0 && !canWithdraw) {
+          btnCobrar.setAttribute('title', 'Solo los Masters o distribuidores con 50+ puntos personales pueden cobrar');
+          btnCobrar.disabled = true;
         } else {
           btnCobrar.setAttribute('title', 'No tienes comisiones por cobrar');
           btnCobrar.disabled = true;
@@ -563,6 +570,28 @@ export { addEarnings, cobrarPending, attachRealtimeForUserBoth, normalizeEntry }
     newBtn.disabled = false;
     newBtn.addEventListener('click', async (ev) => {
       ev.preventDefault();
+
+      // Verificar si el usuario es Master o tiene 50+ puntos personales
+      const userData = window.__lastUserData || {};
+      const personalPoints = Number(userData.personalPoints ?? userData.puntos ?? 0);
+      const isMaster = !userData.patrocinador || userData.patrocinador === '' || userData.patrocinador === null;
+      const canWithdraw = isMaster || personalPoints >= 50;
+
+      if (!canWithdraw) {
+        if (window.Swal) {
+          await Swal.fire({
+            title: 'No puedes cobrar aún',
+            html: `<p>Para desbloquear bonos pagos y cobros, debes ser <strong>Master</strong> o tener más de <strong>50 puntos personales</strong>.</p>
+                   <p><small>Actualmente tienes <strong>${personalPoints.toFixed(2)} puntos personales</strong></small></p>`,
+            icon: 'warning',
+            confirmButtonText: 'Entendido'
+          });
+        } else {
+          alert(`No puedes cobrar aún para desbloquear bonos pagos y cobros, debes ser Master o tener más de 50 puntos personales. Actualmente tienes ${personalPoints.toFixed(2)} puntos.`);
+        }
+        return;
+      }
+
       // Preferir balance directo desde el último snapshot si está disponible
       let amount = 0;
       if (window.__lastUserData && typeof window.__lastUserData.balance !== 'undefined') {

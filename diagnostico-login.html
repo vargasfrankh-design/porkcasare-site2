@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnóstico de Login - PorkCasare</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #f5f9ff;
+      padding: 20px;
+    }
+    .diagnostic-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+    }
+    .test-result {
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      background: #f8f9fa;
+    }
+    .test-result.success {
+      border-color: #28a745;
+      background: #d4edda;
+    }
+    .test-result.error {
+      border-color: #dc3545;
+      background: #f8d7da;
+    }
+    .code-display {
+      font-family: monospace;
+      background: white;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      border: 1px solid #dee2e6;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="diagnostic-container">
+    <h2 class="text-center mb-4">🔍 Diagnóstico de Login de Proveedores</h2>
+
+    <div class="alert alert-info">
+      <strong>Información:</strong> Esta herramienta prueba paso por paso el proceso de login para identificar dónde está fallando.
+    </div>
+
+    <div class="mb-3">
+      <label for="testUsername" class="form-label">Usuario a probar:</label>
+      <input type="text" class="form-control" id="testUsername" placeholder="prueba" value="prueba">
+    </div>
+
+    <div class="mb-3">
+      <button id="btnTest" class="btn btn-primary">Ejecutar Diagnóstico</button>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getAuth } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+    import { getFirestore, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyA" + "jj3AluF19BBbPfafimJoK7SJbdMrvhWY",
+      authDomain: "porkcasare-915ff.firebaseapp.com",
+      projectId: "porkcasare-915ff",
+      storageBucket: "porkcasare-915ff.firebasestorage.app",
+      messagingSenderId: "147157887309",
+      appId: "1:147157887309:web:5c6db76a20474f172def04",
+      measurementId: "G-X0DJ5Y1S6X"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const resultsDiv = document.getElementById('results');
+    const btnTest = document.getElementById('btnTest');
+    const testUsernameInput = document.getElementById('testUsername');
+
+    function addResult(title, success, details, data = null) {
+      const resultDiv = document.createElement('div');
+      resultDiv.className = `test-result ${success ? 'success' : 'error'}`;
+
+      let html = `
+        <h5>${success ? '✅' : '❌'} ${title}</h5>
+        <p>${details}</p>
+      `;
+
+      if (data) {
+        html += `<div class="code-display">${JSON.stringify(data, null, 2)}</div>`;
+      }
+
+      resultDiv.innerHTML = html;
+      resultsDiv.appendChild(resultDiv);
+    }
+
+    btnTest.addEventListener('click', async () => {
+      resultsDiv.innerHTML = '';
+      const username = testUsernameInput.value.trim();
+
+      if (!username) {
+        addResult('Error', false, 'Por favor ingresa un usuario');
+        return;
+      }
+
+      btnTest.disabled = true;
+      btnTest.textContent = 'Probando...';
+
+      try {
+        // Test 1: Check Firestore connection
+        addResult('Paso 1: Conexión a Firestore', true, 'Conectado exitosamente a Firestore');
+
+        // Test 2: Query usuario collection
+        let userDoc = null;
+        let userData = null;
+
+        try {
+          const usersRef = collection(db, "usuarios");
+          addResult('Paso 2: Referencia a colección "usuarios"', true, 'Referencia obtenida correctamente');
+
+          // Test 3: Execute query
+          const q = query(usersRef, where("usuario", "==", username));
+          addResult('Paso 3: Query creado', true, `Query: donde usuario == "${username}"`);
+
+          // Test 4: Execute getDocs
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+            addResult('Paso 4: Ejecutar query', false, `No se encontró ningún usuario con username "${username}"`, {
+              mensaje: 'El query se ejecutó pero no retornó resultados',
+              posibles_causas: [
+                'El usuario no existe en la base de datos',
+                'El campo "usuario" tiene un valor diferente',
+                'Las reglas de Firestore están bloqueando el query'
+              ]
+            });
+          } else {
+            addResult('Paso 4: Ejecutar query', true, `Usuario encontrado: ${querySnapshot.docs.length} resultado(s)`);
+
+            userDoc = querySnapshot.docs[0];
+            userData = userDoc.data();
+
+            // Test 5: Show user data
+            addResult('Paso 5: Datos del usuario', true, 'Datos obtenidos exitosamente', {
+              id: userDoc.id,
+              usuario: userData.usuario,
+              nombre: userData.nombre,
+              apellido: userData.apellido,
+              email: userData.email,
+              role: userData.role,
+              rol: userData.rol,
+              tipoRegistro: userData.tipoRegistro
+            });
+
+            // Test 6: Check role fields
+            const hasRoleProveedor = userData.role === 'proveedor';
+            const hasRolProveedor = userData.rol === 'proveedor';
+
+            if (!hasRoleProveedor && !hasRolProveedor) {
+              addResult('Paso 6: Validación de rol', false,
+                `El usuario NO tiene rol de proveedor. role="${userData.role}", rol="${userData.rol}"`,
+                {
+                  role: userData.role,
+                  rol: userData.rol,
+                  mensaje: 'Ninguno de los dos campos tiene el valor "proveedor"'
+                }
+              );
+            } else {
+              addResult('Paso 6: Validación de rol', true,
+                `El usuario tiene rol de proveedor correctamente configurado`,
+                {
+                  role: userData.role,
+                  rol: userData.rol,
+                  role_es_proveedor: hasRoleProveedor,
+                  rol_es_proveedor: hasRolProveedor
+                }
+              );
+
+              // Test 7: Check email field
+              if (!userData.email) {
+                addResult('Paso 7: Verificar email', false,
+                  'El usuario NO tiene un campo "email" configurado',
+                  {
+                    mensaje: 'Sin el campo email, no se puede autenticar con Firebase Auth',
+                    solucion: 'El administrador debe agregar un email al usuario'
+                  }
+                );
+              } else {
+                addResult('Paso 7: Verificar email', true,
+                  `Email encontrado: ${userData.email}`,
+                  {
+                    email: userData.email,
+                    mensaje: 'El usuario puede intentar autenticarse con Firebase Auth'
+                  }
+                );
+              }
+            }
+          }
+
+        } catch (error) {
+          addResult('Error en query de Firestore', false,
+            `Error al buscar usuario: ${error.message}`,
+            {
+              error_code: error.code,
+              error_message: error.message,
+              posibles_causas: [
+                'Las reglas de Firestore no permiten queries en la colección "usuarios"',
+                'Falta un índice en Firestore para el campo "usuario"',
+                'Problema de permisos o configuración de Firebase'
+              ]
+            }
+          );
+        }
+
+        // Test 8: Check current auth state
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          addResult('Estado de autenticación actual', true,
+            `Usuario actualmente autenticado: ${currentUser.email}`,
+            {
+              uid: currentUser.uid,
+              email: currentUser.email
+            }
+          );
+        } else {
+          addResult('Estado de autenticación actual', true,
+            'No hay usuario autenticado actualmente (esto es normal para este test)'
+          );
+        }
+
+      } catch (error) {
+        addResult('Error general', false, error.message, {
+          error_code: error.code,
+          error_stack: error.stack
+        });
+      } finally {
+        btnTest.disabled = false;
+        btnTest.textContent = 'Ejecutar Diagnóstico';
+      }
+    });
+  </script>
+
+</body>
+</html>
