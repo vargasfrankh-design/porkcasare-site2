@@ -332,6 +332,20 @@
         </div>
       </div>
 
+      <h3>Inventario por Producto</h3>
+      <table style="margin-bottom:30px;">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Total de Unidades</th>
+            <th>Unidades Vendidas</th>
+            <th>Unidades en Existencia</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="productInventoryTable"></tbody>
+      </table>
+
       <h3>Historial de Movimientos</h3>
       <table>
         <thead>
@@ -340,7 +354,7 @@
             <th>Tipo</th>
             <th>Producto</th>
             <th>Unidades</th>
-            <th>Stock Resultante</th>
+            <th>Existencias Restantes</th>
             <th>Notas</th>
           </tr>
         </thead>
@@ -404,6 +418,7 @@
             <th>Precio Dist.</th>
             <th>Precio Cliente</th>
             <th>Precio Rest.</th>
+            <th>Unidades Vendidas</th>
             <th>Destacado</th>
             <th>Estado</th>
             <th>Acciones</th>
@@ -446,10 +461,7 @@
           <label style="display:block;margin-bottom:6px;font-weight:500;">Producto</label>
           <select id="inventoryProductId" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
             <option value="">Seleccionar producto...</option>
-            <option value="paquete-inicio">Paquete Inicial – 15 kg</option>
-            <option value="chuletas-3kg">Chuletas – 3 kg</option>
-            <option value="costillas-3kg">Costillitas – 3 kg</option>
-            <option value="paticas-3kg">Paticas – 3 kg</option>
+            <!-- Products will be loaded dynamically from database -->
           </select>
         </div>
         <div style="margin-bottom:16px;">
@@ -478,6 +490,7 @@
         <option value="distribuidor">Distribuidor</option>
         <option value="cliente">Cliente</option>
         <option value="restaurante">Restaurante</option>
+        <option value="proveedor">Proveedor</option>
       </select>
       <div style="display:flex;gap:10px;justify-content:flex-end;">
         <button id="roleModalCancel" class="btn-secondary">Cancelar</button>
@@ -509,6 +522,20 @@
           <button type="submit" class="btn-success">Guardar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal para ver órdenes de un producto -->
+  <div id="productOrdersModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;overflow-y:auto;">
+    <div style="background:white;padding:30px;border-radius:8px;max-width:800px;width:90%;margin:40px auto;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:2px solid #e9ecef;padding-bottom:12px;">
+        <h3 id="productOrdersModalTitle" style="margin:0;">Órdenes del Producto</h3>
+        <button id="productOrdersModalClose" style="background:transparent;border:none;font-size:28px;cursor:pointer;color:#666;line-height:1;">&times;</button>
+      </div>
+
+      <div id="productOrdersContent">
+        <!-- Content will be loaded dynamically -->
+      </div>
     </div>
   </div>
 
@@ -811,7 +838,7 @@
       try {
         const ordersSnap = await getDocs(collection(db, "orders"));
         const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        
+
         // Fetch missing usernames for orders that don't have buyerUsername
         const usersCache = new Map();
         for (const order of orders) {
@@ -821,20 +848,46 @@
               if (userDoc.exists()) {
                 const userData = userDoc.data();
                 order.buyerUsername = userData.usuario || userData.nombre || 'Usuario desconocido';
-                usersCache.set(order.buyerUid, order.buyerUsername);
+                usersCache.set(order.buyerUid, {
+                  username: order.buyerUsername,
+                  nombre: userData.nombre || '',
+                  usuario: userData.usuario || ''
+                });
               }
             } catch (err) {
               console.warn('Error fetching user for order:', order.id, err);
             }
           } else if (order.buyerUid && usersCache.has(order.buyerUid)) {
-            order.buyerUsername = usersCache.get(order.buyerUid);
+            order.buyerUsername = usersCache.get(order.buyerUid).username;
           }
         }
-        
-        const pending = orders.filter(o => o.status === 'pending' || o.status === 'pending_delivery').sort((a, b) => a.id.localeCompare(b.id));
-        const confirmed = orders.filter(o => o.status === 'confirmed');
-        const rejected = orders.filter(o => o.status === 'rejected');
-        
+
+        // Filter out test users (names starting with "prueba")
+        const filteredOrders = orders.filter(order => {
+          if (order.buyerUid && usersCache.has(order.buyerUid)) {
+            const userData = usersCache.get(order.buyerUid);
+            const isTestUser = userData.nombre.toLowerCase().startsWith('prueba') ||
+                              userData.usuario.toLowerCase().startsWith('prueba');
+            if (isTestUser) {
+              console.log(`🧪 Orden excluida de usuario de prueba: ${userData.usuario || userData.nombre}`);
+            }
+            return !isTestUser;
+          }
+          // Also check buyerUsername if available
+          if (order.buyerUsername) {
+            const isTestUser = order.buyerUsername.toLowerCase().startsWith('prueba');
+            if (isTestUser) {
+              console.log(`🧪 Orden excluida de usuario de prueba: ${order.buyerUsername}`);
+            }
+            return !isTestUser;
+          }
+          return true; // Include if no user data found
+        });
+
+        const pending = filteredOrders.filter(o => o.status === 'pending' || o.status === 'pending_delivery').sort((a, b) => a.id.localeCompare(b.id));
+        const confirmed = filteredOrders.filter(o => o.status === 'confirmed');
+        const rejected = filteredOrders.filter(o => o.status === 'rejected');
+
         renderOrderTable('pendingOrdersTable', pending, true);
         renderOrderTable('confirmedOrdersTable', confirmed, false);
         renderOrderTable('rejectedOrdersTable', rejected, false);
@@ -1290,12 +1343,13 @@
     // Confirm role change
     roleModalConfirm.addEventListener('click', async () => {
       const selectedRole = roleSelect.value;
-      
+
       try {
         if (roleModalMode === 'single' && roleModalTarget) {
           const userRef = doc(db, "usuarios", roleModalTarget);
           await updateDoc(userRef, {
-            role: selectedRole
+            role: selectedRole,
+            rol: selectedRole
           });
           alert('Role actualizado exitosamente ✅');
         } else if (roleModalMode === 'bulk') {
@@ -1303,14 +1357,15 @@
           const updatePromises = usersSnap.docs.map(userDoc => {
             const userRef = doc(db, "usuarios", userDoc.id);
             return updateDoc(userRef, {
-              role: selectedRole
+              role: selectedRole,
+              rol: selectedRole
             });
           });
-          
+
           await Promise.all(updatePromises);
           alert(`Role actualizado para ${usersSnap.docs.length} usuarios ✅`);
         }
-        
+
         roleModal.style.display = 'none';
         roleModalTarget = null;
         await loadAllData();
@@ -1652,7 +1707,28 @@
     const inventoryModalCancel = document.getElementById('inventoryModalCancel');
     const addInventoryForm = document.getElementById('addInventoryForm');
 
-    addInventoryBtn.addEventListener('click', () => {
+    addInventoryBtn.addEventListener('click', async () => {
+      // Populate product dropdown with active products from database
+      const productSelect = document.getElementById('inventoryProductId');
+      productSelect.innerHTML = '<option value="">Seleccionar producto...</option>';
+
+      try {
+        const productsSnap = await getDocs(collection(db, "productos"));
+        const activeProducts = productsSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(p => !p.hidden && !p.deleted); // Only show active products
+
+        activeProducts.forEach(product => {
+          const option = document.createElement('option');
+          option.value = product.id;
+          option.textContent = product.nombre;
+          productSelect.appendChild(option);
+        });
+      } catch (err) {
+        console.error('Error loading products for inventory:', err);
+        alert('Error cargando productos: ' + err.message);
+      }
+
       inventoryModal.style.display = 'flex';
     });
 
@@ -1720,13 +1796,15 @@
         console.log("📦 Cargando inventario...");
         console.log("🔍 Usuario autenticado:", currentUser?.uid);
         console.log("🔍 Token de autenticación presente:", !!currentUser);
-        
-        const productNames = {
-          'paquete-inicio': 'Paquete Inicial – 15 kg',
-          'chuletas-3kg': 'Chuletas – 3 kg',
-          'costillas-3kg': 'Costillitas – 3 kg',
-          'paticas-3kg': 'Paticas – 3 kg'
-        };
+
+        // Dynamically load product names from database
+        const productNames = {};
+        const productsSnap = await getDocs(collection(db, "productos"));
+        productsSnap.docs.forEach(doc => {
+          const data = doc.data();
+          productNames[data.id] = data.nombre;
+        });
+        console.log("✅ Productos cargados:", Object.keys(productNames).length);
 
         try {
           console.log("📦 Test 1: Intentando leer documento de usuario...");
@@ -1749,16 +1827,72 @@
         });
 
         console.log("📦 Leyendo órdenes confirmadas...");
-        const ordersSnap = await getDocs(query(collection(db, 'orders'), where('status', '==', 'confirmed')));
-        
-        // Calculate total units sold based on product type and quantity
+        const ordersSnap = await getDocs(collection(db, 'orders'));
+        const allOrders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // Filter only confirmed orders and exclude test users
+        const confirmedOrders = allOrders.filter(order => order.status === 'confirmed');
+
+        // Fetch buyer information to filter out test users
+        const usersCache = new Map();
+        const filteredOrders = [];
+
+        for (const order of confirmedOrders) {
+          if (order.buyerUid) {
+            // Get user data from cache or fetch it
+            if (!usersCache.has(order.buyerUid)) {
+              try {
+                const userDoc = await getDoc(doc(db, "usuarios", order.buyerUid));
+                if (userDoc.exists()) {
+                  const userData = userDoc.data();
+                  usersCache.set(order.buyerUid, {
+                    nombre: userData.nombre || '',
+                    usuario: userData.usuario || ''
+                  });
+                }
+              } catch (err) {
+                console.warn('Error fetching user for order:', order.id, err);
+              }
+            }
+
+            // Check if user is a test user (starts with "prueba")
+            const userData = usersCache.get(order.buyerUid);
+            if (userData) {
+              const isTestUser = userData.nombre.toLowerCase().startsWith('prueba') ||
+                                userData.usuario.toLowerCase().startsWith('prueba');
+
+              if (!isTestUser) {
+                filteredOrders.push(order);
+              } else {
+                console.log(`🧪 Orden excluida de usuario de prueba: ${userData.usuario || userData.nombre}`);
+              }
+            } else {
+              // If we couldn't fetch user data, include the order to avoid data loss
+              filteredOrders.push(order);
+            }
+          } else {
+            // If no buyerUid, include the order
+            filteredOrders.push(order);
+          }
+        }
+
+        // Calculate total units sold and units sold per product
         let totalSoldUnits = 0;
-        ordersSnap.docs.forEach(doc => {
-          const orderData = doc.data();
-          const quantity = Number(orderData.quantity) || 1;
-          const productId = orderData.productId || '';
-          
-          // Calculate units based on product
+        const unitsSoldByProduct = {};
+
+        filteredOrders.forEach(order => {
+          const quantity = Number(order.quantity) || 1;
+          const productId = order.productId || '';
+
+          // Initialize product counter if needed
+          if (!unitsSoldByProduct[productId]) {
+            unitsSoldByProduct[productId] = 0;
+          }
+
+          // Add quantity to product counter
+          unitsSoldByProduct[productId] += quantity;
+
+          // Calculate units based on product for total
           if (productId === 'paquete-inicio') {
             // Paquete de 300,000 = 10 unidades
             totalSoldUnits += quantity * 10;
@@ -1770,8 +1904,8 @@
             totalSoldUnits += quantity;
           }
         });
-        
-        console.log("✅ Órdenes leídas:", ordersSnap.docs.length, "| Unidades vendidas:", totalSoldUnits);
+
+        console.log("✅ Órdenes leídas:", ordersSnap.docs.length, "| Órdenes confirmadas (sin prueba):", filteredOrders.length, "| Unidades vendidas:", totalSoldUnits);
 
         console.log("📦 Leyendo historial de inventario...");
         const historySnap = await getDocs(query(
@@ -1792,6 +1926,71 @@
         document.getElementById('totalStockUnits').textContent = totalStock;
         document.getElementById('totalSoldUnits').textContent = totalSoldUnits;
         document.getElementById('lastInventoryUpdate').textContent = lastUpdate;
+
+        // Populate product inventory table
+        const productInventoryTable = document.getElementById('productInventoryTable');
+        productInventoryTable.innerHTML = '';
+
+        // Create a map of inventory by product ID
+        const inventoryByProduct = {};
+        inventorySnap.docs.forEach(doc => {
+          const data = doc.data();
+          inventoryByProduct[data.productId] = data.stock || 0;
+        });
+
+        // Get all unique product IDs from both inventory and orders
+        const allProductIds = new Set([
+          ...Object.keys(inventoryByProduct),
+          ...Object.keys(unitsSoldByProduct)
+        ]);
+
+        if (allProductIds.size === 0) {
+          productInventoryTable.innerHTML = '<tr><td colspan="5" class="empty-state">No hay productos en el inventario</td></tr>';
+        } else {
+          // Create rows for each product
+          const productRows = [];
+          allProductIds.forEach(productId => {
+            const totalUnits = inventoryByProduct[productId] || 0;
+            const soldUnits = unitsSoldByProduct[productId] || 0;
+            const remainingUnits = totalUnits - soldUnits;
+            const productName = productNames[productId] || productId;
+
+            // Determine status
+            let statusHtml = '';
+            if (remainingUnits <= 0) {
+              statusHtml = '<span style="background:#dc3545;color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;">AGOTADO</span>';
+            } else if (remainingUnits < 10) {
+              statusHtml = '<span style="background:#fd7e14;color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;">STOCK BAJO</span>';
+            } else {
+              statusHtml = '<span style="background:#28a745;color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;">DISPONIBLE</span>';
+            }
+
+            productRows.push({
+              productId,
+              productName,
+              totalUnits,
+              soldUnits,
+              remainingUnits,
+              statusHtml
+            });
+          });
+
+          // Sort by product name
+          productRows.sort((a, b) => a.productName.localeCompare(b.productName));
+
+          // Render rows
+          productRows.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td><strong>${row.productName}</strong><br><small style="color:#999;">${row.productId}</small></td>
+              <td style="text-align:center;"><strong style="color:#007bff;font-size:16px;">${row.totalUnits}</strong></td>
+              <td style="text-align:center;"><strong style="color:#28a745;font-size:16px;">${row.soldUnits}</strong></td>
+              <td style="text-align:center;"><strong style="color:${row.remainingUnits < 0 ? '#dc3545' : '#6f42c1'};font-size:16px;">${row.remainingUnits}</strong></td>
+              <td style="text-align:center;">${row.statusHtml}</td>
+            `;
+            productInventoryTable.appendChild(tr);
+          });
+        }
 
         const historyTable = document.getElementById('inventoryHistoryTable');
         historyTable.innerHTML = '';
@@ -1861,12 +2060,97 @@
       try {
         const productsSnap = await getDocs(collection(db, "productos"));
         allProducts = productsSnap.docs.map(d => ({ docId: d.id, ...d.data() }));
-        
+
+        // Calculate units sold for each product
+        await calculateUnitsSold();
+
         renderProductsPreview();
         renderProductsManagementTable();
       } catch (err) {
         console.error('Error loading products:', err);
         allProducts = [];
+      }
+    }
+
+    async function calculateUnitsSold() {
+      try {
+        // Get all confirmed orders
+        const ordersSnap = await getDocs(collection(db, "orders"));
+        const allOrders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        console.log(`📊 Total de órdenes en la base de datos: ${allOrders.length}`);
+
+        // Filter only confirmed orders
+        const confirmedOrders = allOrders.filter(order => order.status === 'confirmed');
+
+        console.log(`✅ Órdenes confirmadas: ${confirmedOrders.length}`);
+
+        // Fetch buyer information to filter out test users
+        const usersCache = new Map();
+        const filteredOrders = [];
+
+        for (const order of confirmedOrders) {
+          if (order.buyerUid) {
+            // Get user data from cache or fetch it
+            if (!usersCache.has(order.buyerUid)) {
+              try {
+                const userDoc = await getDoc(doc(db, "usuarios", order.buyerUid));
+                if (userDoc.exists()) {
+                  const userData = userDoc.data();
+                  usersCache.set(order.buyerUid, {
+                    nombre: userData.nombre || '',
+                    usuario: userData.usuario || ''
+                  });
+                }
+              } catch (err) {
+                console.warn('Error fetching user for order:', order.id, err);
+              }
+            }
+
+            // Check if user is a test user (starts with "prueba")
+            const userData = usersCache.get(order.buyerUid);
+            if (userData) {
+              const isTestUser = userData.nombre.toLowerCase().startsWith('prueba') ||
+                                userData.usuario.toLowerCase().startsWith('prueba');
+
+              if (!isTestUser) {
+                filteredOrders.push(order);
+              } else {
+                console.log(`🧪 Orden excluida de usuario de prueba: ${userData.usuario || userData.nombre}`);
+              }
+            } else {
+              // If we couldn't fetch user data, include the order to avoid data loss
+              filteredOrders.push(order);
+            }
+          } else {
+            // If no buyerUid, include the order
+            filteredOrders.push(order);
+          }
+        }
+
+        console.log(`✅ Órdenes confirmadas (sin usuarios de prueba): ${filteredOrders.length}`);
+
+        // Calculate total units sold per product
+        const unitsSoldMap = {};
+        filteredOrders.forEach(order => {
+          const productId = order.productId;
+          const quantity = order.quantity || 0;
+
+          if (!unitsSoldMap[productId]) {
+            unitsSoldMap[productId] = 0;
+          }
+          unitsSoldMap[productId] += quantity;
+        });
+
+        // Log units sold per product for debugging
+        console.log('📦 Unidades vendidas por producto:', unitsSoldMap);
+
+        // Update allProducts with unitsSold
+        allProducts.forEach(product => {
+          product.unitsSold = unitsSoldMap[product.id] || 0;
+        });
+      } catch (err) {
+        console.error('Error calculating units sold:', err);
       }
     }
 
@@ -1920,9 +2204,9 @@
 
     function renderProductsManagementTable() {
       const table = document.getElementById('productsManagementTable');
-      
+
       if (allProducts.length === 0) {
-        table.innerHTML = '<tr><td colspan="9" class="empty-state">No hay productos registrados</td></tr>';
+        table.innerHTML = '<tr><td colspan="11" class="empty-state">No hay productos registrados</td></tr>';
         return;
       }
 
@@ -1940,8 +2224,14 @@
         if (prod.hidden) statusBadges.push('<span style="background:#6c757d;color:white;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">OCULTO</span>');
         if (prod.outOfStock) statusBadges.push('<span style="background:#fd7e14;color:white;padding:2px 6px;border-radius:3px;font-size:11px;">AGOTADO</span>');
         const statusHtml = statusBadges.length > 0 ? statusBadges.join('') : '<span style="color:#28a745;">✓ Activo</span>';
-        
+
         const featuredHtml = prod.featured ? '<span style="font-size:20px;" title="Producto destacado">⭐</span>' : '<span style="color:#ccc;">—</span>';
+
+        // Calculate units sold
+        const unitsSold = prod.unitsSold || 0;
+        const unitsSoldHtml = unitsSold > 0
+          ? `<button onclick="showProductOrders('${prod.id}', '${prod.nombre.replace(/'/g, "\\'")}', ${unitsSold})" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"><strong>${unitsSold}</strong> ${prod.unit || 'unidades'} 📋</button>`
+          : `<span style="color:#999;">${unitsSold} ${prod.unit || 'unidades'}</span>`;
 
         return `
           <tr>
@@ -1952,6 +2242,7 @@
             <td>${prod.precioDistribuidor ? formatCOP(prod.precioDistribuidor) : 'N/A'}</td>
             <td>${prod.precioCliente ? formatCOP(prod.precioCliente) : 'N/A'}</td>
             <td>${prod.precioRestaurante ? formatCOP(prod.precioRestaurante) : 'N/A'}</td>
+            <td style="text-align:center;">${unitsSoldHtml}</td>
             <td style="text-align:center;">${featuredHtml}</td>
             <td>${statusHtml}</td>
             <td>
@@ -2252,6 +2543,214 @@
       }
       return false;
     }
+
+    // Show product orders modal
+    window.showProductOrders = async function(productId, productName, totalUnits) {
+      try {
+        // Get the modal elements
+        const modal = document.getElementById('productOrdersModal');
+        const modalTitle = document.getElementById('productOrdersModalTitle');
+        const modalContent = document.getElementById('productOrdersContent');
+
+        // Set loading state
+        modalTitle.textContent = `Órdenes: ${productName}`;
+        modalContent.innerHTML = '<div style="text-align:center;padding:40px;"><span style="font-size:24px;">⏳</span><br>Cargando órdenes...</div>';
+        modal.style.display = 'flex';
+
+        // Fetch all confirmed orders for this product
+        const ordersSnap = await getDocs(query(
+          collection(db, 'orders'),
+          where('productId', '==', productId),
+          where('status', '==', 'confirmed')
+        ));
+
+        const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        console.log(`📦 Órdenes encontradas para ${productName}:`, orders.length);
+
+        if (orders.length === 0) {
+          modalContent.innerHTML = `
+            <div style="text-align:center;padding:40px;color:#666;">
+              <span style="font-size:48px;">📭</span>
+              <h3 style="margin:16px 0 8px 0;">No hay órdenes confirmadas</h3>
+              <p>No se encontraron órdenes confirmadas para este producto.</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Fetch user information for each order
+        const usersCache = new Map();
+        for (const order of orders) {
+          if (order.buyerUid && !usersCache.has(order.buyerUid)) {
+            try {
+              const userDoc = await getDoc(doc(db, 'usuarios', order.buyerUid));
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                usersCache.set(order.buyerUid, {
+                  nombre: userData.nombre || 'Sin nombre',
+                  usuario: userData.usuario || 'Sin usuario',
+                  email: userData.email || 'Sin email',
+                  role: userData.role || userData.tipoRegistro || 'distribuidor'
+                });
+              } else {
+                usersCache.set(order.buyerUid, {
+                  nombre: 'Usuario no encontrado',
+                  usuario: 'N/A',
+                  email: 'N/A',
+                  role: 'N/A'
+                });
+              }
+            } catch (err) {
+              console.error('Error fetching user:', order.buyerUid, err);
+              usersCache.set(order.buyerUid, {
+                nombre: 'Error al cargar',
+                usuario: 'N/A',
+                email: 'N/A',
+                role: 'N/A'
+              });
+            }
+          }
+        }
+
+        // Filter out test users (names starting with "prueba")
+        const filteredOrders = orders.filter(order => {
+          const userData = usersCache.get(order.buyerUid);
+          if (userData) {
+            const isTestUser = userData.nombre.toLowerCase().startsWith('prueba') ||
+                              userData.usuario.toLowerCase().startsWith('prueba');
+            if (isTestUser) {
+              console.log(`🧪 Orden excluida de usuario de prueba en modal: ${userData.usuario || userData.nombre}`);
+            }
+            return !isTestUser;
+          }
+          return true; // Include if no user data found
+        });
+
+        // Calculate total units
+        const calculatedTotal = filteredOrders.reduce((sum, order) => sum + (order.quantity || 1), 0);
+
+        // Build the content
+        modalContent.innerHTML = `
+          <div style="background:#f8f9fa;padding:16px;border-radius:8px;margin-bottom:20px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+              <div>
+                <div style="font-size:12px;color:#666;margin-bottom:4px;">Producto</div>
+                <div style="font-size:16px;font-weight:600;">${productName}</div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:#666;margin-bottom:4px;">Total Órdenes</div>
+                <div style="font-size:20px;font-weight:700;color:#667eea;">${filteredOrders.length}</div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:#666;margin-bottom:4px;">Total Unidades</div>
+                <div style="font-size:20px;font-weight:700;color:#764ba2;">${calculatedTotal}</div>
+              </div>
+            </div>
+            ${calculatedTotal !== totalUnits ? `
+              <div style="margin-top:12px;padding:12px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;font-size:13px;">
+                ⚠️ <strong>Nota:</strong> El total calculado (${calculatedTotal}) no coincide con el total mostrado (${totalUnits}).
+                Esto podría indicar una discrepancia en los datos.
+              </div>
+            ` : ''}
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+              <thead style="background:#f8f9fa;position:sticky;top:0;">
+                <tr>
+                  <th style="padding:12px 8px;text-align:left;border-bottom:2px solid #dee2e6;">Fecha</th>
+                  <th style="padding:12px 8px;text-align:left;border-bottom:2px solid #dee2e6;">ID Orden</th>
+                  <th style="padding:12px 8px;text-align:left;border-bottom:2px solid #dee2e6;">Distribuidor/Cliente</th>
+                  <th style="padding:12px 8px;text-align:left;border-bottom:2px solid #dee2e6;">Contacto</th>
+                  <th style="padding:12px 8px;text-align:center;border-bottom:2px solid #dee2e6;">Cantidad</th>
+                  <th style="padding:12px 8px;text-align:right;border-bottom:2px solid #dee2e6;">Precio Total</th>
+                  <th style="padding:12px 8px;text-align:center;border-bottom:2px solid #dee2e6;">Puntos</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredOrders.map((order, index) => {
+                  const userData = usersCache.get(order.buyerUid) || {
+                    nombre: order.buyerUsername || 'Desconocido',
+                    usuario: 'N/A',
+                    email: 'N/A',
+                    role: 'N/A'
+                  };
+
+                  const date = order.createdAt
+                    ? (order.createdAt.seconds
+                      ? new Date(order.createdAt.seconds * 1000).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+                      : new Date(order.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }))
+                    : 'N/A';
+
+                  const quantity = order.quantity || 1;
+                  const totalPrice = order.totalPrice || order.priceTotal || (order.price * quantity) || 0;
+                  const totalPoints = order.totalPoints || order.pointsTotal || (order.points * quantity) || 0;
+
+                  const roleColors = {
+                    'distribuidor': '#667eea',
+                    'cliente': '#28a745',
+                    'restaurante': '#fd7e14',
+                    'admin': '#dc3545'
+                  };
+                  const roleColor = roleColors[userData.role] || '#6c757d';
+
+                  const rowBg = index % 2 === 0 ? 'white' : '#f8f9fa';
+
+                  return `
+                    <tr style="background:${rowBg};border-bottom:1px solid #e9ecef;">
+                      <td style="padding:12px 8px;">${date}</td>
+                      <td style="padding:12px 8px;"><code style="font-size:11px;background:#e9ecef;padding:2px 6px;border-radius:3px;">${order.id.substring(0, 12)}...</code></td>
+                      <td style="padding:12px 8px;">
+                        <div style="font-weight:600;margin-bottom:2px;">${userData.nombre}</div>
+                        <div style="font-size:11px;color:#666;">@${userData.usuario}</div>
+                        <div style="font-size:10px;margin-top:2px;">
+                          <span style="background:${roleColor};color:white;padding:2px 6px;border-radius:10px;text-transform:uppercase;font-weight:600;">${userData.role}</span>
+                        </div>
+                      </td>
+                      <td style="padding:12px 8px;font-size:12px;color:#666;">${userData.email}</td>
+                      <td style="padding:12px 8px;text-align:center;"><strong style="font-size:16px;color:#764ba2;">${quantity}</strong></td>
+                      <td style="padding:12px 8px;text-align:right;font-weight:600;">$${totalPrice.toLocaleString()}</td>
+                      <td style="padding:12px 8px;text-align:center;"><strong style="color:#28a745;">${totalPoints}</strong></td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+              <tfoot style="background:#e9ecef;font-weight:700;">
+                <tr>
+                  <td colspan="4" style="padding:12px 8px;text-align:right;border-top:2px solid #dee2e6;">TOTALES:</td>
+                  <td style="padding:12px 8px;text-align:center;border-top:2px solid #dee2e6;color:#764ba2;font-size:18px;">${calculatedTotal}</td>
+                  <td style="padding:12px 8px;text-align:right;border-top:2px solid #dee2e6;">$${filteredOrders.reduce((sum, o) => sum + (o.totalPrice || o.priceTotal || (o.price * (o.quantity || 1)) || 0), 0).toLocaleString()}</td>
+                  <td style="padding:12px 8px;text-align:center;border-top:2px solid #dee2e6;color:#28a745;">${filteredOrders.reduce((sum, o) => sum + (o.totalPoints || o.pointsTotal || (o.points * (o.quantity || 1)) || 0), 0)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        `;
+
+      } catch (err) {
+        console.error('Error loading product orders:', err);
+        const modalContent = document.getElementById('productOrdersContent');
+        modalContent.innerHTML = `
+          <div style="text-align:center;padding:40px;color:#dc3545;">
+            <span style="font-size:48px;">❌</span>
+            <h3 style="margin:16px 0 8px 0;">Error al cargar órdenes</h3>
+            <p>${err.message}</p>
+          </div>
+        `;
+      }
+    };
+
+    // Close product orders modal
+    document.getElementById('productOrdersModalClose').addEventListener('click', () => {
+      document.getElementById('productOrdersModal').style.display = 'none';
+    });
+
+    document.getElementById('productOrdersModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('productOrdersModal')) {
+        document.getElementById('productOrdersModal').style.display = 'none';
+      }
+    });
 
     // Recalculate distributor points and commissions
     window.recalculateDistributor = async function(distributorId) {

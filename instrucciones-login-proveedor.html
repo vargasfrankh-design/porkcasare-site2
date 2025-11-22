@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instrucciones - Login de Proveedores</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #f5f9ff;
+      padding: 30px;
+    }
+    .instructions-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+    }
+    .step {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+    .step h4 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+    .code-box {
+      background: #2d3748;
+      color: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      margin: 10px 0;
+      overflow-x: auto;
+    }
+    .alert-custom {
+      border-left: 4px solid #ffc107;
+      background: #fff3cd;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .success-box {
+      border-left: 4px solid #28a745;
+      background: #d4edda;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .link-box {
+      background: #e7f3ff;
+      border: 2px solid #667eea;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .link-box a {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #667eea;
+      text-decoration: none;
+    }
+    .link-box a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="instructions-container">
+    <h1 class="text-center mb-4">🔧 Guía de Solución: Login de Proveedores</h1>
+
+    <div class="alert alert-info">
+      <strong>Problema reportado:</strong> El usuario "prueba" con rol de proveedor no puede iniciar sesión en el portal de proveedores, a pesar de tener el rol configurado correctamente.
+    </div>
+
+    <h2 class="mt-4 mb-3">Causas Posibles y Soluciones</h2>
+
+    <div class="step">
+      <h4>1. Verificar que el usuario existe y tiene los campos correctos</h4>
+      <p>El usuario "prueba" debe tener los siguientes campos en Firestore:</p>
+      <div class="code-box">
+{
+  "usuario": "prueba",
+  "email": "prueba@ejemplo.com",  // ⚠️ DEBE existir
+  "role": "proveedor",            // ⚠️ Debe ser exactamente "proveedor"
+  "rol": "proveedor",             // ⚠️ Debe ser exactamente "proveedor"
+  "nombre": "Prueba",
+  "apellido": "Test"
+}
+      </div>
+
+      <div class="alert-custom">
+        <strong>⚠️ Campo "email" es obligatorio:</strong> Sin un email válido, el usuario NO puede autenticarse con Firebase Auth.
+      </div>
+    </div>
+
+    <div class="step">
+      <h4>2. Verificar que el usuario existe en Firebase Authentication</h4>
+      <p>El usuario debe estar registrado en <strong>Firebase Authentication</strong> (no solo en Firestore):</p>
+      <ol>
+        <li>Ve a la consola de Firebase: <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a></li>
+        <li>Selecciona el proyecto "porkcasare-915ff"</li>
+        <li>Ve a "Authentication" → "Users"</li>
+        <li>Busca el email del usuario "prueba"</li>
+        <li>Si NO existe, debes crearlo:
+          <ul>
+            <li>Click en "Add user"</li>
+            <li>Email: el mismo que está en Firestore</li>
+            <li>Password: una contraseña temporal</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+
+    <div class="step">
+      <h4>3. Verificar que los campos "role" y "rol" tienen el valor correcto</h4>
+      <p>Los valores deben ser exactamente "proveedor" (en minúsculas, sin espacios adicionales):</p>
+
+      <div class="alert-custom">
+        <strong>❌ Valores incorrectos:</strong>
+        <ul>
+          <li>"Proveedor" (con mayúscula)</li>
+          <li>"provedor" (sin la segunda 'e')</li>
+          <li>"proveedor " (con espacio al final)</li>
+          <li>"PROVEEDOR" (en mayúsculas)</li>
+        </ul>
+      </div>
+
+      <div class="success-box">
+        <strong>✅ Valor correcto:</strong> "proveedor" (minúsculas, sin espacios)
+      </div>
+    </div>
+
+    <div class="step">
+      <h4>4. Verificar reglas de Firestore</h4>
+      <p>Las reglas de Firestore deben permitir lectura pública de la colección "usuarios". El archivo <code>firestore.rules</code> debe tener:</p>
+      <div class="code-box">
+match /usuarios/{userId} {
+  allow read: if true;
+  allow create: if true;
+  allow update, delete: if isOwner(userId) || isAdmin();
+}
+      </div>
+      <p class="mt-2">✅ Esta regla ya está configurada correctamente en el proyecto.</p>
+    </div>
+
+    <h2 class="mt-5 mb-3">Herramientas de Diagnóstico</h2>
+
+    <div class="link-box">
+      <p class="mb-2">Use esta herramienta para diagnosticar el problema exacto:</p>
+      <a href="/diagnostico-login.html" target="_blank">🔍 Diagnóstico de Login</a>
+    </div>
+
+    <div class="link-box">
+      <p class="mb-2">Use esta herramienta para corregir usuarios con roles mal configurados:</p>
+      <a href="/diagnostico-proveedores.html" target="_blank">🔧 Diagnóstico de Roles de Proveedores</a>
+    </div>
+
+    <h2 class="mt-5 mb-3">Mejoras Implementadas</h2>
+
+    <div class="step">
+      <h4>✅ Login mejorado con soporte para Email y Usuario</h4>
+      <p>El sistema de login ahora acepta tanto el nombre de usuario como el email:</p>
+      <ul>
+        <li>Puede ingresar "prueba" (username)</li>
+        <li>O puede ingresar "prueba@ejemplo.com" (email)</li>
+        <li>Ambos métodos buscarán al usuario en Firestore</li>
+      </ul>
+    </div>
+
+    <div class="step">
+      <h4>✅ Validación de roles insensible a mayúsculas/minúsculas</h4>
+      <p>El sistema ahora acepta:</p>
+      <ul>
+        <li>"proveedor" (minúsculas)</li>
+        <li>"Proveedor" (con mayúscula)</li>
+        <li>"PROVEEDOR" (mayúsculas)</li>
+      </ul>
+      <p>Todos serán reconocidos como válidos.</p>
+    </div>
+
+    <div class="step">
+      <h4>✅ Mejor manejo de errores</h4>
+      <p>El sistema ahora muestra mensajes de error más detallados:</p>
+      <ul>
+        <li>Identifica si el problema es de Firestore o Firebase Auth</li>
+        <li>Muestra mensajes específicos según el tipo de error</li>
+        <li>Los errores se registran en la consola del navegador para depuración</li>
+      </ul>
+    </div>
+
+    <h2 class="mt-5 mb-3">Pasos Recomendados para Resolver el Problema</h2>
+
+    <div class="step">
+      <h4>Paso 1: Ejecutar el diagnóstico</h4>
+      <ol>
+        <li>Abrir <a href="/diagnostico-login.html" target="_blank">diagnostico-login.html</a></li>
+        <li>Ingresar "prueba" en el campo de usuario</li>
+        <li>Click en "Ejecutar Diagnóstico"</li>
+        <li>Revisar los resultados para identificar el problema exacto</li>
+      </ol>
+    </div>
+
+    <div class="step">
+      <h4>Paso 2: Corregir roles si es necesario</h4>
+      <ol>
+        <li>Abrir <a href="/diagnostico-proveedores.html" target="_blank">diagnostico-proveedores.html</a></li>
+        <li>Iniciar sesión como administrador</li>
+        <li>Click en "Ejecutar Diagnóstico"</li>
+        <li>Si aparece el usuario "prueba" con problemas, click en "Corregir Este Usuario"</li>
+      </ol>
+    </div>
+
+    <div class="step">
+      <h4>Paso 3: Verificar Firebase Authentication</h4>
+      <ol>
+        <li>Ir a <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a></li>
+        <li>Seleccionar proyecto "porkcasare-915ff"</li>
+        <li>Ir a "Authentication" → "Users"</li>
+        <li>Buscar el email del usuario "prueba"</li>
+        <li>Si no existe, crear el usuario con el mismo email que tiene en Firestore</li>
+      </ol>
+    </div>
+
+    <div class="step">
+      <h4>Paso 4: Intentar login nuevamente</h4>
+      <ol>
+        <li>Ir a <a href="/login-proveedor.html" target="_blank">login-proveedor.html</a></li>
+        <li>Ingresar "prueba" o el email del usuario</li>
+        <li>Ingresar la contraseña</li>
+        <li>Si hay errores, abrir la consola del navegador (F12) para ver los detalles</li>
+      </ol>
+    </div>
+
+    <h2 class="mt-5 mb-3">Problemas Comunes y Soluciones</h2>
+
+    <table class="table table-bordered mt-3">
+      <thead>
+        <tr>
+          <th>Error</th>
+          <th>Causa</th>
+          <th>Solución</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Usuario no encontrado</td>
+          <td>El campo "usuario" no existe o tiene un valor diferente</td>
+          <td>Verificar en Firestore que el campo "usuario" sea exactamente "prueba"</td>
+        </tr>
+        <tr>
+          <td>Acceso denegado. Solo proveedores...</td>
+          <td>Los campos "role" y "rol" no tienen el valor "proveedor"</td>
+          <td>Usar la herramienta de diagnóstico de roles para corregirlo</td>
+        </tr>
+        <tr>
+          <td>Contraseña incorrecta</td>
+          <td>La contraseña en Firebase Auth no coincide</td>
+          <td>Resetear la contraseña en Firebase Console o crear el usuario nuevamente</td>
+        </tr>
+        <tr>
+          <td>Usuario no encontrado en Firebase Auth</td>
+          <td>El usuario existe en Firestore pero no en Authentication</td>
+          <td>Crear el usuario en Firebase Authentication con el mismo email</td>
+        </tr>
+        <tr>
+          <td>Error de permisos en Firestore</td>
+          <td>Las reglas de Firestore están bloqueando la lectura</td>
+          <td>Verificar que firestore.rules tenga "allow read: if true" para usuarios</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-success mt-4">
+      <h5>✅ Mejoras Completadas</h5>
+      <p>El sistema de login ha sido mejorado con:</p>
+      <ul class="mb-0">
+        <li>Soporte para login con email o username</li>
+        <li>Validación de roles insensible a mayúsculas/minúsculas</li>
+        <li>Mejor manejo de errores con mensajes descriptivos</li>
+        <li>Logging detallado en consola para depuración</li>
+        <li>Herramientas de diagnóstico para identificar problemas rápidamente</li>
+      </ul>
+    </div>
+
+    <div class="text-center mt-5">
+      <a href="/login-proveedor.html" class="btn btn-primary btn-lg">Ir al Login de Proveedores</a>
+    </div>
+  </div>
+
+</body>
+</html>

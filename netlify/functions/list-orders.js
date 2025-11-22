@@ -40,12 +40,20 @@ exports.handler = async (event) => {
         return {
           id: d.id,
           ...data,
-          buyerUsername: buyerData.usuario || data.buyerUid
+          buyerUsername: buyerData.usuario || data.buyerUid,
+          buyerNombre: buyerData.nombre || ''
         };
       })
     );
 
-    return { statusCode: 200, body: JSON.stringify({ orders }) };
+    // Filter out test users (names starting with "prueba")
+    const filteredOrders = orders.filter(order => {
+      const isTestUser = (order.buyerUsername && order.buyerUsername.toLowerCase().startsWith('prueba')) ||
+                        (order.buyerNombre && order.buyerNombre.toLowerCase().startsWith('prueba'));
+      return !isTestUser;
+    });
+
+    return { statusCode: 200, body: JSON.stringify({ orders: filteredOrders }) };
   } catch (err) {
     console.error(err);
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };

@@ -20,6 +20,15 @@ service cloud.firestore {
              );
     }
 
+    // Proveedor/Supplier con soporte a 'rol' y 'role'
+    function isSupplier() {
+      return isAuthenticated() &&
+             (
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'proveedor' ||
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == 'proveedor'
+             );
+    }
+
     // ========== Payouts Collection (Solicitudes de Cobro) ==========
     match /payouts/{payoutId} {
       allow create: if isAuthenticated()
@@ -66,7 +75,7 @@ service cloud.firestore {
                     && request.auth.uid == request.resource.data.buyerUid;
 
       allow read: if isAuthenticated() &&
-                  (request.auth.uid == resource.data.buyerUid || isAdmin());
+                  (request.auth.uid == resource.data.buyerUid || isAdmin() || isSupplier());
 
       allow update: if isAuthenticated() &&
                     (request.auth.uid == resource.data.buyerUid || isAdmin());

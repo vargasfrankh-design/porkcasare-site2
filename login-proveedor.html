@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proveedor - Login</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .login-box {
+      background: #fff;
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0px 10px 40px rgba(0,0,0,0.3);
+      text-align: center;
+      width: 400px;
+      max-width: 90%;
+    }
+
+    .login-box img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      margin-bottom: 1rem;
+      object-fit: cover;
+    }
+
+    .login-box h2 {
+      color: #2d3748;
+      margin-bottom: 0.5rem;
+      font-size: 1.8rem;
+    }
+
+    .login-box p {
+      color: #6c757d;
+      margin-bottom: 2rem;
+      font-size: 1rem;
+    }
+
+    .input-group {
+      display: flex;
+      align-items: center;
+      margin: 1rem 0;
+      background: #f8f9fa;
+      padding: 0.8rem;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .input-group:focus-within {
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .input-group span {
+      font-size: 1.4rem;
+      margin-right: 10px;
+      color: #667eea;
+    }
+
+    .input-group input {
+      border: none;
+      background: none;
+      outline: none;
+      flex: 1;
+      font-size: 1rem;
+      color: #2d3748;
+    }
+
+    .input-group input::placeholder {
+      color: #adb5bd;
+    }
+
+    button {
+      width: 100%;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1.1rem;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .login-box a {
+      display: block;
+      margin-top: 1.5rem;
+      font-size: 0.95rem;
+      color: #667eea;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .login-box a:hover {
+      text-decoration: underline;
+    }
+
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      display: none;
+      font-size: 0.9rem;
+      border: 1px solid #f5c6cb;
+    }
+
+    @media (max-width: 500px) {
+      .login-box {
+        padding: 2rem;
+      }
+
+      .login-box h2 {
+        font-size: 1.5rem;
+      }
+
+      .login-box img {
+        width: 80px;
+        height: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <img src="/images/productos/inicio.jpg" alt="PorKCasare Logo">
+    <h2>Portal de Proveedores</h2>
+    <p>Ingresa tus credenciales para acceder</p>
+
+    <form id="loginForm">
+      <div class="input-group">
+        <span>👤</span>
+        <input type="text" id="username" placeholder="Usuario o Email" required autocomplete="username">
+      </div>
+
+      <div class="input-group">
+        <span>🔒</span>
+        <input type="password" id="password" placeholder="Contraseña" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" id="loginBtn">Iniciar Sesión</button>
+
+      <div id="errorMessage" class="error-message"></div>
+    </form>
+
+    <a href="/">← Volver al inicio</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+    import { getFirestore, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyA" + "jj3AluF19BBbPfafimJoK7SJbdMrvhWY",
+      authDomain: "porkcasare-915ff.firebaseapp.com",
+      projectId: "porkcasare-915ff",
+      storageBucket: "porkcasare-915ff.firebasestorage.app",
+      messagingSenderId: "147157887309",
+      appId: "1:147157887309:web:5c6db76a20474f172def04",
+      measurementId: "G-X0DJ5Y1S6X"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const errorMessage = document.getElementById('errorMessage');
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+    }
+
+    function hideError() {
+      errorMessage.style.display = 'none';
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        showError('Por favor, completa todos los campos');
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Iniciando sesión...';
+
+      try {
+        let userData = null;
+        let userEmail = null;
+
+        // Check if input is an email or username
+        const isEmail = username.includes('@');
+
+        if (isEmail) {
+          // Try to find user by email
+          const usersRef = collection(db, "usuarios");
+          const qEmail = query(usersRef, where("email", "==", username));
+          const emailSnapshot = await getDocs(qEmail);
+
+          if (!emailSnapshot.empty) {
+            userData = emailSnapshot.docs[0].data();
+            userEmail = userData.email;
+          }
+        } else {
+          // Try to find user by username
+          const usersRef = collection(db, "usuarios");
+          const qUsername = query(usersRef, where("usuario", "==", username));
+          const usernameSnapshot = await getDocs(qUsername);
+
+          if (!usernameSnapshot.empty) {
+            userData = usernameSnapshot.docs[0].data();
+            userEmail = userData.email;
+          }
+        }
+
+        // If user not found
+        if (!userData || !userEmail) {
+          showError('Usuario no encontrado. Verifica tus credenciales.');
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Iniciar Sesión';
+          return;
+        }
+
+        // Check if user is a supplier (case-insensitive comparison)
+        const userRole = (userData.role || '').toLowerCase();
+        const userRol = (userData.rol || '').toLowerCase();
+
+        if (userRole !== 'proveedor' && userRol !== 'proveedor') {
+          showError('Acceso denegado. Solo proveedores pueden acceder a este portal.');
+          console.error('Role check failed:', { role: userData.role, rol: userData.rol });
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Iniciar Sesión';
+          return;
+        }
+
+        // Sign in with email and password
+        const userCredential = await signInWithEmailAndPassword(auth, userEmail, password);
+
+        // Redirect to supplier portal
+        window.location.href = '/proveedor-portal.html';
+
+      } catch (error) {
+        console.error('Login error:', error);
+        console.error('Error details:', { code: error.code, message: error.message });
+
+        let errorMsg = 'Error al iniciar sesión';
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+          errorMsg = 'Contraseña incorrecta';
+        } else if (error.code === 'auth/user-not-found') {
+          errorMsg = 'Usuario no encontrado en Firebase Auth';
+        } else if (error.code === 'auth/too-many-requests') {
+          errorMsg = 'Demasiados intentos fallidos. Intenta más tarde';
+        } else if (error.code === 'auth/network-request-failed') {
+          errorMsg = 'Error de conexión. Verifica tu internet';
+        } else if (error.code === 'permission-denied') {
+          errorMsg = 'Error de permisos en Firestore. Contacta al administrador.';
+        } else {
+          errorMsg = `Error: ${error.message}`;
+        }
+
+        showError(errorMsg);
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Iniciar Sesión';
+      }
+    });
+  </script>
+</body>
+</html>
