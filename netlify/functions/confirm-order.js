@@ -1,47 +1,53 @@
 
 // netlify/functions/confirm-order.js
-// Reglas implementadas:
-// - POINT_VALUE = 2800 pesos
-// - Sistema base: 3 kg = 10 puntos = 60,000 COP | 1 kg = 10/3 ≈ 3.333 puntos
-// 
-// CLIENTES:
-//   * Pagan 25% más que precio distribuidor: 60,000 × 1.25 = 75,000 por 3kg
-//   * No generan puntos ni comisiones
-// 
-// DISTRIBUIDORES:
-//   * Compran paquete de 3 kg = 10 puntos = 60,000 COP
-//   * Comisiones: Cada uno de los 5 uplines recibe 1 punto
-//   * Pago por upline = 1 × 2,800 = 2,800 COP
-//   * Pago total sistema = 5 × 2,800 = 14,000 COP
-// 
-// RESTAURANTES:
-//   * Compran kilos arbitrarios (ejemplo: 2 kg)
-//   * Conversión: 2 kg × 10/3 = 6.6667 puntos
-//   * Cada upline recibe 0.05 puntos por cada punto generado
-//   * Ejemplo 2kg: 6.6667 × 0.05 = 0.3333 puntos por upline
-//   * Pago por upline = 0.3333 × 2,800 ≈ 933 COP
-//   * Pago total sistema = 5 × 933 ≈ 4,665 COP
-// 
-// FÓRMULAS UNIVERSALES:
-//   * Puntos totales = kilos × 10/3
-//   * Puntos por upline (restaurantes) = puntos_totales × 0.05
-//   * Puntos por upline (distribuidores) = 1 punto fijo
-//   * Pago por upline = puntos_por_upline × 2,800
-//   * Pago total sistema = pago_por_upline × 5
-// 
-// SISTEMA DE 25 PUNTOS PARA PRIMERA COMPRA GRANDE:
-//   * Se activa SOLO en la PRIMERA compra del usuario
-//   * Y SOLO si esa primera compra es >= 50 puntos
-//   * Distribución de 25 puntos por cada paquete de 50 puntos:
-//     - 21 puntos al patrocinador directo (bono inicio rápido + punto grupal)
-//     - 4 puntos a los 4 niveles arriba del patrocinador (1 punto por nivel)
-//   * Ejemplo: Primera compra de 50 puntos = $70,000 total distribuidos
-//     - Patrocinador directo: 21 × $2,800 = $58,800
-//     - 4 niveles superiores: 1 × $2,800 = $2,800 cada uno ($11,200 total)
-//   * Ejemplo: Primera compra de 100 puntos = $140,000 total distribuidos
-//     - Patrocinador directo: 42 × $2,800 = $117,600
-//     - 4 niveles superiores: 2 × $2,800 = $5,600 cada uno ($22,400 total)
-// 
+//
+// SISTEMA DE BONOS Y COMISIONES - PorKCasare
+//
+// CONFIGURACIÓN BASE:
+// - POINT_VALUE = 2,800 COP por punto
+// - Cada producto tiene su propio precio y puntos configurados manualmente por el administrador
+// - No existe un precio base universal
+//
+// SISTEMA DE COMISIONES:
+//
+// 1. CLIENTES:
+//    * Pagan el precio de cliente configurado por el administrador
+//    * Generan comisión por diferencia de precio SOLO al patrocinador directo
+//    * Comisión = (Precio Cliente - Precio Distribuidor)
+//    * Esta diferencia se convierte a puntos: diferencia / 2,800
+//    * El patrocinador recibe la comisión en COP y en groupPoints
+//    * Si el cliente no tiene patrocinador o el patrocinador no es distribuidor, no hay comisión
+//    * Registro: "Comisión por diferencia de precio"
+//
+// 2. DISTRIBUIDORES:
+//    * Pagan el precio de distribuidor configurado
+//    * DISTRIBUIDORES NORMALES (compras subsecuentes):
+//      - Cada uno de los 5 uplines recibe el 10% del valor total
+//      - Valor total = puntos × 2,800 COP
+//      - Comisión por upline = valor_total × 0.10
+//      - Se convierte a puntos: comisión / 2,800
+//    * QUICK START BONUS (primera compra >= 50 puntos):
+//      - Sistema de 25 puntos por cada paquete de 50
+//      - Patrocinador directo: 21 puntos por paquete
+//      - 4 niveles superiores: 1 punto cada uno por paquete
+//      - Solo se paga UNA VEZ en la primera compra grande
+//
+// 3. RESTAURANTES:
+//    * Compran por kilos con precio y puntos por kilo configurados
+//    * Puntos totales = kilos × puntos_por_kilo del producto
+//    * El 5% de los puntos totales se distribuye a cada upline (máximo 5)
+//    * Cada upline recibe el 5% COMPLETO (no se divide entre ellos)
+//    * Ejemplo: 18 kg × 3.333 pts/kg = 60 pts totales
+//      - 5% de 60 = 3 puntos por upline
+//      - En COP: 3 × 2,800 = 8,400 COP por upline
+//      - Total: 5 uplines × 8,400 = 42,000 COP
+//    * Registro: "Comisión por compra de restaurante"
+//
+// CONTROL DE DUPLICADOS:
+// - Campo groupPointsDistributed marca si ya se procesó la orden
+// - Todas las operaciones se realizan al confirmar la orden
+// - Transacciones garantizan consistencia
+//
 // - Función para Netlify / Firestore (firebase-admin).
 
 const admin = require('firebase-admin');
@@ -57,7 +63,8 @@ const db = admin.firestore();
 
 // CONFIG
 const POINT_VALUE = 2800;
-const COMMISSION_RATE = 0.10; // 10% commission
+const COMMISSION_RATE = 0.10; // 10% commission for distributors
+const RESTAURANT_COMMISSION_RATE = 0.05; // 5% of total points to each upline for restaurants
 const MAX_LEVELS_NORMAL = 5;
 const MAX_LEVELS_QUICK_START = 4;
 const QUICK_START_DIRECT_POINTS = 21;
@@ -475,7 +482,210 @@ exports.handler = async (event) => {
       // Check buyer type to determine commission rate
       const buyerDoc = await db.collection('usuarios').doc(buyerUid).get();
       const buyerDataForType = buyerDoc.exists ? buyerDoc.data() : {};
-      
+      const buyerType = (buyerDataForType.tipoRegistro || buyerDataForType.role || 'distribuidor').toLowerCase();
+
+      console.log(`🔍 Tipo de comprador: ${buyerType}`);
+
+      // NEW LOGIC FOR CLIENTE: Pay price difference to direct sponsor only
+      if (buyerType === 'cliente') {
+        console.log(`💰 Procesando comisión por diferencia de precio para CLIENTE`);
+
+        // Get product data to calculate price difference
+        const productId = order.productId || order.product?.id || null;
+        if (!productId) {
+          console.warn(`⚠️ No se encontró productId en la orden para calcular diferencia de precio`);
+          await orderRef.update({
+            groupPointsDistributed: true,
+            groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
+            distributionNote: 'Cliente sin productId para calcular diferencia'
+          });
+          return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada (cliente sin productId)' }) };
+        }
+
+        // Get product from Firestore
+        const productsSnap = await db.collection('productos').where('id', '==', productId).limit(1).get();
+        if (productsSnap.empty) {
+          console.warn(`⚠️ Producto ${productId} no encontrado en Firestore`);
+          await orderRef.update({
+            groupPointsDistributed: true,
+            groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
+            distributionNote: 'Cliente - producto no encontrado'
+          });
+          return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada (producto no encontrado)' }) };
+        }
+
+        const productData = productsSnap.docs[0].data();
+        const precioCliente = productData.precioCliente || 0;
+        const precioDistribuidor = productData.precioDistribuidor || 0;
+
+        if (precioCliente === 0 || precioDistribuidor === 0) {
+          console.warn(`⚠️ Precios no configurados: cliente=${precioCliente}, distribuidor=${precioDistribuidor}`);
+          await orderRef.update({
+            groupPointsDistributed: true,
+            groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
+            distributionNote: 'Cliente - precios no configurados'
+          });
+          return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada (precios no configurados)' }) };
+        }
+
+        const quantity = Number(order.quantity || order.cantidad || 1);
+        const priceDifference = (precioCliente - precioDistribuidor) * quantity;
+
+        if (priceDifference <= 0) {
+          console.log(`ℹ️ No hay diferencia de precio positiva: ${priceDifference} COP`);
+          await orderRef.update({
+            groupPointsDistributed: true,
+            groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
+            distributionNote: 'Cliente - sin diferencia de precio'
+          });
+          return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada (sin diferencia de precio)' }) };
+        }
+
+        // Convert to points
+        const commissionPoints = priceDifference / POINT_VALUE;
+
+        console.log(`💰 Diferencia de precio: ${priceDifference} COP = ${commissionPoints.toFixed(2)} puntos`);
+        console.log(`   Precio cliente: ${precioCliente} COP × ${quantity} = ${precioCliente * quantity} COP`);
+        console.log(`   Precio distribuidor: ${precioDistribuidor} COP × ${quantity} = ${precioDistribuidor * quantity} COP`);
+
+        // Pay to direct sponsor only if exists and is a distributor
+        if (!directSponsorCode) {
+          console.log(`ℹ️ Cliente sin patrocinador - no hay comisión`);
+          await orderRef.update({
+            groupPointsDistributed: true,
+            groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
+            distributionNote: 'Cliente sin patrocinador'
+          });
+          return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada (cliente sin patrocinador)' }) };
+        }
+
+        const sponsor = await findUserByUsername(directSponsorCode);
+        if (!sponsor) {
+          console.warn(`⚠️ Patrocinador ${directSponsorCode} no encontrado`);
+          await orderRef.update({
+            groupPointsDistributed: true,
+            groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
+            distributionNote: 'Patrocinador no encontrado'
+          });
+          return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada (patrocinador no encontrado)' }) };
+        }
+
+        const sponsorRole = (sponsor.data.tipoRegistro || sponsor.data.role || '').toLowerCase();
+        if (sponsorRole !== 'distribuidor') {
+          console.log(`ℹ️ Patrocinador ${directSponsorCode} no es distribuidor (rol: ${sponsorRole}) - no hay comisión`);
+          await orderRef.update({
+            groupPointsDistributed: true,
+            groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
+            distributionNote: 'Patrocinador no es distribuidor'
+          });
+          return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada (patrocinador no es distribuidor)' }) };
+        }
+
+        // Pay commission to direct sponsor
+        const sponsorRef = db.collection('usuarios').doc(sponsor.id);
+        const now = Date.now();
+
+        await sponsorRef.update({
+          groupPoints: admin.firestore.FieldValue.increment(commissionPoints),
+          balance: admin.firestore.FieldValue.increment(priceDifference),
+          history: admin.firestore.FieldValue.arrayUnion({
+            action: `Comisión por diferencia de precio - compra de ${buyerUsername} (${quantity}× ${productData.nombre || 'producto'})`,
+            amount: priceDifference,
+            points: commissionPoints,
+            orderId,
+            date: new Date().toISOString(),
+            timestamp: now,
+            originMs: now,
+            type: 'client_price_difference',
+            fromUser: buyerUsername
+          })
+        });
+
+        console.log(`✅ Comisión pagada a patrocinador directo ${directSponsorCode}: ${priceDifference} COP (${commissionPoints.toFixed(2)} puntos)`);
+
+        await orderRef.update({
+          groupPointsDistributed: true,
+          groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
+          distributionNote: `Cliente - comisión pagada: ${priceDifference} COP`
+        });
+
+        return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada y comisión de cliente procesada' }) };
+      }
+
+      // NEW LOGIC FOR RESTAURANTE: Distribute 5% of total points to each upline
+      if (buyerType === 'restaurante') {
+        console.log(`🍽️ Procesando comisión de RESTAURANTE - 5% de puntos totales a cada upline`);
+
+        const totalPoints = points;
+        const commissionPerUpline = totalPoints * RESTAURANT_COMMISSION_RATE;
+        const commissionAmountPerUpline = Math.round(commissionPerUpline * POINT_VALUE);
+
+        console.log(`📊 Restaurante - Puntos totales: ${totalPoints}`);
+        console.log(`   Comisión por upline (5%): ${commissionPerUpline.toFixed(2)} puntos = ${commissionAmountPerUpline} COP`);
+        console.log(`   Total a distribuir: ${commissionAmountPerUpline * MAX_LEVELS_NORMAL} COP (a ${MAX_LEVELS_NORMAL} uplines)`);
+
+        if (!directSponsorCode) {
+          console.warn(`⚠️ Restaurante sin patrocinador - no se puede distribuir comisión`);
+          await orderRef.update({
+            groupPointsDistributed: true,
+            groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
+            distributionNote: 'Restaurante sin patrocinador'
+          });
+          return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada (restaurante sin patrocinador)' }) };
+        }
+
+        let currentSponsorCode = directSponsorCode;
+        let distributedCount = 0;
+
+        for (let level = 0; level < MAX_LEVELS_NORMAL; level++) {
+          if (!currentSponsorCode) {
+            console.log(`⏹️ Detenido en nivel ${level + 1}: no hay más patrocinadores`);
+            break;
+          }
+
+          const sponsor = await findUserByUsername(currentSponsorCode);
+          if (!sponsor) {
+            console.warn(`⚠️ Nivel ${level + 1}: No se encontró usuario ${currentSponsorCode}`);
+            break;
+          }
+
+          const sponsorRef = db.collection('usuarios').doc(sponsor.id);
+          const now = Date.now();
+
+          await sponsorRef.update({
+            groupPoints: admin.firestore.FieldValue.increment(commissionPerUpline),
+            balance: admin.firestore.FieldValue.increment(commissionAmountPerUpline),
+            history: admin.firestore.FieldValue.arrayUnion({
+              action: `Comisión por compra de restaurante (5% = ${commissionPerUpline.toFixed(2)} pts) - ${buyerUsername} - Nivel ${level + 1}`,
+              amount: commissionAmountPerUpline,
+              points: commissionPerUpline,
+              orderId,
+              date: new Date().toISOString(),
+              timestamp: now,
+              originMs: now,
+              type: 'restaurant_commission',
+              fromUser: buyerUsername
+            })
+          });
+
+          console.log(`✅ Nivel ${level + 1} (${sponsor.data.usuario}): ${commissionAmountPerUpline} COP (${commissionPerUpline.toFixed(2)} puntos)`);
+
+          distributedCount++;
+          currentSponsorCode = sponsor.data.patrocinador || null;
+        }
+
+        console.log(`✅ Comisión de restaurante distribuida a ${distributedCount} uplines`);
+
+        await orderRef.update({
+          groupPointsDistributed: true,
+          groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
+          distributionNote: `Restaurante - ${distributedCount} uplines, ${commissionPerUpline.toFixed(2)} pts c/u`
+        });
+
+        return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada y comisión de restaurante procesada' }) };
+      }
+
+      // DISTRIBUTOR LOGIC (unchanged - continues below)
       // NEW LOGIC: Calculate commission as 10% of (points × 2800)
       // Each upline receives 10% of the total value, regardless of buyer type
       const totalPointValue = points * POINT_VALUE; // e.g., 2.5 × 2800 = 7000
