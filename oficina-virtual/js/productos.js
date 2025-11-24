@@ -3,37 +3,32 @@
 // No hay writes en la BD al pulsar 'Aceptar' del modal pequeño ni al cerrar el modal grande.
 // Autor: parche aplicado por asistente
 //
-// === FÓRMULAS DE COMISIONES Y PUNTOS ===
+// === SISTEMA DE BONOS Y COMISIONES ===
+//
+// IMPORTANTE: Los bonos y comisiones se calculan y distribuyen SOLO en el backend
+// (netlify/functions/confirm-order.js) cuando el administrador confirma la orden.
+// Este archivo frontend solo crea la orden con status "pending_delivery".
 //
 // SISTEMA BASE:
-//   - Paquete base: 3 kg = 10 puntos = 60,000 COP
-//   - Por lo tanto: 1 kg = 10/3 ≈ 3.333 puntos
-//   - Valor de cada punto: 2,800 COP
+//   - Valor por punto: 2,800 COP
+//   - Cada producto tiene su propio precio y puntos configurados por el administrador
+//   - No existe un precio base universal
 //
 // CLIENTES:
-//   - Pagan 25% más que el precio distribuidor por 3 kg → 60,000 × 1.25 = 75,000 por paquete
-//   - No generan puntos ni comisiones
+//   - Pagan el precio de cliente configurado en el producto
+//   - Generan comisión por diferencia de precio solo al patrocinador directo
+//   - Comisión = (Precio Cliente - Precio Distribuidor) × cantidad
+//   - Se convierte a puntos usando: diferencia / 2,800
 //
 // DISTRIBUIDORES:
-//   - Compran paquete de 3 kg = 10 puntos = 60,000 COP
-//   - Comisiones:
-//     - Cada uno de los 5 uplines recibe 1 punto
-//     - Pago por upline = 1 × 2,800 = 2,800 COP
-//     - Pago total sistema = 5 × 2,800 = 14,000 COP
+//   - Pagan el precio de distribuidor configurado
+//   - Compras normales: cada upline recibe 10% del valor total
+//   - Primera compra ≥50 puntos: Quick Start Bonus (21 puntos al directo, 1 a cada uno de 4 niveles superiores)
 //
 // RESTAURANTES:
-//   - Pueden comprar kilos arbitrarios, ejemplo: 2 kg
-//   - Conversión kilos → puntos: 2 kg × 10/3 = 6.6667 puntos
-//   - Cada upline recibe 0.05 puntos por cada punto generado:
-//     - 6.6667 × 0.05 = 0.3333 puntos
-//     - Pago por upline = 0.3333 × 2,800 ≈ 933.33 COP
-//     - Pago total sistema = 5 × 933.33 ≈ 4,666.67 COP
-//
-// FÓRMULAS UNIVERSALES:
-//   - Puntos totales = kilos × 10/3
-//   - Puntos por upline (restaurantes) = puntos_totales × 0.05
-//   - Pago por upline = puntos_por_upline × 2800
-//   - Pago total sistema = pago_por_upline × 5
+//   - Compran por kilos con precio y puntos por kilo configurados
+//   - Cada upline recibe 5% de los puntos totales (no se divide, cada uno recibe el 5% completo)
+//   - Ejemplo: 18 kg × 3.333 pts/kg = 60 pts → 5% = 3 pts por upline → 3 × 2,800 = 8,400 COP c/u
 
 import { auth, db } from "/src/firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
@@ -49,13 +44,18 @@ import {
   arrayUnion,
   increment
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { initializeCartUI, cart } from "./cart.js";
 
 const POINT_VALUE = 2800;
 const POINTS_PER_PACKAGE = 10;
 const POINTS_PER_KG = 10 / 3;
-const POINTS_PER_UPLINE_DISTRIBUTOR = 1;
-const POINTS_PER_UPLINE_RESTAURANT_RATE = 0.05;
-const MAX_UPLINE_LEVELS = 5;
+
+// NOTE: The following constants are LEGACY and NOT USED in the actual commission system
+// All commission calculations happen server-side in netlify/functions/confirm-order.js
+// These are kept for reference only
+const POINTS_PER_UPLINE_DISTRIBUTOR = 1; // Legacy - not used
+const POINTS_PER_UPLINE_RESTAURANT_RATE = 0.05; // Legacy - not used
+const MAX_UPLINE_LEVELS = 5; // Legacy - not used
 
 let productos = [];
 
@@ -155,6 +155,28 @@ function getDisplayPrice(prod){
   return prod.precio;
 }
 
+function getDisplayPoints(prod){
+  const tipo = (window.currentTipoRegistro || 'distribuidor').toLowerCase();
+  if(tipo === 'restaurante'){
+    // For restaurants, use puntosRestaurante if available, otherwise fallback to puntos
+    if(typeof prod.puntosRestaurante === 'number') return prod.puntosRestaurante;
+    return prod.puntos || 0;
+  }
+  if(tipo === 'distribuidor'){
+    // For distributors, use puntosDistribuidor if available, otherwise fallback to puntos
+    if(typeof prod.puntosDistribuidor === 'number') return prod.puntosDistribuidor;
+    return prod.puntos || 0;
+  }
+  if(tipo === 'cliente'){
+    // Clients don't earn points directly from products, but we need a value for display
+    // Use distributor points as reference
+    if(typeof prod.puntosDistribuidor === 'number') return prod.puntosDistribuidor;
+    return prod.puntos || 0;
+  }
+  // Default fallback
+  return prod.puntos || 0;
+}
+
 function getFilteredProducts(){
   const tipo = (window.currentTipoRegistro || 'distribuidor').toLowerCase();
   const selectedCategory = window.selectedCategory || 'todas';
@@ -181,6 +203,9 @@ async function findUserByUsername(username) {
   return { id: docSnap.id, data: docSnap.data() };
 }
 
+// LEGACY FUNCTION - NOT USED
+// This function is kept for backward compatibility but is NOT called anywhere
+// All commission distribution is handled server-side in netlify/functions/confirm-order.js
 async function distributePointsUpline(startSponsorCode, pointsEarned, buyerUsername, orderId, buyerType = 'distribuidor') {
   try {
     let sponsorCode = startSponsorCode;
@@ -251,12 +276,12 @@ function renderProductos() {
     const outOfStockBadge = isOutOfStock ? '<span style="position:absolute;top:12px;right:12px;background:#fd7e14;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">AGOTADO</span>' : '';
     const disabledStyle = isOutOfStock ? 'opacity:0.6;pointer-events:none;' : '';
     const buttonText = isOutOfStock ? 'No Disponible' : 'Comprar';
-    
+
     // Display points value in small gray text if product has points
-    const pointsDisplay = (prod.puntos && prod.puntos > 0) 
-      ? `<p style="font-size:11px;color:#999;margin:4px 0 8px 0;">${prod.puntos} punto${prod.puntos !== 1 ? 's' : ''}</p>` 
+    const pointsDisplay = (prod.puntos && prod.puntos > 0)
+      ? `<p style="font-size:11px;color:#999;margin:4px 0 8px 0;">${prod.puntos} punto${prod.puntos !== 1 ? 's' : ''}</p>`
       : '';
-    
+
     return `
       <div class="product-card" data-id="${prod.id}" style="position:relative;${disabledStyle}">
         ${outOfStockBadge}
@@ -271,7 +296,10 @@ function renderProductos() {
           <button class="qty-btn qty-plus" data-id="${prod.id}" aria-label="Aumentar cantidad" ${isOutOfStock ? 'disabled' : ''}>+</button>
         </div>
         <p class="total-price" data-id="${prod.id}"><strong>Total: ${formatCOP(getDisplayPrice(prod))}</strong></p>
-        <button class="btn small btn-buy" data-id="${prod.id}" ${isOutOfStock ? 'disabled' : ''}>${buttonText}</button>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn small btn-add-cart" data-id="${prod.id}" ${isOutOfStock ? 'disabled' : ''} style="flex:1;background:#667eea;color:white;">🛒 Agregar</button>
+          <button class="btn small btn-buy" data-id="${prod.id}" ${isOutOfStock ? 'disabled' : ''} style="flex:1;">${buttonText}</button>
+        </div>
       </div>
     `;
   }).join("");
@@ -279,11 +307,11 @@ function renderProductos() {
   document.querySelectorAll(".qty-minus").forEach((btn) => {
     btn.addEventListener("click", onQuantityChange);
   });
-  
+
   document.querySelectorAll(".qty-plus").forEach((btn) => {
     btn.addEventListener("click", onQuantityChange);
   });
-  
+
   document.querySelectorAll(".qty-input").forEach((input) => {
     input.addEventListener("change", onQuantityChange);
   });
@@ -291,7 +319,14 @@ function renderProductos() {
   document.querySelectorAll(".btn-buy").forEach((btn) => {
     btn.addEventListener("click", onBuyClick);
   });
-  
+
+  document.querySelectorAll(".btn-add-cart").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const productId = e.currentTarget.dataset.id;
+      window.addToCart(productId, productos);
+    });
+  });
+
   renderProductPagination(totalPages);
 }
 
@@ -722,10 +757,11 @@ async function onBuyClick(e) {
     const buyerData = buyerDocSnap.exists() ? buyerDocSnap.data() : null;
     const buyerUsername = buyerData?.usuario || buyerData?.nombre || 'Usuario desconocido';
     const buyerType = (buyerData?.tipoRegistro || 'distribuidor').toLowerCase();
-    
+
     const unitPrice = getDisplayPrice(prod);
     const totalPrice = unitPrice * quantity;
-    const totalPoints = prod.puntos * quantity;
+    const productPoints = getDisplayPoints(prod);
+    const totalPoints = productPoints * quantity;
 
     const orderObj = {
       productId: prod.id,
@@ -733,7 +769,7 @@ async function onBuyClick(e) {
       price: unitPrice,
       quantity: quantity,
       totalPrice: totalPrice,
-      points: prod.puntos,
+      points: productPoints,
       totalPoints: totalPoints,
       buyerUid,
       buyerUsername,
@@ -813,7 +849,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadProductsFromFirestore();
   await loadCategoriesIntoSelector();
   renderProductos();
-  
+
+  // Initialize shopping cart UI
+  initializeCartUI(getDisplayPrice, getDisplayPoints);
+
   const categorySelector = document.getElementById('categorySelector');
   if (categorySelector) {
     categorySelector.addEventListener('change', (e) => {
@@ -823,5 +862,298 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
+
+// Handle cart checkout
+window.proceedToCheckout = async function() {
+  if (!auth.currentUser) {
+    alert("Debes iniciar sesión para comprar.");
+    window.location.href = "distribuidor-login.html";
+    return;
+  }
+
+  const cartItems = cart.getItems();
+  if (cartItems.length === 0) {
+    alert("El carrito está vacío");
+    return;
+  }
+
+  const buyerUid = auth.currentUser.uid;
+
+  // Get user profile for prefill
+  let initialBuyerProfile = {};
+  let buyerData = null;
+  try {
+    const userDoc = await getDoc(doc(db, "usuarios", buyerUid));
+    if (userDoc.exists()) {
+      initialBuyerProfile = userDoc.data();
+      buyerData = userDoc.data();
+    }
+  } catch (err) {
+    console.warn("No se pudo leer perfil del usuario para prefill:", err);
+  }
+
+  const buyerType = initialBuyerProfile.tipoRegistro || 'distribuidor';
+  const buyerUsername = initialBuyerProfile.usuario || '';
+
+  // Calculate totals
+  const { totalPrice, totalPoints } = cart.getTotals(getDisplayPrice, getDisplayPoints);
+
+  // Show payment confirmation modal (visual only)
+  await new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.setAttribute('id','payment-modal-overlay');
+    overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:9999;backdrop-filter:blur(2px);';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'max-width:420px;width:90%;padding:20px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.25);background:linear-gradient(180deg,#ffffff,#fbfbfb);text-align:center;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial';
+
+    const h = document.createElement('h3');
+    h.textContent = 'Confirmar compra';
+    h.style.cssText = 'margin:0 0 12px 0;font-size:22px;color:#212529;';
+
+    const p = document.createElement('p');
+    p.textContent = `${cartItems.length} producto${cartItems.length !== 1 ? 's' : ''} en el carrito`;
+    p.style.cssText = 'margin:0 0 16px 0;font-size:15px;color:#6c757d;';
+
+    const totalDiv = document.createElement('div');
+    totalDiv.style.cssText = 'background:#f8f9fa;padding:16px;border-radius:8px;margin-bottom:20px;';
+    totalDiv.innerHTML = `
+      <div style="font-size:14px;color:#666;margin-bottom:4px;">Total a pagar</div>
+      <div style="font-size:24px;font-weight:700;color:#333;">$${totalPrice.toLocaleString()}</div>
+      <div style="font-size:14px;color:#28a745;margin-top:4px;">${totalPoints} puntos</div>
+    `;
+
+    const paymentInfo = document.createElement('p');
+    paymentInfo.textContent = 'Pago por Efectivo o Transferencia';
+    paymentInfo.style.cssText = 'margin:0 0 20px 0;font-size:14px;color:#495057;';
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Aceptar';
+    confirmBtn.className = 'btn btn-primary';
+    confirmBtn.style.cssText = 'width:100%;padding:12px;font-size:16px;font-weight:600;';
+    confirmBtn.addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve();
+    });
+
+    box.appendChild(h);
+    box.appendChild(p);
+    box.appendChild(totalDiv);
+    box.appendChild(paymentInfo);
+    box.appendChild(confirmBtn);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  });
+
+  // Show customer info form modal
+  await new Promise((resolve, reject) => {
+    const overlay = document.createElement('div');
+    overlay.setAttribute('id','customer-form-overlay');
+    overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:10000;backdrop-filter:blur(3px);overflow-y:auto;padding:20px;';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'max-width:600px;width:100%;background:white;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'padding:24px;border-bottom:2px solid #eee;position:sticky;top:0;background:white;z-index:1;border-radius:16px 16px 0 0;';
+    header.innerHTML = '<h2 style="margin:0;font-size:24px;color:#333;">Datos de Entrega</h2>';
+
+    const content = document.createElement('div');
+    content.style.cssText = 'padding:24px;';
+
+    const form = document.createElement('form');
+    form.id = 'customerForm';
+    form.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div>
+          <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Nombre</label>
+          <input type="text" name="firstName" required value="${initialBuyerProfile.nombre || ''}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Apellido</label>
+          <input type="text" name="lastName" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Email</label>
+        <input type="email" name="email" required value="${initialBuyerProfile.email || ''}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Teléfono</label>
+        <input type="tel" name="phone" required value="${initialBuyerProfile.celular || ''}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;margin-bottom:10px;font-weight:500;color:#333;">Método de Entrega</label>
+        <div style="display:flex;gap:12px;">
+          <label style="flex:1;padding:12px;border:2px solid #ddd;border-radius:6px;cursor:pointer;text-align:center;transition:all 0.2s;">
+            <input type="radio" name="deliveryMethod" value="home" checked style="margin-right:6px;">
+            Entrega a domicilio
+          </label>
+          <label style="flex:1;padding:12px;border:2px solid #ddd;border-radius:6px;cursor:pointer;text-align:center;transition:all 0.2s;">
+            <input type="radio" name="deliveryMethod" value="pickup" style="margin-right:6px;">
+            Recoger en oficina
+          </label>
+        </div>
+      </div>
+      <div id="addressField" style="margin-bottom:16px;">
+        <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Dirección</label>
+        <input type="text" name="address" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+      </div>
+      <div id="cityField" style="margin-bottom:16px;">
+        <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Ciudad</label>
+        <input type="text" name="city" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Notas adicionales (opcional)</label>
+        <textarea name="notes" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <button type="button" id="cancelCustomerForm" style="flex:1;padding:12px;background:#6c757d;color:white;border:none;border-radius:6px;font-size:16px;font-weight:600;cursor:pointer;">Cancelar</button>
+        <button type="submit" style="flex:2;padding:12px;background:#28a745;color:white;border:none;border-radius:6px;font-size:16px;font-weight:600;cursor:pointer;">Confirmar Pedido</button>
+      </div>
+    `;
+
+    // Toggle address/city fields based on delivery method
+    const toggleAddressFields = () => {
+      const deliveryMethod = form.querySelector('input[name="deliveryMethod"]:checked').value;
+      const addressField = form.querySelector('#addressField');
+      const cityField = form.querySelector('#cityField');
+      const addressInput = form.querySelector('input[name="address"]');
+      const cityInput = form.querySelector('input[name="city"]');
+
+      if (deliveryMethod === 'pickup') {
+        addressField.style.display = 'none';
+        cityField.style.display = 'none';
+        addressInput.required = false;
+        cityInput.required = false;
+      } else {
+        addressField.style.display = 'block';
+        cityField.style.display = 'block';
+        addressInput.required = true;
+        cityInput.required = true;
+      }
+    };
+
+    form.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
+      radio.addEventListener('change', toggleAddressFields);
+    });
+
+    toggleAddressFields();
+
+    form.querySelector('#cancelCustomerForm').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      reject(new Error('Cancelled by user'));
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const customerData = {
+        firstName: formData.get('firstName'),
+        lastName: formData.get('lastName'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        deliveryMethod: formData.get('deliveryMethod'),
+        address: formData.get('address'),
+        city: formData.get('city'),
+        notes: formData.get('notes')
+      };
+      document.body.removeChild(overlay);
+      resolve(customerData);
+    });
+
+    content.appendChild(form);
+    box.appendChild(header);
+    box.appendChild(content);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }).then(async (customerData) => {
+    // Create orders for each item in cart
+    try {
+      const orderIds = [];
+
+      for (const item of cartItems) {
+        const prod = item.product;
+        const unitPrice = getDisplayPrice(prod);
+        const productPoints = getDisplayPoints(prod);
+        const quantity = item.quantity;
+        const totalPrice = unitPrice * quantity;
+        const totalPoints = productPoints * quantity;
+
+        const orderObj = {
+          productId: prod.id,
+          productName: prod.nombre,
+          price: unitPrice,
+          quantity: quantity,
+          totalPrice: totalPrice,
+          points: productPoints,
+          totalPoints: totalPoints,
+          buyerUid,
+          buyerUsername,
+          buyerType,
+          buyerInfo: customerData,
+          deliveryMethod: customerData.deliveryMethod === 'pickup' ? 'pickup' : 'home',
+          entrega: customerData.deliveryMethod === 'pickup' ? 'oficina' : 'domicilio',
+          direccion: customerData.deliveryMethod === 'pickup' ? null : (customerData.address || null),
+          telefono: customerData.phone || null,
+          observaciones: customerData.notes || '',
+          status: "pending_delivery",
+          createdAt: new Date().toISOString(),
+          isInitial: prod.id === "paquete-inicio",
+          initialBonusPaid: false,
+          paymentMethod: "efectivo_transferencia",
+          fromCart: true
+        };
+
+        if (customerData.deliveryMethod === 'pickup') {
+          orderObj.pickupInfo = {
+            name: 'Oficina PorkCasaRe',
+            address: 'Calle 123 #45-67, Ciudad',
+            hours: 'Lun-Vie 9:00 - 17:00'
+          };
+          orderObj.buyerInfo.address = orderObj.pickupInfo.address;
+        }
+
+        const orderRef = await addDoc(collection(db, "orders"), orderObj);
+        orderIds.push(orderRef.id);
+
+        // Add to user history
+        try {
+          await updateDoc(doc(db, "usuarios", buyerUid), {
+            history: arrayUnion({
+              action: `Compra pendiente: ${prod.nombre} (x${quantity})`,
+              amount: totalPrice,
+              points: totalPoints,
+              quantity: quantity,
+              orderId: orderRef.id,
+              date: new Date().toISOString(),
+              type: "pending_purchase"
+            })
+          });
+        } catch (err) {
+          console.error("Error actualizando historial:", err);
+        }
+      }
+
+      // Clear cart
+      cart.clear();
+
+      // Close cart modal if open
+      const cartModal = document.getElementById('cartModal');
+      if (cartModal) cartModal.remove();
+
+      // Success message
+      alert(`✅ ${orderIds.length} pedido${orderIds.length !== 1 ? 's' : ''} creado${orderIds.length !== 1 ? 's' : ''} correctamente.`);
+      window.location.href = `/oficina-virtual/index.html`;
+    } catch (err) {
+      console.error("Error creando órdenes:", err);
+      alert("Ocurrió un error al crear las órdenes. Intenta de nuevo.");
+    }
+  }).catch((err) => {
+    if (err.message !== 'Cancelled by user') {
+      console.error("Error en checkout:", err);
+    }
+  });
+};
 
 export { renderProductos };

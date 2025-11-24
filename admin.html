@@ -131,6 +131,7 @@
       <button class="tab-button" data-tab="inventory">Inventario</button>
       <button class="tab-button" data-tab="products">Productos</button>
       <button class="tab-button" data-tab="categories">Categorías</button>
+      <button class="tab-button" data-tab="calculator">Calculadora de Puntos</button>
     </div>
 
     <!-- Tab: Resumen -->
@@ -450,6 +451,61 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Tab: Calculadora de Puntos -->
+    <div id="tab-calculator" class="tab-content">
+      <div style="max-width:900px;margin:0 auto;">
+        <h2 style="margin-bottom:8px;">Calculadora de Puntos y Comisiones</h2>
+        <p style="color:#666;margin-bottom:24px;">Simula cómo se distribuirán los puntos y comisiones en la red antes de confirmar cualquier orden.</p>
+
+        <div style="background:white;padding:24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:24px;">
+          <h3 style="margin-top:0;border-bottom:2px solid #007bff;padding-bottom:8px;margin-bottom:20px;">Datos de la Compra</h3>
+
+          <div style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Comprador</label>
+            <select id="calcBuyer" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+              <option value="">Seleccionar usuario...</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Producto</label>
+            <select id="calcProduct" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+              <option value="">Seleccionar producto...</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Cantidad</label>
+            <input type="number" id="calcQuantity" min="1" value="1" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:6px;font-weight:500;">
+              <input type="checkbox" id="calcIsFirstPurchase" style="margin-right:6px;">
+              Marcar como primera compra (para Quick Start Bonus)
+            </label>
+            <p style="font-size:12px;color:#666;margin:4px 0 0 24px;">Solo aplicable para distribuidores que compran 50+ puntos por primera vez</p>
+          </div>
+
+          <button id="calcCalculateBtn" class="btn-primary" style="width:100%;padding:12px;font-size:16px;font-weight:600;">
+            Calcular Distribución
+          </button>
+        </div>
+
+        <div id="calcResults" style="display:none;">
+          <div style="background:white;padding:24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:16px;">
+            <h3 style="margin-top:0;border-bottom:2px solid #28a745;padding-bottom:8px;margin-bottom:20px;">Resumen de la Compra</h3>
+            <div id="calcSummary"></div>
+          </div>
+
+          <div style="background:white;padding:24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+            <h3 style="margin-top:0;border-bottom:2px solid #764ba2;padding-bottom:8px;margin-bottom:20px;">Distribución de Comisiones</h3>
+            <div id="calcDistribution"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Modal para agregar inventario -->
@@ -585,12 +641,21 @@
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
           <div>
-            <label style="display:block;margin-bottom:6px;font-weight:500;">Puntos</label>
-            <input type="number" id="productPoints" step="any" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="2.5">
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Puntos para Distribuidores</label>
+            <input type="number" id="productPointsDistributor" step="any" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="2.5">
+            <small style="color:#666;font-size:12px;">Puntos que genera este producto para distribuidores</small>
           </div>
-          
+
+          <div>
+            <label style="display:block;margin-bottom:6px;font-weight:500;">Puntos para Restaurantes</label>
+            <input type="number" id="productPointsRestaurant" step="any" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="3.333">
+            <small style="color:#666;font-size:12px;">Puntos por kilo/unidad para restaurantes</small>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
           <div>
             <label style="display:block;margin-bottom:6px;font-weight:500;">Unidad</label>
             <select id="productUnit" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
@@ -599,7 +664,7 @@
               <option value="unidad">Unidad</option>
             </select>
           </div>
-          
+
           <div>
             <label style="display:block;margin-bottom:6px;font-weight:500;">Categoría</label>
             <select id="productCategory" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
@@ -862,27 +927,8 @@
           }
         }
 
-        // Filter out test users (names starting with "prueba")
-        const filteredOrders = orders.filter(order => {
-          if (order.buyerUid && usersCache.has(order.buyerUid)) {
-            const userData = usersCache.get(order.buyerUid);
-            const isTestUser = userData.nombre.toLowerCase().startsWith('prueba') ||
-                              userData.usuario.toLowerCase().startsWith('prueba');
-            if (isTestUser) {
-              console.log(`🧪 Orden excluida de usuario de prueba: ${userData.usuario || userData.nombre}`);
-            }
-            return !isTestUser;
-          }
-          // Also check buyerUsername if available
-          if (order.buyerUsername) {
-            const isTestUser = order.buyerUsername.toLowerCase().startsWith('prueba');
-            if (isTestUser) {
-              console.log(`🧪 Orden excluida de usuario de prueba: ${order.buyerUsername}`);
-            }
-            return !isTestUser;
-          }
-          return true; // Include if no user data found
-        });
+        // Don't filter out any orders - show all including test users
+        const filteredOrders = orders;
 
         const pending = filteredOrders.filter(o => o.status === 'pending' || o.status === 'pending_delivery').sort((a, b) => a.id.localeCompare(b.id));
         const confirmed = filteredOrders.filter(o => o.status === 'confirmed');
@@ -2280,7 +2326,9 @@
         precioCliente: parseFloat(document.getElementById('productPriceClient').value) || 0,
         precioRestaurante: parseFloat(document.getElementById('productPriceRestaurant').value) || 0,
         precio: parseFloat(document.getElementById('productPriceDistributor').value) || 0,
-        puntos: parseFloat(document.getElementById('productPoints').value) || 0,
+        puntosDistribuidor: parseFloat(document.getElementById('productPointsDistributor').value) || 0,
+        puntosRestaurante: parseFloat(document.getElementById('productPointsRestaurant').value) || 0,
+        puntos: parseFloat(document.getElementById('productPointsDistributor').value) || 0, // backward compatibility
         unit: document.getElementById('productUnit').value,
         categoria: document.getElementById('productCategory').value,
         availableFor: [],
@@ -2329,14 +2377,15 @@
       document.getElementById('productPriceDistributor').value = product.precioDistribuidor || '';
       document.getElementById('productPriceClient').value = product.precioCliente || '';
       document.getElementById('productPriceRestaurant').value = product.precioRestaurante || '';
-      document.getElementById('productPoints').value = product.puntos || '';
+      document.getElementById('productPointsDistributor').value = product.puntosDistribuidor || product.puntos || '';
+      document.getElementById('productPointsRestaurant').value = product.puntosRestaurante || product.puntos || '';
       document.getElementById('productUnit').value = product.unit || 'paquete';
       document.getElementById('productCategory').value = product.categoria || 'carnes';
-      
+
       document.getElementById('productAvailDistributor').checked = (product.availableFor || []).includes('distribuidor');
       document.getElementById('productAvailClient').checked = (product.availableFor || []).includes('cliente');
       document.getElementById('productAvailRestaurant').checked = (product.availableFor || []).includes('restaurante');
-      
+
       document.getElementById('productHidden').checked = product.hidden || false;
       document.getElementById('productOutOfStock').checked = product.outOfStock || false;
       document.getElementById('productFeatured').checked = product.featured || false;
@@ -2832,6 +2881,317 @@
         }
       }
     };
+
+    // ============================================
+    // CALCULADORA DE PUNTOS Y COMISIONES
+    // ============================================
+
+    const POINT_VALUE = 2800;
+    const COMMISSION_RATE = 0.10;
+    const RESTAURANT_COMMISSION_RATE = 0.05;
+    const MAX_LEVELS = 5;
+    const QUICK_START_THRESHOLD = 50;
+    const QUICK_START_DIRECT_POINTS = 21;
+    const QUICK_START_UPPER_LEVELS_POINTS = 1;
+    const MAX_LEVELS_QUICK_START = 4;
+
+    let calcUsers = [];
+    let calcProducts = [];
+
+    async function loadCalculatorData() {
+      try {
+        const [usersSnap, productsSnap] = await Promise.all([
+          getDocs(collection(db, 'usuarios')),
+          getDocs(collection(db, 'productos'))
+        ]);
+
+        calcUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        calcProducts = productsSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(p => !p.deleted && !p.hidden);
+
+        const buyerSelect = document.getElementById('calcBuyer');
+        const productSelect = document.getElementById('calcProduct');
+
+        buyerSelect.innerHTML = '<option value="">Seleccionar usuario...</option>';
+        calcUsers.forEach(user => {
+          const option = document.createElement('option');
+          option.value = user.id;
+          option.textContent = `${user.nombre} (@${user.usuario}) - ${user.tipoRegistro || 'usuario'}`;
+          buyerSelect.appendChild(option);
+        });
+
+        productSelect.innerHTML = '<option value="">Seleccionar producto...</option>';
+        calcProducts.forEach(prod => {
+          const option = document.createElement('option');
+          option.value = prod.id;
+          option.textContent = `${prod.nombre} - $${(prod.precioDistribuidor || prod.precio || 0).toLocaleString()}`;
+          productSelect.appendChild(option);
+        });
+
+      } catch (err) {
+        console.error('Error loading calculator data:', err);
+        alert('Error cargando datos para la calculadora');
+      }
+    }
+
+    async function findUserByUsername(username) {
+      if (!username) return null;
+      const user = calcUsers.find(u => u.usuario === username);
+      return user ? { id: user.id, data: user } : null;
+    }
+
+    function getProductPrice(product, userType) {
+      if (userType === 'distribuidor') {
+        return product.precioDistribuidor || product.precio || 0;
+      } else if (userType === 'cliente') {
+        return product.precioCliente || product.precio || 0;
+      } else if (userType === 'restaurante') {
+        return product.precioRestaurante || product.precio || 0;
+      }
+      return product.precio || 0;
+    }
+
+    function getProductPoints(product, userType) {
+      if (userType === 'distribuidor') {
+        return product.puntosDistribuidor || product.puntos || 0;
+      } else if (userType === 'restaurante') {
+        return product.puntosRestaurante || product.puntos || 0;
+      }
+      return product.puntosDistribuidor || product.puntos || 0;
+    }
+
+    document.getElementById('calcCalculateBtn').addEventListener('click', async () => {
+      const buyerId = document.getElementById('calcBuyer').value;
+      const productId = document.getElementById('calcProduct').value;
+      const quantity = parseInt(document.getElementById('calcQuantity').value) || 1;
+      const isFirstPurchase = document.getElementById('calcIsFirstPurchase').checked;
+
+      if (!buyerId || !productId) {
+        alert('Por favor selecciona un comprador y un producto');
+        return;
+      }
+
+      const buyer = calcUsers.find(u => u.id === buyerId);
+      const product = calcProducts.find(p => p.id === productId);
+
+      if (!buyer || !product) {
+        alert('Error: comprador o producto no encontrado');
+        return;
+      }
+
+      const buyerType = buyer.tipoRegistro || 'distribuidor';
+      const unitPrice = getProductPrice(product, buyerType);
+      const unitPoints = getProductPoints(product, buyerType);
+      const totalPrice = unitPrice * quantity;
+      const totalPoints = unitPoints * quantity;
+
+      // Build upline chain
+      const uplineChain = [];
+      let currentSponsor = buyer.patrocinador;
+
+      while (currentSponsor && uplineChain.length < MAX_LEVELS) {
+        const sponsorObj = await findUserByUsername(currentSponsor);
+        if (!sponsorObj) break;
+
+        uplineChain.push({
+          username: sponsorObj.data.usuario,
+          name: sponsorObj.data.nombre,
+          level: uplineChain.length + 1,
+          type: sponsorObj.data.tipoRegistro || 'distribuidor'
+        });
+
+        currentSponsor = sponsorObj.data.patrocinador;
+      }
+
+      // Calculate commissions based on buyer type
+      let commissions = [];
+      let quickStartBonus = null;
+
+      if (buyerType === 'cliente') {
+        // Cliente: solo al patrocinador directo
+        if (uplineChain.length > 0) {
+          const distPrice = product.precioDistribuidor || product.precio || 0;
+          const priceDiff = (unitPrice - distPrice) * quantity;
+          const diffPoints = priceDiff / POINT_VALUE;
+
+          commissions.push({
+            recipient: uplineChain[0],
+            amountCOP: priceDiff,
+            points: diffPoints,
+            type: 'Comisión por diferencia de precio'
+          });
+        }
+      } else if (buyerType === 'distribuidor') {
+        // Check Quick Start Bonus
+        if (isFirstPurchase && totalPoints >= QUICK_START_THRESHOLD) {
+          const numPackages = Math.floor(totalPoints / QUICK_START_THRESHOLD);
+
+          if (uplineChain.length > 0) {
+            const directPoints = numPackages * QUICK_START_DIRECT_POINTS;
+            quickStartBonus = {
+              recipient: uplineChain[0],
+              points: directPoints,
+              amountCOP: directPoints * POINT_VALUE,
+              type: 'Quick Start Bonus (Patrocinador Directo)'
+            };
+          }
+
+          for (let i = 1; i < Math.min(uplineChain.length, MAX_LEVELS_QUICK_START + 1); i++) {
+            const upperPoints = numPackages * QUICK_START_UPPER_LEVELS_POINTS;
+            commissions.push({
+              recipient: uplineChain[i],
+              amountCOP: upperPoints * POINT_VALUE,
+              points: upperPoints,
+              type: `Quick Start Bonus (Nivel ${i + 1})`
+            });
+          }
+        } else {
+          // Normal commission: 10% to each upline
+          const totalValue = totalPoints * POINT_VALUE;
+          const commissionPerUpline = totalValue * COMMISSION_RATE;
+          const pointsPerUpline = commissionPerUpline / POINT_VALUE;
+
+          uplineChain.forEach(upline => {
+            commissions.push({
+              recipient: upline,
+              amountCOP: commissionPerUpline,
+              points: pointsPerUpline,
+              type: `Comisión 10% (Nivel ${upline.level})`
+            });
+          });
+        }
+      } else if (buyerType === 'restaurante') {
+        // Restaurant: 5% of total points to each upline
+        const pointsPerUpline = totalPoints * RESTAURANT_COMMISSION_RATE;
+        const amountPerUpline = pointsPerUpline * POINT_VALUE;
+
+        uplineChain.forEach(upline => {
+          commissions.push({
+            recipient: upline,
+            amountCOP: amountPerUpline,
+            points: pointsPerUpline,
+            type: `Comisión 5% Restaurante (Nivel ${upline.level})`
+          });
+        });
+      }
+
+      // Display results
+      const summaryDiv = document.getElementById('calcSummary');
+      summaryDiv.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:16px;">
+          <div style="background:#f8f9fa;padding:16px;border-radius:6px;">
+            <div style="font-size:12px;color:#666;margin-bottom:4px;">Comprador</div>
+            <div style="font-weight:600;font-size:16px;">${buyer.nombre}</div>
+            <div style="font-size:13px;color:#666;">@${buyer.usuario}</div>
+            <div style="margin-top:4px;">
+              <span style="background:#007bff;color:white;padding:2px 8px;border-radius:10px;font-size:11px;text-transform:uppercase;">${buyerType}</span>
+            </div>
+          </div>
+          <div style="background:#f8f9fa;padding:16px;border-radius:6px;">
+            <div style="font-size:12px;color:#666;margin-bottom:4px;">Producto</div>
+            <div style="font-weight:600;font-size:16px;">${product.nombre}</div>
+            <div style="font-size:13px;color:#666;">Cantidad: ${quantity}</div>
+          </div>
+          <div style="background:#e7f5ff;padding:16px;border-radius:6px;">
+            <div style="font-size:12px;color:#666;margin-bottom:4px;">Precio Total</div>
+            <div style="font-weight:700;font-size:20px;color:#007bff;">$${totalPrice.toLocaleString()}</div>
+            <div style="font-size:13px;color:#666;">$${unitPrice.toLocaleString()} × ${quantity}</div>
+          </div>
+          <div style="background:#e6f9f0;padding:16px;border-radius:6px;">
+            <div style="font-size:12px;color:#666;margin-bottom:4px;">Puntos Totales</div>
+            <div style="font-weight:700;font-size:20px;color:#28a745;">${totalPoints} pts</div>
+            <div style="font-size:13px;color:#666;">${unitPoints} pts × ${quantity}</div>
+          </div>
+        </div>
+      `;
+
+      const distributionDiv = document.getElementById('calcDistribution');
+
+      if (commissions.length === 0 && !quickStartBonus) {
+        distributionDiv.innerHTML = `
+          <div style="text-align:center;padding:40px;color:#6c757d;">
+            <span style="font-size:48px;">ℹ️</span>
+            <h3 style="margin:16px 0 8px 0;">Sin comisiones</h3>
+            <p>Este comprador no tiene patrocinador o no genera comisiones.</p>
+          </div>
+        `;
+      } else {
+        let totalCommissionCOP = commissions.reduce((sum, c) => sum + c.amountCOP, 0);
+        let totalCommissionPoints = commissions.reduce((sum, c) => sum + c.points, 0);
+
+        if (quickStartBonus) {
+          totalCommissionCOP += quickStartBonus.amountCOP;
+          totalCommissionPoints += quickStartBonus.points;
+        }
+
+        let distributionHTML = '';
+
+        if (quickStartBonus) {
+          distributionHTML += `
+            <div style="background:#fff3cd;border-left:4px solid #ffc107;padding:16px;margin-bottom:16px;border-radius:4px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div>
+                  <div style="font-weight:600;color:#856404;margin-bottom:4px;">⭐ ${quickStartBonus.type}</div>
+                  <div style="font-size:14px;color:#856404;">${quickStartBonus.recipient.name} (@${quickStartBonus.recipient.username})</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:18px;font-weight:700;color:#856404;">$${quickStartBonus.amountCOP.toLocaleString()}</div>
+                  <div style="font-size:14px;color:#856404;">${quickStartBonus.points.toFixed(2)} puntos</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        commissions.forEach((comm, idx) => {
+          const bgColor = idx % 2 === 0 ? '#f8f9fa' : '#ffffff';
+          distributionHTML += `
+            <div style="background:${bgColor};padding:16px;margin-bottom:8px;border-radius:4px;border-left:4px solid #764ba2;">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div style="flex:1;">
+                  <div style="font-weight:600;margin-bottom:4px;">${comm.recipient.name}</div>
+                  <div style="font-size:13px;color:#666;">@${comm.recipient.username}</div>
+                  <div style="font-size:12px;color:#764ba2;margin-top:4px;">${comm.type}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:18px;font-weight:700;color:#333;">$${comm.amountCOP.toLocaleString()}</div>
+                  <div style="font-size:14px;color:#28a745;">${comm.points.toFixed(2)} puntos</div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        distributionHTML += `
+          <div style="background:#e9ecef;padding:20px;margin-top:16px;border-radius:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:18px;">
+              <div>TOTAL A DISTRIBUIR:</div>
+              <div>
+                <div style="color:#333;">$${totalCommissionCOP.toLocaleString()}</div>
+                <div style="color:#28a745;font-size:16px;">${totalCommissionPoints.toFixed(2)} puntos</div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        distributionDiv.innerHTML = distributionHTML;
+      }
+
+      document.getElementById('calcResults').style.display = 'block';
+    });
+
+    // Load calculator data when the calculator tab is activated
+    const originalTabListener = document.querySelectorAll('.tab-button');
+    originalTabListener.forEach(btn => {
+      if (btn.dataset.tab === 'calculator') {
+        btn.addEventListener('click', () => {
+          if (calcUsers.length === 0 || calcProducts.length === 0) {
+            loadCalculatorData();
+          }
+        });
+      }
+    });
   </script>
 </body>
 </html>
