@@ -95,6 +95,28 @@ async function getChildrenForParent(node) {
 
 /* -------------------- CONSTRUCCIÓN DEL ÁRBOL -------------------- */
 
+// Cache for children queries to avoid duplicate Firestore requests
+const childrenCache = new Map();
+const CACHE_TTL = 30000; // 30 seconds cache
+
+async function getCachedChildrenForParent(node) {
+  const cacheKey = node.id;
+  const cached = childrenCache.get(cacheKey);
+
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+    return cached.docs;
+  }
+
+  const docs = await getChildrenForParent(node);
+  childrenCache.set(cacheKey, { docs, timestamp: Date.now() });
+  return docs;
+}
+
+// Clear cache when needed (e.g., after modifications)
+function clearChildrenCache() {
+  childrenCache.clear();
+}
+
 async function buildUnilevelTree(username) {
   const usuariosCol = collection(db, "usuarios");
   const qRoot = query(usuariosCol, where(FIELD_USUARIO, "==", username));
@@ -117,9 +139,13 @@ async function buildUnilevelTree(username) {
     fullTree: null
   };
 
-  async function addChildren(node, level = 1, isFullTree = false) {
+  // Build full tree first and cache all data, then extract paginated view
+  // This avoids duplicate Firestore queries
+
+  async function buildFullTree(node, level = 1) {
     if (level > DEPTH_LIMIT) return;
-    const childDocs = await getChildrenForParent(node);
+
+    const childDocs = await getCachedChildrenForParent(node);
     const allChildren = childDocs.map(d => {
       const data = d.data();
       return {
@@ -135,63 +161,43 @@ async function buildUnilevelTree(username) {
         allChildren: []
       };
     });
-    
-    if (level === 1 && !isFullTree) {
-      node.allChildren = allChildren;
-      const startIdx = (currentFrontlinePage - 1) * FRONTLINES_PER_PAGE;
-      const endIdx = startIdx + FRONTLINES_PER_PAGE;
-      node.children = allChildren.slice(startIdx, endIdx);
-    } else {
-      node.allChildren = allChildren;
-      node.children = allChildren;
-    }
-    
-    for (const c of node.children) await addChildren(c, level + 1, isFullTree);
+
+    node.allChildren = allChildren;
+    node.children = allChildren;
+
+    // Load children in parallel for better performance
+    await Promise.all(node.children.map(c => buildFullTree(c, level + 1)));
   }
 
-  await addChildren(rootNode, 1, false);
-  
-  const fullTreeRoot = {
-    id: rootNode.id,
-    usuario: rootNode.usuario,
-    nombre: rootNode.nombre,
-    active: rootNode.active,
-    puntos: rootNode.puntos,
-    groupPoints: rootNode.groupPoints,
-    celular: rootNode.celular,
-    tipoRegistro: rootNode.tipoRegistro,
-    children: [],
-    allChildren: rootNode.allChildren
-  };
-  
-  async function addAllChildren(node, level = 1) {
-    if (level > DEPTH_LIMIT) return;
-    const childDocs = await getChildrenForParent(node);
-    const allChildren = childDocs.map(d => {
-      const data = d.data();
-      return {
-        id: d.id,
-        usuario: data[FIELD_USUARIO] || data.usuario,
-        nombre: data.nombre || data[FIELD_USUARIO] || data.usuario,
-        active: isActiveThisMonth(data),
-        puntos: Number(data.puntos || data.personalPoints || 0),
-        groupPoints: Number(data.groupPoints || 0),
-        celular: data.celular || "No registrado",
-        tipoRegistro: data.tipoRegistro || data.role || data.rol || 'distribuidor',
-        children: [],
-        allChildren: []
-      };
-    });
-    
-    node.children = allChildren;
-    node.allChildren = allChildren;
-    
-    for (const c of node.children) await addAllChildren(c, level + 1);
+  // Build the complete tree once
+  await buildFullTree(rootNode, 1);
+
+  // Create a deep clone for fullTree (preserves all children)
+  function deepCloneNode(node) {
+    return {
+      id: node.id,
+      usuario: node.usuario,
+      nombre: node.nombre,
+      active: node.active,
+      puntos: node.puntos,
+      groupPoints: node.groupPoints,
+      celular: node.celular,
+      tipoRegistro: node.tipoRegistro,
+      children: (node.children || []).map(c => deepCloneNode(c)),
+      allChildren: node.allChildren
+    };
   }
-  
-  await addAllChildren(fullTreeRoot, 1);
-  rootNode.fullTree = fullTreeRoot;
-  
+
+  rootNode.fullTree = deepCloneNode(rootNode);
+
+  // Now apply pagination to rootNode's first level children for display
+  // (only affects displayed children, fullTree keeps all)
+  if (rootNode.allChildren.length > FRONTLINES_PER_PAGE) {
+    const startIdx = (currentFrontlinePage - 1) * FRONTLINES_PER_PAGE;
+    const endIdx = startIdx + FRONTLINES_PER_PAGE;
+    rootNode.children = rootNode.allChildren.slice(startIdx, endIdx);
+  }
+
   return rootNode;
 }
 
@@ -1291,6 +1297,7 @@ export {
   calculatePersonalPoints,
   calculateTeamPoints,
   persistTeamPointsSafely,
-  createInfoCard
+  createInfoCard,
+  clearChildrenCache
 };
 

@@ -223,6 +223,18 @@ function showCartNotification(message) {
   }, 2000);
 }
 
+// Helper function to format prices correctly (COP currency, no decimals)
+function formatPrice(num) {
+  return Math.round(num).toLocaleString('es-CO');
+}
+
+// Helper function to format points (rounded to 2 decimal places max)
+function formatPoints(num) {
+  const rounded = Math.round(num * 100) / 100;
+  // If it's a whole number, show without decimals
+  return Number.isInteger(rounded) ? rounded : rounded.toFixed(2).replace(/\.?0+$/, '');
+}
+
 function openCartModal(getDisplayPrice, getDisplayPoints) {
   const items = cart.getItems();
 
@@ -259,18 +271,18 @@ function openCartModal(getDisplayPrice, getDisplayPoints) {
   const { totalPrice, totalPoints } = cart.getTotals(getDisplayPrice, getDisplayPoints);
 
   let itemsHTML = items.map(item => {
-    const unitPrice = getDisplayPrice(item.product);
+    const unitPrice = Math.round(getDisplayPrice(item.product));
     const unitPoints = getDisplayPoints(item.product);
-    const itemTotal = unitPrice * item.quantity;
-    const itemPoints = unitPoints * item.quantity;
+    const itemTotal = Math.round(unitPrice * item.quantity);
+    const itemPoints = Math.round(unitPoints * item.quantity * 100) / 100;
 
     return `
       <div style="display:flex;gap:16px;padding:16px;border-bottom:1px solid #eee;align-items:center;">
         <img src="${item.productImage}" alt="${item.productName}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;">
         <div style="flex:1;">
           <h4 style="margin:0 0 8px 0;font-size:16px;">${item.productName}</h4>
-          <p style="margin:0;font-size:14px;color:#666;">$${unitPrice.toLocaleString()} × ${item.quantity}</p>
-          <p style="margin:4px 0 0 0;font-size:13px;color:#28a745;">${unitPoints} pts × ${item.quantity} = ${itemPoints} pts</p>
+          <p style="margin:0;font-size:14px;color:#666;">$${formatPrice(unitPrice)} × ${item.quantity}</p>
+          <p style="margin:4px 0 0 0;font-size:13px;color:#28a745;">${formatPoints(unitPoints)} pts × ${item.quantity} = ${formatPoints(itemPoints)} pts</p>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <button onclick="window.updateCartItemQuantity('${item.productId}', ${item.quantity - 1})" class="qty-btn" style="width:30px;height:30px;border:1px solid #ddd;background:white;border-radius:4px;cursor:pointer;">−</button>
@@ -278,13 +290,17 @@ function openCartModal(getDisplayPrice, getDisplayPoints) {
           <button onclick="window.updateCartItemQuantity('${item.productId}', ${item.quantity + 1})" class="qty-btn" style="width:30px;height:30px;border:1px solid #ddd;background:white;border-radius:4px;cursor:pointer;">+</button>
         </div>
         <div style="text-align:right;min-width:120px;">
-          <p style="margin:0;font-size:18px;font-weight:700;">$${itemTotal.toLocaleString()}</p>
-          <p style="margin:4px 0 0 0;font-size:14px;color:#28a745;">${itemPoints} pts</p>
+          <p style="margin:0;font-size:18px;font-weight:700;">$${formatPrice(itemTotal)}</p>
+          <p style="margin:4px 0 0 0;font-size:14px;color:#28a745;">${formatPoints(itemPoints)} pts</p>
         </div>
         <button onclick="window.removeFromCart('${item.productId}')" style="background:#dc3545;color:white;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:12px;">✕</button>
       </div>
     `;
   }).join('');
+
+  // Round totals for display
+  const displayTotalPrice = Math.round(totalPrice);
+  const displayTotalPoints = Math.round(totalPoints * 100) / 100;
 
   modalContent.innerHTML = `
     <div style="padding:24px;border-bottom:2px solid #eee;">
@@ -300,11 +316,11 @@ function openCartModal(getDisplayPrice, getDisplayPoints) {
       <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding-bottom:16px;border-bottom:2px solid #dee2e6;">
         <div>
           <p style="margin:0 0 8px 0;font-size:14px;color:#666;">${items.length} producto${items.length !== 1 ? 's' : ''} (${cart.getItemCount()} unidades)</p>
-          <p style="margin:0;font-size:24px;font-weight:700;">Total: $${totalPrice.toLocaleString()}</p>
+          <p style="margin:0;font-size:24px;font-weight:700;">Total: $${formatPrice(displayTotalPrice)}</p>
         </div>
         <div style="text-align:right;">
           <p style="margin:0 0 8px 0;font-size:14px;color:#666;">Puntos totales</p>
-          <p style="margin:0;font-size:24px;font-weight:700;color:#28a745;">${totalPoints} pts</p>
+          <p style="margin:0;font-size:24px;font-weight:700;color:#28a745;">${formatPoints(displayTotalPoints)} pts</p>
         </div>
       </div>
       <div style="display:flex;gap:12px;">
