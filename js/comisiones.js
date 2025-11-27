@@ -35,11 +35,302 @@ const historyEl = document.getElementById("history");
   .entry.earning .amount { color: #111827; }
   .entry .source { color: #9ca3af; font-size: 12px; margin-left: 8px; }
   .entry .bold-name { font-weight: 700; }
+
+  /* Badge de notificación para comisiones del mes */
+  .comision-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Estado INACTIVO: color rojizo actual */
+  .comision-badge.inactive {
+    background: linear-gradient(135deg, #ff6b35, #f44336);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(244, 67, 54, 0.35);
+    animation: badge-pulse 2s ease-in-out infinite;
+  }
+  /* Estado ACTIVO: color verde clarito con animación de $ */
+  .comision-badge.active {
+    background: linear-gradient(135deg, #a8e6cf, #56c596);
+    color: #1b5e20;
+    box-shadow: 0 2px 6px rgba(86, 197, 150, 0.4);
+    animation: badge-pulse-active 2s ease-in-out infinite;
+  }
+  .comision-badge.hidden { display: none; }
+  @keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  @keyframes badge-pulse-active {
+    0%, 100% { transform: scale(1); box-shadow: 0 2px 6px rgba(86, 197, 150, 0.4); }
+    50% { transform: scale(1.03); box-shadow: 0 3px 10px rgba(86, 197, 150, 0.5); }
+  }
+  /* Animación sutil de signos $ para usuarios activos */
+  .comision-badge.active::before {
+    content: '$';
+    position: absolute;
+    font-size: 9px;
+    opacity: 0;
+    animation: float-dollar 3s ease-in-out infinite;
+    left: 5px;
+    top: -2px;
+    color: #2e7d32;
+  }
+  .comision-badge.active::after {
+    content: '$';
+    position: absolute;
+    font-size: 8px;
+    opacity: 0;
+    animation: float-dollar 3s ease-in-out 1.5s infinite;
+    right: 8px;
+    top: -3px;
+    color: #388e3c;
+  }
+  @keyframes float-dollar {
+    0% { opacity: 0; transform: translateY(8px) scale(0.6); }
+    20% { opacity: 0.7; transform: translateY(2px) scale(0.9); }
+    40% { opacity: 0.4; transform: translateY(-5px) scale(0.7); }
+    60% { opacity: 0; transform: translateY(-12px) scale(0.5); }
+    100% { opacity: 0; transform: translateY(-15px) scale(0.4); }
+  }
+  /* Mensaje de advertencia para usuarios inactivos */
+  .comision-warning {
+    display: block;
+    font-size: 9px;
+    color: #e53935;
+    font-weight: 600;
+    margin-top: 2px;
+    animation: warning-blink 2.5s ease-in-out infinite;
+  }
+  .comision-warning.hidden { display: none; }
+  @keyframes warning-blink {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+  }
+  /* Wrapper para posicionar el badge */
+  .comision-label-wrapper {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
   `;
   const s = document.createElement("style");
   s.textContent = css;
   document.head.appendChild(s);
 })();
+
+// Función para calcular comisiones del mes en curso
+function calculateCurrentMonthCommissions(historyArray) {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  let monthlyTotal = 0;
+
+  if (!Array.isArray(historyArray)) return 0;
+
+  for (const entry of historyArray) {
+    // Solo contar entradas tipo earning (comisiones ganadas)
+    const entryType = entry.type || '';
+    const isEarning = entryType === 'earning' || entryType === 'group_points' || entryType === 'quick_start_bonus' || entryType === 'quick_start_upper_level';
+
+    if (!isEarning) continue;
+
+    // Obtener timestamp de la entrada
+    let entryDate = null;
+    if (entry.timestamp) {
+      if (typeof entry.timestamp === 'number') {
+        entryDate = new Date(entry.timestamp);
+      } else if (entry.timestamp && typeof entry.timestamp.toDate === 'function') {
+        entryDate = entry.timestamp.toDate();
+      } else if (entry.timestamp && typeof entry.timestamp.seconds === 'number') {
+        entryDate = new Date(entry.timestamp.seconds * 1000);
+      } else if (typeof entry.timestamp === 'string') {
+        entryDate = new Date(entry.timestamp);
+      }
+    } else if (entry.date) {
+      entryDate = new Date(entry.date);
+    } else if (entry.originMs) {
+      entryDate = new Date(Number(entry.originMs));
+    }
+
+    if (!entryDate || isNaN(entryDate.getTime())) continue;
+
+    // Verificar si es del mes actual
+    if (entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear) {
+      monthlyTotal += Number(entry.amount ?? 0);
+    }
+  }
+
+  return monthlyTotal;
+}
+
+// Función para verificar si el usuario está activo en el mes actual
+// Un usuario está activo si tiene puntos personales generados en el mes actual (compras propias)
+function checkUserActiveThisMonth(historyArray, userData) {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // Verificar si tiene puntos personales actualizados este mes (de la data del usuario)
+  const personalPoints = Number(userData?.personalPoints ?? userData?.puntos ?? 0);
+  const lastPurchaseDate = userData?.lastPurchaseDate || userData?.ultimaCompra;
+
+  if (lastPurchaseDate) {
+    let purchaseDate = null;
+    if (typeof lastPurchaseDate === 'number') {
+      purchaseDate = new Date(lastPurchaseDate);
+    } else if (lastPurchaseDate && typeof lastPurchaseDate.toDate === 'function') {
+      purchaseDate = lastPurchaseDate.toDate();
+    } else if (lastPurchaseDate && typeof lastPurchaseDate.seconds === 'number') {
+      purchaseDate = new Date(lastPurchaseDate.seconds * 1000);
+    } else if (typeof lastPurchaseDate === 'string') {
+      purchaseDate = new Date(lastPurchaseDate);
+    }
+
+    if (purchaseDate && !isNaN(purchaseDate.getTime())) {
+      if (purchaseDate.getMonth() === currentMonth && purchaseDate.getFullYear() === currentYear) {
+        return true;
+      }
+    }
+  }
+
+  // Verificar también en el historial si hay compras del mes actual
+  if (!Array.isArray(historyArray)) return false;
+
+  for (const entry of historyArray) {
+    // Buscar compras propias (purchase) o entradas que indiquen actividad personal
+    const entryType = entry.type || '';
+    const isPurchase = entryType === 'purchase' ||
+                       (entry.orderId && entry.action && entry.action.includes('Compra')) ||
+                       (entry.meta && entry.meta.action && entry.meta.action.includes('compra'));
+
+    if (!isPurchase) continue;
+
+    // Obtener timestamp de la entrada
+    let entryDate = null;
+    if (entry.timestamp) {
+      if (typeof entry.timestamp === 'number') {
+        entryDate = new Date(entry.timestamp);
+      } else if (entry.timestamp && typeof entry.timestamp.toDate === 'function') {
+        entryDate = entry.timestamp.toDate();
+      } else if (entry.timestamp && typeof entry.timestamp.seconds === 'number') {
+        entryDate = new Date(entry.timestamp.seconds * 1000);
+      } else if (typeof entry.timestamp === 'string') {
+        entryDate = new Date(entry.timestamp);
+      }
+    } else if (entry.date) {
+      entryDate = new Date(entry.date);
+    } else if (entry.originMs) {
+      entryDate = new Date(Number(entry.originMs));
+    }
+
+    if (!entryDate || isNaN(entryDate.getTime())) continue;
+
+    // Verificar si es del mes actual
+    if (entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear) {
+      return true;
+    }
+  }
+
+  // Si tiene puntos personales > 0, también consideramos que podría estar activo
+  // (esto es un fallback si no hay historial de compras pero sí hay puntos)
+  if (personalPoints > 0 && userData?.activeThisMonth !== false) {
+    // Verificamos si el campo activeThisMonth está explícitamente en false
+    return userData?.activeThisMonth ?? false;
+  }
+
+  return false;
+}
+
+// Función para verificar si estamos en la última semana del mes
+function isLastWeekOfMonth() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const currentDay = now.getDate();
+
+  // Obtener el último día del mes
+  const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+
+  // La última semana es cuando faltan 7 días o menos para terminar el mes
+  const daysUntilEndOfMonth = lastDayOfMonth - currentDay;
+  return daysUntilEndOfMonth < 7;
+}
+
+// Función para actualizar o crear el badge de comisiones del mes
+// isActive: true si el usuario tiene actividad (puntos personales) en el mes actual
+// El badge solo se muestra en la última semana del mes
+function updateMonthlyCommissionBadge(monthlyAmount, isActive = false) {
+  // Buscar el elemento "Comisiones por cobrar"
+  const porCobrarLabel = document.querySelector('.comision-item.por-cobrar .comision-label');
+  if (!porCobrarLabel) return;
+
+  // Solo mostrar el badge en la última semana del mes
+  const showBadge = isLastWeekOfMonth();
+
+  // Verificar si ya existe un wrapper
+  let wrapper = porCobrarLabel.querySelector('.comision-label-wrapper');
+  if (!wrapper) {
+    // Crear wrapper y mover el texto dentro
+    wrapper = document.createElement('span');
+    wrapper.className = 'comision-label-wrapper';
+    const labelText = porCobrarLabel.textContent;
+    porCobrarLabel.textContent = '';
+    const textSpan = document.createElement('span');
+    textSpan.textContent = labelText;
+    wrapper.appendChild(textSpan);
+    porCobrarLabel.appendChild(wrapper);
+  }
+
+  // Buscar o crear el badge
+  let badge = wrapper.querySelector('.comision-badge');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'comision-badge';
+    wrapper.appendChild(badge);
+  }
+
+  // Buscar o crear el mensaje de advertencia para usuarios inactivos
+  let warningMsg = porCobrarLabel.querySelector('.comision-warning');
+  if (!warningMsg) {
+    warningMsg = document.createElement('span');
+    warningMsg.className = 'comision-warning hidden';
+    warningMsg.textContent = '¡Actívate, o perderás estas comisiones!';
+    porCobrarLabel.appendChild(warningMsg);
+  }
+
+  // Actualizar contenido del badge
+  if (monthlyAmount > 0 && showBadge) {
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const now = new Date();
+    const monthName = monthNames[now.getMonth()];
+    badge.textContent = `${monthName}: ${formatCurrency(monthlyAmount)}`;
+    badge.classList.remove('hidden');
+
+    // Aplicar estilo según estado activo/inactivo
+    if (isActive) {
+      badge.classList.add('active');
+      badge.classList.remove('inactive');
+      warningMsg.classList.add('hidden');
+    } else {
+      badge.classList.add('inactive');
+      badge.classList.remove('active');
+      warningMsg.classList.remove('hidden');
+    }
+  } else {
+    badge.classList.add('hidden');
+    warningMsg.classList.add('hidden');
+  }
+}
 
 // Utilidades
 function formatCurrency(amount = 0) {
@@ -206,19 +497,24 @@ const uRef = doc(db, "usuarios", uid);
 
     // Actualiza balances visibles si existen
     if (elPending) elPending.textContent = formatCurrency(Number(data.balance ?? 0));
-    // Actualizar estado del botón Cobrar: verificar balance, y si es Master o tiene 50+ puntos personales
+    // Actualizar estado del botón Cobrar: verificar balance, si es Master, y mínimo 20,000 pesos
     try {
       const pendingAmountNumber = Number(data.balance ?? 0);
       const personalPoints = Number(data.personalPoints ?? data.puntos ?? 0);
       const isMaster = !data.patrocinador || data.patrocinador === '' || data.patrocinador === null;
       const canWithdraw = isMaster || personalPoints >= 50;
+      const MIN_WITHDRAW_AMOUNT = 20000; // Mínimo 20,000 pesos para cobrar
+      const meetsMinimum = pendingAmountNumber >= MIN_WITHDRAW_AMOUNT;
 
       if (btnCobrar) {
-        if (pendingAmountNumber > 0 && canWithdraw) {
+        if (pendingAmountNumber > 0 && canWithdraw && meetsMinimum) {
           btnCobrar.removeAttribute('title');
           btnCobrar.disabled = false;
         } else if (pendingAmountNumber > 0 && !canWithdraw) {
           btnCobrar.setAttribute('title', 'Solo los Masters o distribuidores con 50+ puntos personales pueden cobrar');
+          btnCobrar.disabled = true;
+        } else if (pendingAmountNumber > 0 && !meetsMinimum) {
+          btnCobrar.setAttribute('title', `El monto mínimo para cobrar es ${formatCurrency(MIN_WITHDRAW_AMOUNT)}`);
           btnCobrar.disabled = true;
         } else {
           btnCobrar.setAttribute('title', 'No tienes comisiones por cobrar');
@@ -233,6 +529,14 @@ const uRef = doc(db, "usuarios", uid);
     if (elGroupPoints) elGroupPoints.textContent = (data.groupPoints !== undefined) ? String(data.groupPoints) : (data.puntosGrupales !== undefined ? String(data.puntosGrupales) : '0');
 
     renderCombinedHistory();
+
+    // Actualizar badge de comisiones del mes actual
+    try {
+      const monthlyCommissions = calculateCurrentMonthCommissions(userHistoryArray);
+      const isUserActiveThisMonth = checkUserActiveThisMonth(userHistoryArray, data);
+      updateMonthlyCommissionBadge(monthlyCommissions, isUserActiveThisMonth);
+    } catch (e) { console.warn('Error actualizando badge de comisiones mensuales', e); }
+
     // --- Actualización automática de puntos grupales basada en el historial ---
     // Este proceso se ejecuta automáticamente cada vez que se actualiza el documento del usuario
     // y calcula los puntos comisionables disponibles SIN mezclar los ya cobrados
@@ -576,6 +880,9 @@ export { addEarnings, cobrarPending, attachRealtimeForUserBoth, normalizeEntry }
       const personalPoints = Number(userData.personalPoints ?? userData.puntos ?? 0);
       const isMaster = !userData.patrocinador || userData.patrocinador === '' || userData.patrocinador === null;
       const canWithdraw = isMaster || personalPoints >= 50;
+      const MIN_WITHDRAW_AMOUNT = 20000; // Mínimo 20,000 pesos para cobrar
+      const currentBalance = Number(userData.balance ?? 0);
+      const meetsMinimum = currentBalance >= MIN_WITHDRAW_AMOUNT;
 
       if (!canWithdraw) {
         if (window.Swal) {
@@ -588,6 +895,24 @@ export { addEarnings, cobrarPending, attachRealtimeForUserBoth, normalizeEntry }
           });
         } else {
           alert(`No puedes cobrar aún para desbloquear bonos pagos y cobros, debes ser Master o tener más de 50 puntos personales. Actualmente tienes ${personalPoints.toFixed(2)} puntos.`);
+        }
+        return;
+      }
+
+      // Verificar monto mínimo de 20,000 pesos
+      if (!meetsMinimum) {
+        const prettyMin = (typeof formatCurrency === 'function') ? formatCurrency(MIN_WITHDRAW_AMOUNT) : ('$' + MIN_WITHDRAW_AMOUNT.toLocaleString());
+        const prettyBalance = (typeof formatCurrency === 'function') ? formatCurrency(currentBalance) : ('$' + currentBalance.toLocaleString());
+        if (window.Swal) {
+          await Swal.fire({
+            title: 'Monto mínimo no alcanzado',
+            html: `<p>El monto mínimo para cobrar es <strong>${prettyMin}</strong>.</p>
+                   <p><small>Actualmente tienes <strong>${prettyBalance}</strong> en comisiones por cobrar.</small></p>`,
+            icon: 'warning',
+            confirmButtonText: 'Entendido'
+          });
+        } else {
+          alert(`El monto mínimo para cobrar es ${prettyMin}. Actualmente tienes ${prettyBalance} en comisiones.`);
         }
         return;
       }

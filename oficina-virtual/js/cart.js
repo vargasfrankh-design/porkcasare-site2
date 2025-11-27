@@ -282,7 +282,7 @@ function openCartModal(getDisplayPrice, getDisplayPoints) {
         <div style="flex:1;">
           <h4 style="margin:0 0 8px 0;font-size:16px;">${item.productName}</h4>
           <p style="margin:0;font-size:14px;color:#666;">$${formatPrice(unitPrice)} × ${item.quantity}</p>
-          <p style="margin:4px 0 0 0;font-size:13px;color:#28a745;">${formatPoints(unitPoints)} pts × ${item.quantity} = ${formatPoints(itemPoints)} pts</p>
+          <p style="margin:4px 0 0 0;font-size:13px;color:#28a745;">${formatPoints(itemPoints)} pts</p>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <button onclick="window.updateCartItemQuantity('${item.productId}', ${item.quantity - 1})" class="qty-btn" style="width:30px;height:30px;border:1px solid #ddd;background:white;border-radius:4px;cursor:pointer;">−</button>
