@@ -132,6 +132,7 @@
       <button class="tab-button" data-tab="products">Productos</button>
       <button class="tab-button" data-tab="categories">Categorías</button>
       <button class="tab-button" data-tab="calculator">Calculadora de Puntos</button>
+      <button class="tab-button" data-tab="profits">Ganancias</button>
     </div>
 
     <!-- Tab: Resumen -->
@@ -241,7 +242,24 @@
     <div id="tab-distributors" class="tab-content">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap;">
         <h2 style="margin:0;">Distribuidores Registrados</h2>
-        <input type="text" id="distributorSearchInput" placeholder="Buscar por nombre, usuario o cédula..." style="padding:10px 16px;border:1px solid #ddd;border-radius:6px;font-size:14px;min-width:300px;flex:1;max-width:400px;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="distributorSearchInput" placeholder="Buscar por nombre, usuario o cédula..." style="padding:10px 16px;border:1px solid #ddd;border-radius:6px;font-size:14px;min-width:200px;">
+          <select id="distributorSortFilter" style="padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:white;">
+            <option value="name_asc">Nombre A-Z</option>
+            <option value="name_desc">Nombre Z-A</option>
+            <option value="date_newest">Más Recientes</option>
+            <option value="date_oldest">Más Antiguos</option>
+            <option value="balance_high">Mayor Balance</option>
+            <option value="balance_low">Menor Balance</option>
+            <option value="points_high">Más Puntos Personales</option>
+            <option value="points_low">Menos Puntos Personales</option>
+            <option value="group_high">Más Puntos Grupales</option>
+            <option value="group_low">Menos Puntos Grupales</option>
+            <option value="referrals_high">Más Referidos</option>
+            <option value="active_first">Activos Primero</option>
+            <option value="inactive_first">Inactivos Primero</option>
+          </select>
+        </div>
       </div>
       <table>
         <thead>
@@ -416,10 +434,12 @@
             <th>Nombre</th>
             <th>Descripción</th>
             <th>Categoría</th>
+            <th>Unidades</th>
             <th>Precio Dist.</th>
             <th>Precio Cliente</th>
             <th>Precio Rest.</th>
-            <th>Unidades Vendidas</th>
+            <th>Puntos</th>
+            <th>Vendidas</th>
             <th>Destacado</th>
             <th>Estado</th>
             <th>Acciones</th>
@@ -456,7 +476,141 @@
     <div id="tab-calculator" class="tab-content">
       <div style="max-width:900px;margin:0 auto;">
         <h2 style="margin-bottom:8px;">Calculadora de Puntos y Comisiones</h2>
-        <p style="color:#666;margin-bottom:24px;">Simula cómo se distribuirán los puntos y comisiones en la red antes de confirmar cualquier orden.</p>
+        <p style="color:#666;margin-bottom:24px;">Calcula automáticamente los puntos y comisiones basados en el beneficio de un producto.</p>
+
+        <!-- CALCULADORA RÁPIDA DE CONVERSIÓN -->
+        <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);padding:28px;border-radius:12px;box-shadow:0 4px 15px rgba(102,126,234,0.4);margin-bottom:32px;">
+          <h3 style="margin:0 0 20px 0;color:white;font-size:20px;font-weight:700;">
+            <span style="margin-right:8px;">💰</span>Conversión Rápida: Pesos → Puntos
+          </h3>
+
+          <div style="background:rgba(255,255,255,0.15);padding:16px;border-radius:8px;margin-bottom:20px;border-left:4px solid rgba(255,255,255,0.6);">
+            <p style="color:rgba(255,255,255,0.95);margin:0;font-size:14px;">
+              <strong>Fórmula:</strong> 1 Punto = $2.800 pesos | Distribuidores reciben 10% de los puntos | Restaurantes reciben 5% de los puntos
+            </p>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:end;">
+            <div>
+              <label style="display:block;margin-bottom:8px;font-weight:600;color:white;font-size:14px;">
+                Beneficio del Producto (en pesos)
+              </label>
+              <div style="position:relative;">
+                <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#667eea;font-weight:700;font-size:18px;">$</span>
+                <input type="number"
+                  id="quickCalcBenefit"
+                  min="0"
+                  step="100"
+                  placeholder="Ej: 7000"
+                  style="width:100%;padding:16px 16px 16px 36px;border:none;border-radius:8px;font-size:18px;font-weight:600;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+              </div>
+              <p style="color:rgba(255,255,255,0.7);font-size:12px;margin:8px 0 0 0;">Ingresa el valor del beneficio que genera el producto</p>
+            </div>
+
+            <div>
+              <button id="quickCalcBtn"
+                style="width:100%;padding:16px 24px;background:white;color:#667eea;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:all 0.2s;"
+                onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(0,0,0,0.2)';"
+                onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)';">
+                <span style="margin-right:8px;">📊</span>Calcular Puntos y Comisiones
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESULTADOS DE LA CALCULADORA RÁPIDA -->
+        <div id="quickCalcResults" style="display:none;margin-bottom:32px;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+
+            <!-- Resultado 1: Conversión a Puntos -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 4px 12px rgba(0,0,0,0.08);border-top:4px solid #28a745;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <div style="width:48px;height:48px;background:linear-gradient(135deg,#28a745 0%,#20c997 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;">
+                  🎯
+                </div>
+                <div>
+                  <div style="font-size:12px;color:#6c757d;font-weight:500;text-transform:uppercase;">Conversión a Puntos</div>
+                  <div style="font-size:12px;color:#28a745;">$2.800 = 1 punto</div>
+                </div>
+              </div>
+              <div style="font-size:36px;font-weight:800;color:#28a745;margin-bottom:4px;" id="quickResultPoints">0.00</div>
+              <div style="font-size:14px;color:#666;">puntos generados</div>
+              <div style="margin-top:12px;padding:12px;background:#e6f9f0;border-radius:6px;font-size:13px;color:#0d6d45;">
+                <strong id="quickResultBenefitDisplay">$0</strong> ÷ $2.800 = <strong id="quickResultPointsSmall">0.00</strong> puntos
+              </div>
+            </div>
+
+            <!-- Resultado 2: Comisión Distribuidores (10%) -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 4px 12px rgba(0,0,0,0.08);border-top:4px solid #007bff;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <div style="width:48px;height:48px;background:linear-gradient(135deg,#007bff 0%,#00d4ff 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;">
+                  👥
+                </div>
+                <div>
+                  <div style="font-size:12px;color:#6c757d;font-weight:500;text-transform:uppercase;">Distribuidores</div>
+                  <div style="font-size:12px;color:#007bff;">10% de los puntos</div>
+                </div>
+              </div>
+              <div style="font-size:36px;font-weight:800;color:#007bff;margin-bottom:4px;" id="quickResultDistributor">0.00</div>
+              <div style="font-size:14px;color:#666;">puntos de comisión</div>
+              <div style="margin-top:12px;padding:12px;background:#e7f5ff;border-radius:6px;font-size:13px;color:#0a5eb5;">
+                <strong id="quickResultPointsForDist">0.00</strong> × 10% = <strong id="quickResultDistributorSmall">0.00</strong> puntos
+                <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #b8daff;">
+                  Equivalente: <strong id="quickResultDistributorPesos">$0</strong> pesos
+                </div>
+              </div>
+            </div>
+
+            <!-- Resultado 3: Comisión Restaurantes (5%) -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 4px 12px rgba(0,0,0,0.08);border-top:4px solid #fd7e14;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <div style="width:48px;height:48px;background:linear-gradient(135deg,#fd7e14 0%,#ffc107 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;">
+                  🍽️
+                </div>
+                <div>
+                  <div style="font-size:12px;color:#6c757d;font-weight:500;text-transform:uppercase;">Restaurantes</div>
+                  <div style="font-size:12px;color:#fd7e14;">5% de los puntos</div>
+                </div>
+              </div>
+              <div style="font-size:36px;font-weight:800;color:#fd7e14;margin-bottom:4px;" id="quickResultRestaurant">0.00</div>
+              <div style="font-size:14px;color:#666;">puntos de comisión</div>
+              <div style="margin-top:12px;padding:12px;background:#fff8e6;border-radius:6px;font-size:13px;color:#b36b00;">
+                <strong id="quickResultPointsForRest">0.00</strong> × 5% = <strong id="quickResultRestaurantSmall">0.00</strong> puntos
+                <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #ffc107;">
+                  Equivalente: <strong id="quickResultRestaurantPesos">$0</strong> pesos
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resumen Total -->
+          <div style="margin-top:20px;background:#f8f9fa;border-radius:12px;padding:20px;border:2px solid #e9ecef;">
+            <h4 style="margin:0 0 16px 0;font-size:16px;color:#495057;">📋 Resumen del Cálculo</h4>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center;">
+              <div style="padding:12px;background:white;border-radius:8px;">
+                <div style="font-size:12px;color:#6c757d;">Beneficio Ingresado</div>
+                <div style="font-size:20px;font-weight:700;color:#333;" id="summaryBenefit">$0</div>
+              </div>
+              <div style="padding:12px;background:white;border-radius:8px;">
+                <div style="font-size:12px;color:#6c757d;">Puntos Totales</div>
+                <div style="font-size:20px;font-weight:700;color:#28a745;" id="summaryPoints">0.00</div>
+              </div>
+              <div style="padding:12px;background:white;border-radius:8px;">
+                <div style="font-size:12px;color:#6c757d;">Comisión Dist. (10%)</div>
+                <div style="font-size:20px;font-weight:700;color:#007bff;" id="summaryDist">0.00 pts</div>
+              </div>
+              <div style="padding:12px;background:white;border-radius:8px;">
+                <div style="font-size:12px;color:#6c757d;">Comisión Rest. (5%)</div>
+                <div style="font-size:20px;font-weight:700;color:#fd7e14;" id="summaryRest">0.00 pts</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr style="border:none;border-top:2px dashed #e9ecef;margin:32px 0;">
+
+        <h3 style="margin-bottom:8px;color:#495057;">🧮 Simulador Avanzado de Distribución</h3>
+        <p style="color:#666;margin-bottom:24px;">Simula cómo se distribuirán los puntos y comisiones en la red para una orden específica.</p>
 
         <div style="background:white;padding:24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:24px;">
           <h3 style="margin-top:0;border-bottom:2px solid #007bff;padding-bottom:8px;margin-bottom:20px;">Datos de la Compra</h3>
@@ -502,6 +656,133 @@
           <div style="background:white;padding:24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
             <h3 style="margin-top:0;border-bottom:2px solid #764ba2;padding-bottom:8px;margin-bottom:20px;">Distribución de Comisiones</h3>
             <div id="calcDistribution"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Ganancias (Profits) -->
+    <div id="tab-profits" class="tab-content">
+      <div style="max-width:1200px;margin:0 auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+          <h2 style="margin:0;">Análisis de Ganancias por Producto</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label style="font-weight:500;">Período:</label>
+            <select id="profitsPeriodFilter" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+              <option value="current">Mes en Curso</option>
+              <option value="last">Mes Anterior</option>
+              <option value="last3">Últimos 3 Meses</option>
+              <option value="last6">Últimos 6 Meses</option>
+              <option value="year">Este Año</option>
+              <option value="all">Todo el Tiempo</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="stats-grid" style="margin-bottom:24px;">
+          <div class="stat-card green">
+            <h3>Ganancia Total del Período</h3>
+            <div class="value" id="profitsTotalProfit">$0</div>
+          </div>
+          <div class="stat-card blue">
+            <h3>Total Ventas (Bruto)</h3>
+            <div class="value" id="profitsTotalSales">$0</div>
+          </div>
+          <div class="stat-card orange">
+            <h3>Pagado a la Red</h3>
+            <div class="value" id="profitsTotalNetwork">$0</div>
+          </div>
+          <div class="stat-card purple">
+            <h3>Margen Promedio</h3>
+            <div class="value" id="profitsAvgMargin">0%</div>
+          </div>
+        </div>
+
+        <!-- Add/Edit Costs Section -->
+        <div style="background:white;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:24px;">
+          <h3 style="margin-top:0;border-bottom:2px solid #28a745;padding-bottom:8px;margin-bottom:16px;">Configurar Costos y Beneficios por Producto</h3>
+          <p style="color:#666;font-size:14px;margin-bottom:16px;">Ingresa el costo de compra de cada producto y el porcentaje que corresponde a la plataforma. Por ejemplo: si el beneficio es 600 pesos y la plataforma se queda con 50%, la plataforma gana 300 pesos y la red 300 pesos.</p>
+
+          <div style="background:#e7f5ff;padding:12px 16px;border-radius:8px;margin-bottom:20px;border-left:4px solid #007bff;">
+            <strong style="color:#007bff;">Ejemplo:</strong>
+            <span style="color:#495057;">Arroz - Costo: $2,980 / Precio Venta: $3,580 / Beneficio: $600 / Plataforma 50%: $300 / Red 50%: $300</span>
+          </div>
+
+          <div id="profitsCostsList" style="margin-bottom:20px;">
+            <!-- Product cost rows will be rendered here -->
+            <div style="text-align:center;color:#666;padding:20px;">Cargando productos...</div>
+          </div>
+
+          <button id="saveProfitsCostsBtn" class="btn-success" style="width:100%;padding:12px;">Guardar Configuracion</button>
+        </div>
+
+        <!-- Profits Table -->
+        <div style="background:white;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:24px;">
+          <h3 style="margin-top:0;border-bottom:2px solid #007bff;padding-bottom:8px;margin-bottom:16px;">Reporte de Ganancias por Producto</h3>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th style="text-align:center;">Unidades</th>
+                <th>Precio Venta</th>
+                <th>Costo</th>
+                <th>Beneficio Unitario</th>
+                <th>Ganancia Plataforma</th>
+                <th>Pago a Red</th>
+                <th>Ingreso Bruto</th>
+                <th>Ganancia Neta Total</th>
+              </tr>
+            </thead>
+            <tbody id="profitsTable">
+              <tr><td colspan="9" class="empty-state">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Monthly Chart Section -->
+        <div style="background:white;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+          <h3 style="margin-top:0;border-bottom:2px solid #764ba2;padding-bottom:8px;margin-bottom:16px;">Histórico Mensual de Ganancias</h3>
+
+          <div id="profitsMonthlyReport" style="min-height:200px;">
+            <!-- Monthly bars will be rendered here -->
+            <div style="text-align:center;color:#666;padding:20px;">Cargando histórico...</div>
+          </div>
+        </div>
+
+        <!-- Purged Commissions Report Section -->
+        <div style="background:white;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-top:24px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="margin:0;border-bottom:2px solid #dc3545;padding-bottom:8px;">Informe de Comisiones Eliminadas por Inactividad</h3>
+            <select id="purgeReportFilter" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+              <option value="all">Todos los meses</option>
+              <option value="current_year">Este año</option>
+              <option value="last_3">Últimos 3 meses</option>
+            </select>
+          </div>
+
+          <div class="stats-grid" style="margin-bottom:20px;">
+            <div class="stat-card" style="background:linear-gradient(135deg,#f5f5f5,#e0e0e0);">
+              <h3>Total Reportes</h3>
+              <div class="value" id="purgeReportCount">0</div>
+            </div>
+            <div class="stat-card" style="background:linear-gradient(135deg,#ffebee,#ffcdd2);">
+              <h3>Total COP Eliminados</h3>
+              <div class="value" id="purgeTotalAmount" style="color:#c62828;">$0</div>
+            </div>
+            <div class="stat-card" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);">
+              <h3>Total Puntos Eliminados</h3>
+              <div class="value" id="purgeTotalPoints" style="color:#ef6c00;">0</div>
+            </div>
+            <div class="stat-card" style="background:linear-gradient(135deg,#fce4ec,#f8bbd9);">
+              <h3>Usuarios Afectados</h3>
+              <div class="value" id="purgeTotalUsers" style="color:#ad1457;">0</div>
+            </div>
+          </div>
+
+          <div id="purgeReportsList" style="max-height:500px;overflow-y:auto;">
+            <div style="text-align:center;color:#666;padding:20px;">Cargando informes de purga...</div>
           </div>
         </div>
       </div>
@@ -597,127 +878,159 @@
 
   <!-- Modal para crear/editar producto -->
   <div id="productModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;overflow-y:auto;">
-    <div style="background:white;padding:30px;border-radius:8px;max-width:700px;width:90%;margin:40px auto;">
-      <h3 id="productModalTitle" style="margin-top:0;">Crear Producto</h3>
+    <div style="background:white;padding:20px;border-radius:8px;max-width:600px;width:95%;margin:20px auto;max-height:90vh;overflow-y:auto;box-sizing:border-box;">
+      <h3 id="productModalTitle" style="margin-top:0;font-size:18px;">Crear Producto</h3>
       <form id="productForm">
         <input type="hidden" id="productEditId">
-        
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-          <div>
-            <label style="display:block;margin-bottom:6px;font-weight:500;">Nombre del Producto *</label>
-            <input type="text" id="productName" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: Chuletas - 3 kg">
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;font-size:13px;">Nombre del Producto *</label>
+          <input type="text" id="productName" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;" placeholder="Ej: Chuletas - 3 kg">
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;font-size:13px;">ID del Producto *</label>
+          <input type="text" id="productId" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;" placeholder="Ej: chuletas-3kg">
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;font-size:13px;">Descripción</label>
+          <textarea id="productDescription" rows="2" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;" placeholder="Descripción del producto"></textarea>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;font-size:13px;">URL de la Imagen</label>
+          <input type="text" id="productImage" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;" placeholder="/images/productos/producto.jpg">
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+          <div style="flex:1;min-width:120px;">
+            <label style="display:block;margin-bottom:6px;font-weight:500;font-size:13px;">Precio Distribuidor</label>
+            <input type="number" id="productPriceDistributor" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;" placeholder="60000">
           </div>
-          
-          <div>
-            <label style="display:block;margin-bottom:6px;font-weight:500;">ID del Producto *</label>
-            <input type="text" id="productId" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: chuletas-3kg">
+
+          <div style="flex:1;min-width:120px;">
+            <label style="display:block;margin-bottom:6px;font-weight:500;font-size:13px;">Precio Cliente</label>
+            <input type="number" id="productPriceClient" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;" placeholder="75000">
+          </div>
+
+          <div style="flex:1;min-width:120px;">
+            <label style="display:block;margin-bottom:6px;font-weight:500;font-size:13px;">Precio Restaurante</label>
+            <input type="number" id="productPriceRestaurant" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;" placeholder="20000">
           </div>
         </div>
 
-        <div style="margin-bottom:16px;">
-          <label style="display:block;margin-bottom:6px;font-weight:500;">Descripción</label>
-          <textarea id="productDescription" rows="2" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Descripción del producto"></textarea>
-        </div>
+        <!-- Puntos separados para Distribuidores vs Restaurantes -->
+        <div style="background:#e7f5ff;padding:14px;border-radius:8px;margin-bottom:14px;border-left:4px solid #007bff;">
+          <h4 style="margin:0 0 10px 0;font-size:13px;color:#0a5eb5;">Configuración de Puntos</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <div style="flex:1;min-width:140px;">
+              <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;">Puntos para Distribuidores</label>
+              <input type="number" id="productPointsDistributor" step="0.01" min="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" placeholder="Ej: 2.5">
+              <small style="color:#666;font-size:10px;">Puntos por unidad (permite decimales)</small>
+            </div>
 
-        <div style="margin-bottom:16px;">
-          <label style="display:block;margin-bottom:6px;font-weight:500;">URL de la Imagen</label>
-          <input type="text" id="productImage" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="/images/productos/producto.jpg">
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
-          <div>
-            <label style="display:block;margin-bottom:6px;font-weight:500;">Precio Distribuidor</label>
-            <input type="number" id="productPriceDistributor" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="60000">
-          </div>
-          
-          <div>
-            <label style="display:block;margin-bottom:6px;font-weight:500;">Precio Cliente</label>
-            <input type="number" id="productPriceClient" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="75000">
-          </div>
-          
-          <div>
-            <label style="display:block;margin-bottom:6px;font-weight:500;">Precio Restaurante</label>
-            <input type="number" id="productPriceRestaurant" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="20000">
+            <div style="flex:1;min-width:140px;">
+              <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;">Puntos para Restaurantes</label>
+              <input type="number" id="productPointsRestaurant" step="0.001" min="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" placeholder="Ej: 3.333">
+              <small style="color:#666;font-size:10px;">Puntos por kilo/unidad (hasta 3 decimales)</small>
+            </div>
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-          <div>
-            <label style="display:block;margin-bottom:6px;font-weight:500;">Puntos para Distribuidores</label>
-            <input type="number" id="productPointsDistributor" step="any" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="2.5">
-            <small style="color:#666;font-size:12px;">Puntos que genera este producto para distribuidores</small>
+        <!-- Unidades separadas para Distribuidores/Clientes vs Restaurantes -->
+        <div style="background:#f8f9fa;padding:14px;border-radius:8px;margin-bottom:14px;">
+          <h4 style="margin:0 0 10px 0;font-size:13px;color:#495057;">Configuración de Unidades y Cantidades</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <div style="flex:1;min-width:140px;">
+              <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;">Unidad (Distribuidores/Clientes)</label>
+              <select id="productUnit" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;">
+                <option value="paquete">Paquete</option>
+                <option value="kilo">Kilo</option>
+                <option value="unidad">Unidad</option>
+              </select>
+              <small style="color:#666;font-size:10px;">Unidad para dist. y clientes</small>
+            </div>
+
+            <div style="flex:1;min-width:140px;">
+              <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;">Unidad (Restaurantes)</label>
+              <select id="productUnitRestaurant" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;">
+                <option value="kilo">Kilo</option>
+                <option value="paquete">Paquete</option>
+                <option value="unidad">Unidad</option>
+              </select>
+              <small style="color:#666;font-size:10px;">Unidad para restaurantes</small>
+            </div>
           </div>
 
-          <div>
-            <label style="display:block;margin-bottom:6px;font-weight:500;">Puntos para Restaurantes</label>
-            <input type="number" id="productPointsRestaurant" step="any" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="3.333">
-            <small style="color:#666;font-size:12px;">Puntos por kilo/unidad para restaurantes</small>
+          <!-- Nuevos campos de cantidad/peso -->
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;padding-top:12px;border-top:1px dashed #ddd;">
+            <div style="flex:1;min-width:140px;">
+              <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;">Cantidad/Peso (Dist./Clientes)</label>
+              <input type="number" id="productQuantityDistributor" step="0.1" min="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" placeholder="Ej: 3">
+              <small style="color:#666;font-size:10px;">Ej: 3 si el paquete pesa 3 kilos</small>
+            </div>
+
+            <div style="flex:1;min-width:140px;">
+              <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;">Cantidad/Peso (Restaurantes)</label>
+              <input type="number" id="productQuantityRestaurant" step="0.1" min="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" placeholder="Ej: 1">
+              <small style="color:#666;font-size:10px;">Ej: 1 para venta por kilo</small>
+            </div>
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-          <div>
-            <label style="display:block;margin-bottom:6px;font-weight:500;">Unidad</label>
-            <select id="productUnit" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
-              <option value="paquete">Paquete</option>
-              <option value="kilo">Kilo</option>
-              <option value="unidad">Unidad</option>
-            </select>
-          </div>
-
-          <div>
-            <label style="display:block;margin-bottom:6px;font-weight:500;">Categoría</label>
-            <select id="productCategory" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
-              <option value="carnes">Carnes</option>
-              <option value="bebidas">Bebidas</option>
-              <option value="alimentos">Alimentos</option>
-              <option value="aseo">Aseo</option>
-              <option value="higiene-personal">Higiene Personal</option>
-              <option value="abarrotes">Abarrotes</option>
-            </select>
-          </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;font-size:13px;">Categoría</label>
+          <select id="productCategory" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+            <option value="carnes">Carnes</option>
+            <option value="bebidas">Bebidas</option>
+            <option value="alimentos">Alimentos</option>
+            <option value="aseo">Aseo</option>
+            <option value="higiene-personal">Higiene Personal</option>
+            <option value="abarrotes">Abarrotes</option>
+          </select>
         </div>
 
-        <div style="margin-bottom:16px;">
-          <label style="display:block;margin-bottom:6px;font-weight:500;">Disponible para:</label>
-          <div style="display:flex;gap:16px;">
-            <label style="display:flex;align-items:center;gap:6px;">
+        <div style="margin-bottom:14px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;font-size:13px;">Disponible para:</label>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
               <input type="checkbox" id="productAvailDistributor" value="distribuidor">
               <span>Distribuidores</span>
             </label>
-            <label style="display:flex;align-items:center;gap:6px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
               <input type="checkbox" id="productAvailClient" value="cliente">
               <span>Clientes</span>
             </label>
-            <label style="display:flex;align-items:center;gap:6px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
               <input type="checkbox" id="productAvailRestaurant" value="restaurante">
               <span>Restaurantes</span>
             </label>
           </div>
         </div>
 
-        <div style="margin-bottom:20px;">
-          <label style="display:flex;align-items:center;gap:8px;">
+        <div style="margin-bottom:12px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
             <input type="checkbox" id="productHidden">
             <span style="font-weight:500;">Ocultar producto (no visible para usuarios)</span>
           </label>
         </div>
 
-        <div style="margin-bottom:20px;">
-          <label style="display:flex;align-items:center;gap:8px;">
+        <div style="margin-bottom:12px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
             <input type="checkbox" id="productOutOfStock">
             <span style="font-weight:500;">Marcar como agotado</span>
           </label>
         </div>
 
-        <div style="margin-bottom:20px;">
-          <label style="display:flex;align-items:center;gap:8px;">
+        <div style="margin-bottom:16px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
             <input type="checkbox" id="productFeatured">
-            <span style="font-weight:500;">⭐ Destacar (aparece de primero en oficina virtual)</span>
+            <span style="font-weight:500;">⭐ Destacar (aparece de primero)</span>
           </label>
         </div>
 
-        <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding-top:10px;border-top:1px solid #eee;">
           <button type="button" id="productModalCancel" class="btn-secondary">Cancelar</button>
           <button type="submit" class="btn-success">Guardar Producto</button>
         </div>
@@ -1003,7 +1316,8 @@
     }
 
     let allDistributors = [];
-    
+    let distributorReferralCounts = {}; // Global referral counts for sorting
+
     // Cargar distribuidores
     async function loadDistributors() {
       try {
@@ -1011,70 +1325,152 @@
         allDistributors = usersSnap.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(u => (u.role === 'distribuidor' || u.tipoRegistro === 'distribuidor' || (!u.role && !u.tipoRegistro)));
-        
-        renderDistributorsTable(allDistributors);
-        
+
+        // Build referral counts
+        distributorReferralCounts = {};
+        allDistributors.forEach(dist => {
+          const sponsor = dist.patrocinador;
+          if (sponsor) {
+            distributorReferralCounts[sponsor] = (distributorReferralCounts[sponsor] || 0) + 1;
+          }
+        });
+
+        // Add referral count to each distributor for sorting
+        allDistributors = allDistributors.map(dist => ({
+          ...dist,
+          referralCount: distributorReferralCounts[dist.usuario] || 0,
+          isActive: checkIfUserActiveThisMonth(dist)
+        }));
+
+        applyDistributorFilters();
+
         // Attach search event listener after loading distributors
         const searchInput = document.getElementById('distributorSearchInput');
         if (searchInput && !searchInput.dataset.listenerAttached) {
           searchInput.dataset.listenerAttached = 'true';
-          searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase().trim();
-            
-            if (!searchTerm) {
-              renderDistributorsTable(allDistributors);
-              return;
-            }
-            
-            const filtered = allDistributors.filter(dist => {
-              const nombre = (dist.nombre || '').toLowerCase();
-              const usuario = (dist.usuario || '').toLowerCase();
-              const cedula = (dist.cedula || '').toLowerCase();
-              const email = (dist.email || '').toLowerCase();
-              
-              return nombre.includes(searchTerm) || 
-                     usuario.includes(searchTerm) || 
-                     cedula.includes(searchTerm) ||
-                     email.includes(searchTerm);
-            });
-            
-            renderDistributorsTable(filtered);
-          });
+          searchInput.addEventListener('input', () => applyDistributorFilters());
+        }
+
+        // Attach sort filter event listener
+        const sortFilter = document.getElementById('distributorSortFilter');
+        if (sortFilter && !sortFilter.dataset.listenerAttached) {
+          sortFilter.dataset.listenerAttached = 'true';
+          sortFilter.addEventListener('change', () => applyDistributorFilters());
         }
       } catch (err) {
         console.error('Error loading distributors:', err);
       }
     }
-    
+
+    // Apply both search and sort filters
+    function applyDistributorFilters() {
+      const searchInput = document.getElementById('distributorSearchInput');
+      const sortFilter = document.getElementById('distributorSortFilter');
+
+      const searchTerm = (searchInput?.value || '').toLowerCase().trim();
+      const sortBy = sortFilter?.value || 'name_asc';
+
+      // First filter by search term
+      let filtered = allDistributors;
+      if (searchTerm) {
+        filtered = allDistributors.filter(dist => {
+          const nombre = (dist.nombre || '').toLowerCase();
+          const usuario = (dist.usuario || '').toLowerCase();
+          const cedula = (dist.cedula || '').toLowerCase();
+          const email = (dist.email || '').toLowerCase();
+
+          return nombre.includes(searchTerm) ||
+                 usuario.includes(searchTerm) ||
+                 cedula.includes(searchTerm) ||
+                 email.includes(searchTerm);
+        });
+      }
+
+      // Then sort
+      filtered = sortDistributors(filtered, sortBy);
+
+      renderDistributorsTable(filtered);
+    }
+
+    // Sort distributors by criteria
+    function sortDistributors(distributors, sortBy) {
+      const sorted = [...distributors];
+
+      switch (sortBy) {
+        case 'name_asc':
+          return sorted.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+        case 'name_desc':
+          return sorted.sort((a, b) => (b.nombre || '').localeCompare(a.nombre || ''));
+        case 'date_newest':
+          return sorted.sort((a, b) => {
+            const dateA = a.createdAt?.seconds || 0;
+            const dateB = b.createdAt?.seconds || 0;
+            return dateB - dateA;
+          });
+        case 'date_oldest':
+          return sorted.sort((a, b) => {
+            const dateA = a.createdAt?.seconds || 0;
+            const dateB = b.createdAt?.seconds || 0;
+            return dateA - dateB;
+          });
+        case 'balance_high':
+          return sorted.sort((a, b) => (b.balance || 0) - (a.balance || 0));
+        case 'balance_low':
+          return sorted.sort((a, b) => (a.balance || 0) - (b.balance || 0));
+        case 'points_high':
+          return sorted.sort((a, b) => {
+            const pointsA = a.personalPoints || a.puntos || 0;
+            const pointsB = b.personalPoints || b.puntos || 0;
+            return pointsB - pointsA;
+          });
+        case 'points_low':
+          return sorted.sort((a, b) => {
+            const pointsA = a.personalPoints || a.puntos || 0;
+            const pointsB = b.personalPoints || b.puntos || 0;
+            return pointsA - pointsB;
+          });
+        case 'group_high':
+          return sorted.sort((a, b) => (b.groupPoints || 0) - (a.groupPoints || 0));
+        case 'group_low':
+          return sorted.sort((a, b) => (a.groupPoints || 0) - (b.groupPoints || 0));
+        case 'referrals_high':
+          return sorted.sort((a, b) => (b.referralCount || 0) - (a.referralCount || 0));
+        case 'active_first':
+          return sorted.sort((a, b) => {
+            if (a.isActive === b.isActive) return (a.nombre || '').localeCompare(b.nombre || '');
+            return a.isActive ? -1 : 1;
+          });
+        case 'inactive_first':
+          return sorted.sort((a, b) => {
+            if (a.isActive === b.isActive) return (a.nombre || '').localeCompare(b.nombre || '');
+            return a.isActive ? 1 : -1;
+          });
+        default:
+          return sorted;
+      }
+    }
+
     function renderDistributorsTable(distributors) {
       const table = document.getElementById('distributorsTable');
       table.innerHTML = '';
-      
+
       if (distributors.length === 0) {
         table.innerHTML = '<tr><td colspan="9" class="empty-state">No hay distribuidores</td></tr>';
         return;
       }
-      
-      const referralCounts = {};
-      allDistributors.forEach(dist => {
-        const sponsor = dist.patrocinador;
-        if (sponsor) {
-          referralCounts[sponsor] = (referralCounts[sponsor] || 0) + 1;
-        }
-      });
-      
+
       distributors.forEach(dist => {
         const row = document.createElement('tr');
         const date = dist.createdAt ? new Date(dist.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
         const personalPoints = dist.personalPoints || dist.puntos || 0;
         const groupPoints = dist.groupPoints || 0;
-        const referralCount = referralCounts[dist.usuario] || 0;
-        
-        const isActive = checkIfUserActiveThisMonth(dist);
-        const statusBadge = isActive 
+        const referralCount = dist.referralCount || 0;
+
+        const isActive = dist.isActive;
+        const statusBadge = isActive
           ? '<span style="background:#10b981;color:white;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600;">✓ Activo</span>'
           : '<span style="background:#ef4444;color:white;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600;">⚠ Inactivo</span>';
-        
+
         row.innerHTML = `
           <td>${dist.usuario || 'N/A'}</td>
           <td>${dist.nombre || 'N/A'}</td>
@@ -2176,24 +2572,77 @@
 
         console.log(`✅ Órdenes confirmadas (sin usuarios de prueba): ${filteredOrders.length}`);
 
-        // Calculate total units sold per product
+        // Calculate total units sold per product using intelligent matching
         const unitsSoldMap = {};
+
+        // Helper function to find matching product by ID or name (same logic as findProductMatch)
+        const findProductByIdOrName = (productId, productName) => {
+          // Try by productId first
+          if (productId) {
+            let match = allProducts.find(p => p.id === productId);
+            if (match) return match.id;
+
+            match = allProducts.find(p => p.docId === productId);
+            if (match) return match.id;
+          }
+
+          // Try by product name
+          if (productName) {
+            const lowerName = productName.toLowerCase().trim();
+
+            // Exact match
+            let match = allProducts.find(p => p.nombre && p.nombre.toLowerCase().trim() === lowerName);
+            if (match) return match.id;
+
+            // Contains match
+            match = allProducts.find(p => {
+              if (!p.nombre) return false;
+              const pName = p.nombre.toLowerCase().trim();
+              return pName.includes(lowerName) || lowerName.includes(pName);
+            });
+            if (match) return match.id;
+
+            // First significant characters match (for partial names)
+            if (lowerName.length >= 4) {
+              const prefix = lowerName.substring(0, Math.min(6, lowerName.length));
+              match = allProducts.find(p => {
+                if (!p.nombre) return false;
+                const pName = p.nombre.toLowerCase().trim();
+                return pName.startsWith(prefix) || prefix.startsWith(pName.substring(0, prefix.length));
+              });
+              if (match) return match.id;
+            }
+          }
+
+          return productId || null; // Return original ID if no match found
+        };
+
         filteredOrders.forEach(order => {
           const productId = order.productId;
-          const quantity = order.quantity || 0;
+          const productName = order.productName || order.product || '';
+          const quantity = order.quantity || 1;
 
-          if (!unitsSoldMap[productId]) {
-            unitsSoldMap[productId] = 0;
+          // Use intelligent matching to find the product ID
+          const matchedProductId = findProductByIdOrName(productId, productName);
+
+          if (matchedProductId) {
+            if (!unitsSoldMap[matchedProductId]) {
+              unitsSoldMap[matchedProductId] = 0;
+            }
+            unitsSoldMap[matchedProductId] += quantity;
           }
-          unitsSoldMap[productId] += quantity;
         });
 
         // Log units sold per product for debugging
-        console.log('📦 Unidades vendidas por producto:', unitsSoldMap);
+        console.log('📦 Unidades vendidas por producto (con vinculación inteligente):');
+        Object.entries(unitsSoldMap).forEach(([id, qty]) => {
+          const prod = allProducts.find(p => p.id === id);
+          console.log(`   - ${prod?.nombre || id}: ${qty} unidades`);
+        });
 
         // Update allProducts with unitsSold
         allProducts.forEach(product => {
-          product.unitsSold = unitsSoldMap[product.id] || 0;
+          product.unitsSold = unitsSoldMap[product.id] || unitsSoldMap[product.docId] || 0;
         });
       } catch (err) {
         console.error('Error calculating units sold:', err);
@@ -2211,7 +2660,7 @@
     function renderProductsPreview() {
       const previewGrid = document.getElementById('productsPreviewGrid');
       const previewType = document.getElementById('previewTypeSelector').value;
-      
+
       const filteredProducts = allProducts.filter(prod => {
         if (prod.hidden) return false;
         if (!prod.availableFor || prod.availableFor.length === 0) return true;
@@ -2225,15 +2674,41 @@
 
       previewGrid.innerHTML = filteredProducts.map(prod => {
         let price = prod.precio || 0;
-        if (previewType === 'distribuidor' && prod.precioDistribuidor) {
-          price = prod.precioDistribuidor;
-        } else if (previewType === 'cliente' && prod.precioCliente) {
-          price = prod.precioCliente;
-        } else if (previewType === 'restaurante' && prod.precioRestaurante) {
-          price = prod.precioRestaurante;
+        let points = 0;
+        let unitLabel = prod.unit || 'paquete';
+
+        if (previewType === 'distribuidor') {
+          price = prod.precioDistribuidor || prod.precio || 0;
+          points = prod.puntosDistribuidor || prod.puntos || 0;
+          unitLabel = prod.unit || 'paquete';
+        } else if (previewType === 'cliente') {
+          price = prod.precioCliente || prod.precio || 0;
+          points = prod.puntosDistribuidor || prod.puntos || 0; // Reference points
+          unitLabel = prod.unit || 'paquete';
+        } else if (previewType === 'restaurante') {
+          price = prod.precioRestaurante || prod.precio || 0;
+          points = prod.puntosRestaurante || prod.puntos || 0;
+          unitLabel = prod.unitRestaurant || prod.unit || 'kilo';
         }
 
         const badge = prod.outOfStock ? '<span class="product-badge outofstock">Agotado</span>' : '';
+
+        // Format points with appropriate decimals
+        const formattedPoints = previewType === 'restaurante'
+          ? points.toFixed(3).replace(/\.?0+$/, '')
+          : points.toFixed(2).replace(/\.?0+$/, '');
+
+        // Points display based on user type
+        let pointsDisplay = '';
+        if (points > 0) {
+          if (previewType === 'distribuidor') {
+            pointsDisplay = `<p style="font-size:11px;color:#007bff;margin:4px 0 0 0;"><span style="background:#e7f5ff;padding:2px 6px;border-radius:4px;">${formattedPoints} pts/${unitLabel}</span></p>`;
+          } else if (previewType === 'restaurante') {
+            pointsDisplay = `<p style="font-size:11px;color:#fd7e14;margin:4px 0 0 0;"><span style="background:#fff8e6;padding:2px 6px;border-radius:4px;">${formattedPoints} pts/${unitLabel}</span></p>`;
+          } else {
+            pointsDisplay = `<p style="font-size:10px;color:#999;margin:4px 0 0 0;">Genera ${formattedPoints} pts</p>`;
+          }
+        }
 
         return `
           <div class="product-card-preview">
@@ -2242,7 +2717,8 @@
             <h4>${prod.nombre}</h4>
             <p>${prod.descripcion || ''}</p>
             <div class="price">${formatCOP(price)}</div>
-            <p style="font-size:12px;color:#999;">por ${prod.unit || 'paquete'}</p>
+            <p style="font-size:12px;color:#999;margin:2px 0;">por ${unitLabel}</p>
+            ${pointsDisplay}
           </div>
         `;
       }).join('');
@@ -2252,7 +2728,7 @@
       const table = document.getElementById('productsManagementTable');
 
       if (allProducts.length === 0) {
-        table.innerHTML = '<tr><td colspan="11" class="empty-state">No hay productos registrados</td></tr>';
+        table.innerHTML = '<tr><td colspan="13" class="empty-state">No hay productos registrados</td></tr>';
         return;
       }
 
@@ -2279,15 +2755,29 @@
           ? `<button onclick="showProductOrders('${prod.id}', '${prod.nombre.replace(/'/g, "\\'")}', ${unitsSold})" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"><strong>${unitsSold}</strong> ${prod.unit || 'unidades'} 📋</button>`
           : `<span style="color:#999;">${unitsSold} ${prod.unit || 'unidades'}</span>`;
 
+        // Units display with quantity
+        const unitDistClient = prod.unit || 'paquete';
+        const unitRestaurant = prod.unitRestaurant || 'kilo';
+        const qtyDist = prod.quantityDistributor ? `${prod.quantityDistributor} ` : '';
+        const qtyRest = prod.quantityRestaurant ? `${prod.quantityRestaurant} ` : '';
+        const unitsHtml = `<span style="font-size:11px;"><span style="background:#e7f5ff;padding:2px 4px;border-radius:3px;color:#007bff;">D/C: ${qtyDist}${unitDistClient}${prod.quantityDistributor && prod.quantityDistributor !== 1 ? 's' : ''}</span><br><span style="background:#fff8e6;padding:2px 4px;border-radius:3px;color:#fd7e14;margin-top:2px;display:inline-block;">R: ${qtyRest}${unitRestaurant}${prod.quantityRestaurant && prod.quantityRestaurant !== 1 ? 's' : ''}</span></span>`;
+
+        // Points display
+        const ptsDistribuidor = (prod.puntosDistribuidor || prod.puntos || 0).toFixed(2).replace(/\.?0+$/, '');
+        const ptsRestaurante = (prod.puntosRestaurante || 0).toFixed(3).replace(/\.?0+$/, '');
+        const pointsHtml = `<span style="font-size:11px;"><span style="background:#e7f5ff;padding:2px 4px;border-radius:3px;color:#007bff;">D: ${ptsDistribuidor}</span><br><span style="background:#fff8e6;padding:2px 4px;border-radius:3px;color:#fd7e14;margin-top:2px;display:inline-block;">R: ${ptsRestaurante}</span></span>`;
+
         return `
           <tr>
             <td><img src="${prod.imagen || '/images/productos/inicio.jpg'}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;"></td>
             <td><strong>${prod.nombre}</strong><br><small style="color:#666;">${prod.id}</small></td>
             <td style="max-width:200px;"><small>${prod.descripcion || 'N/A'}</small></td>
             <td><span style="background:#e9ecef;padding:4px 8px;border-radius:4px;font-size:12px;">${categoryNames[prod.categoria] || prod.categoria || 'N/A'}</span></td>
+            <td>${unitsHtml}</td>
             <td>${prod.precioDistribuidor ? formatCOP(prod.precioDistribuidor) : 'N/A'}</td>
             <td>${prod.precioCliente ? formatCOP(prod.precioCliente) : 'N/A'}</td>
             <td>${prod.precioRestaurante ? formatCOP(prod.precioRestaurante) : 'N/A'}</td>
+            <td>${pointsHtml}</td>
             <td style="text-align:center;">${unitsSoldHtml}</td>
             <td style="text-align:center;">${featuredHtml}</td>
             <td>${statusHtml}</td>
@@ -2330,6 +2820,9 @@
         puntosRestaurante: parseFloat(document.getElementById('productPointsRestaurant').value) || 0,
         puntos: parseFloat(document.getElementById('productPointsDistributor').value) || 0, // backward compatibility
         unit: document.getElementById('productUnit').value,
+        unitRestaurant: document.getElementById('productUnitRestaurant').value,
+        quantityDistributor: parseFloat(document.getElementById('productQuantityDistributor').value) || null,
+        quantityRestaurant: parseFloat(document.getElementById('productQuantityRestaurant').value) || null,
         categoria: document.getElementById('productCategory').value,
         availableFor: [],
         hidden: document.getElementById('productHidden').checked,
@@ -2380,6 +2873,9 @@
       document.getElementById('productPointsDistributor').value = product.puntosDistribuidor || product.puntos || '';
       document.getElementById('productPointsRestaurant').value = product.puntosRestaurante || product.puntos || '';
       document.getElementById('productUnit').value = product.unit || 'paquete';
+      document.getElementById('productUnitRestaurant').value = product.unitRestaurant || 'kilo';
+      document.getElementById('productQuantityDistributor').value = product.quantityDistributor || '';
+      document.getElementById('productQuantityRestaurant').value = product.quantityRestaurant || '';
       document.getElementById('productCategory').value = product.categoria || 'carnes';
 
       document.getElementById('productAvailDistributor').checked = (product.availableFor || []).includes('distribuidor');
@@ -3181,6 +3677,91 @@
       document.getElementById('calcResults').style.display = 'block';
     });
 
+    // ============================================
+    // QUICK CALCULATOR: Pesos → Puntos → Comisiones
+    // ============================================
+
+    const QUICK_CALC_POINT_VALUE = 2800; // 1 punto = $2,800 pesos
+    const QUICK_CALC_DISTRIBUTOR_RATE = 0.10; // 10% para distribuidores
+    const QUICK_CALC_RESTAURANT_RATE = 0.05; // 5% para restaurantes
+
+    // Función para formatear números con separadores de miles
+    function formatPesos(amount) {
+      return '$' + Math.round(amount).toLocaleString('es-CO');
+    }
+
+    // Función para calcular y mostrar resultados
+    function calculateQuickResults() {
+      const benefitInput = document.getElementById('quickCalcBenefit');
+      const benefit = Number(benefitInput?.value) || 0;
+
+      if (benefit <= 0) {
+        document.getElementById('quickCalcResults').style.display = 'none';
+        return;
+      }
+
+      // 1. Conversión de pesos a puntos (1 punto = $2,800)
+      const totalPoints = benefit / QUICK_CALC_POINT_VALUE;
+
+      // 2. Comisión para distribuidores (10% de los puntos)
+      const distributorPoints = totalPoints * QUICK_CALC_DISTRIBUTOR_RATE;
+      const distributorPesos = distributorPoints * QUICK_CALC_POINT_VALUE;
+
+      // 3. Comisión para restaurantes (5% de los puntos)
+      const restaurantPoints = totalPoints * QUICK_CALC_RESTAURANT_RATE;
+      const restaurantPesos = restaurantPoints * QUICK_CALC_POINT_VALUE;
+
+      // Actualizar resultados en la UI
+      // Resultado 1: Puntos totales
+      document.getElementById('quickResultPoints').textContent = totalPoints.toFixed(2);
+      document.getElementById('quickResultBenefitDisplay').textContent = formatPesos(benefit);
+      document.getElementById('quickResultPointsSmall').textContent = totalPoints.toFixed(2);
+
+      // Resultado 2: Distribuidores
+      document.getElementById('quickResultDistributor').textContent = distributorPoints.toFixed(2);
+      document.getElementById('quickResultPointsForDist').textContent = totalPoints.toFixed(2);
+      document.getElementById('quickResultDistributorSmall').textContent = distributorPoints.toFixed(2);
+      document.getElementById('quickResultDistributorPesos').textContent = formatPesos(distributorPesos);
+
+      // Resultado 3: Restaurantes
+      document.getElementById('quickResultRestaurant').textContent = restaurantPoints.toFixed(2);
+      document.getElementById('quickResultPointsForRest').textContent = totalPoints.toFixed(2);
+      document.getElementById('quickResultRestaurantSmall').textContent = restaurantPoints.toFixed(2);
+      document.getElementById('quickResultRestaurantPesos').textContent = formatPesos(restaurantPesos);
+
+      // Resumen
+      document.getElementById('summaryBenefit').textContent = formatPesos(benefit);
+      document.getElementById('summaryPoints').textContent = totalPoints.toFixed(2);
+      document.getElementById('summaryDist').textContent = distributorPoints.toFixed(2) + ' pts';
+      document.getElementById('summaryRest').textContent = restaurantPoints.toFixed(2) + ' pts';
+
+      // Mostrar resultados
+      document.getElementById('quickCalcResults').style.display = 'block';
+    }
+
+    // Event listener para el botón de calcular
+    document.getElementById('quickCalcBtn')?.addEventListener('click', calculateQuickResults);
+
+    // También calcular al presionar Enter en el campo de beneficio
+    document.getElementById('quickCalcBenefit')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        calculateQuickResults();
+      }
+    });
+
+    // Calcular automáticamente mientras se escribe (con debounce)
+    let quickCalcTimeout = null;
+    document.getElementById('quickCalcBenefit')?.addEventListener('input', () => {
+      if (quickCalcTimeout) clearTimeout(quickCalcTimeout);
+      quickCalcTimeout = setTimeout(() => {
+        const value = Number(document.getElementById('quickCalcBenefit')?.value) || 0;
+        if (value > 0) {
+          calculateQuickResults();
+        }
+      }, 300);
+    });
+
     // Load calculator data when the calculator tab is activated
     const originalTabListener = document.querySelectorAll('.tab-button');
     originalTabListener.forEach(btn => {
@@ -3191,7 +3772,1027 @@
           }
         });
       }
+      // Load profits data when profits tab is activated
+      if (btn.dataset.tab === 'profits') {
+        btn.addEventListener('click', () => {
+          loadProfitsData();
+        });
+      }
     });
+
+    // ============================================
+    // GANANCIAS (PROFITS) SECTION
+    // ============================================
+
+    let profitsProductCosts = {}; // Stores cost per product {productId: {cost: number, networkPayment: number}}
+    let profitsOrders = []; // All confirmed orders
+    let profitsProducts = []; // All products
+
+    // Load profits data
+    async function loadProfitsData() {
+      try {
+        // Load products and orders
+        const [productsSnap, ordersSnap] = await Promise.all([
+          getDocs(collection(db, 'productos')),
+          getDocs(collection(db, 'orders'))
+        ]);
+
+        // Map products with docId (Firestore document ID) and id (product field)
+        profitsProducts = productsSnap.docs
+          .map(d => {
+            const data = d.data();
+            return {
+              docId: d.id,         // Firestore document ID
+              id: data.id || d.id, // Product ID field (or fallback to doc ID)
+              ...data
+            };
+          })
+          .filter(p => !p.deleted);
+
+        profitsOrders = ordersSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(o => o.status === 'confirmed');
+
+        // Debug logging
+        console.log('📊 Profits Data Loaded:');
+        console.log(`   - Productos: ${profitsProducts.length}`);
+        console.log(`   - Órdenes confirmadas: ${profitsOrders.length}`);
+
+        // Log all products for debugging
+        console.log('📦 Lista de productos:');
+        profitsProducts.forEach(p => {
+          console.log(`   - "${p.nombre}" (id: ${p.id}, docId: ${p.docId})`);
+        });
+
+        // Log sample orders for debugging
+        if (profitsOrders.length > 0) {
+          console.log('📦 Muestra de órdenes confirmadas:');
+          profitsOrders.slice(0, 5).forEach(order => {
+            console.log(`   - Orden ${order.id.substring(0, 8)}...: productId="${order.productId}", productName="${order.productName}"`);
+          });
+        }
+
+        // Load saved costs from localStorage (or could be from Firestore)
+        const savedCosts = localStorage.getItem('profitsProductCosts');
+        if (savedCosts) {
+          profitsProductCosts = JSON.parse(savedCosts);
+        }
+
+        renderProfitsCostsList();
+        updateProfitsReport();
+      } catch (err) {
+        console.error('Error loading profits data:', err);
+        alert('Error cargando datos de ganancias');
+      }
+    }
+
+    // Render the costs configuration list
+    function renderProfitsCostsList() {
+      const container = document.getElementById('profitsCostsList');
+
+      if (profitsProducts.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">No hay productos</div>';
+        return;
+      }
+
+      let html = `
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:8px;padding:12px;background:#f8f9fa;border-radius:4px;font-weight:600;font-size:12px;margin-bottom:8px;">
+          <div>Producto</div>
+          <div style="text-align:center;">Precio Venta</div>
+          <div style="text-align:center;">Costo Compra</div>
+          <div style="text-align:center;">Beneficio</div>
+          <div style="text-align:center;">% Plataforma</div>
+          <div style="text-align:center;">Resumen</div>
+        </div>
+      `;
+
+      profitsProducts.forEach(product => {
+        const savedCost = profitsProductCosts[product.id] || {};
+        const salePrice = product.precioDistribuidor || product.precio || 0;
+        const cost = savedCost.cost || 0;
+        const platformPercent = savedCost.platformPercent || 50; // Default 50% for platform
+        const benefit = salePrice - cost;
+        const platformProfit = benefit > 0 ? Math.round(benefit * (platformPercent / 100)) : 0;
+        const networkPayment = benefit > 0 ? benefit - platformProfit : 0;
+
+        const benefitColor = benefit > 0 ? '#28a745' : (benefit < 0 ? '#dc3545' : '#666');
+        const hasConfig = cost > 0;
+
+        html += `
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:8px;padding:14px 12px;border-bottom:1px solid #eee;align-items:center;${hasConfig ? '' : 'background:#fffbe6;'}">
+            <div>
+              <div style="font-weight:600;font-size:14px;">${product.nombre}</div>
+              <div style="font-size:11px;color:#999;">${product.id}</div>
+            </div>
+            <div style="text-align:center;">
+              <span style="color:#28a745;font-weight:700;font-size:15px;">$${salePrice.toLocaleString()}</span>
+            </div>
+            <div style="text-align:center;">
+              <input type="number"
+                id="cost-${product.id}"
+                value="${cost || ''}"
+                min="0"
+                style="width:100%;max-width:110px;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;text-align:center;"
+                placeholder="Ej: 2980"
+                onchange="updateBenefitPreview('${product.id}', ${salePrice})">
+            </div>
+            <div style="text-align:center;">
+              <span id="benefit-${product.id}" style="font-weight:700;font-size:15px;color:${benefitColor};">
+                ${cost > 0 ? '$' + benefit.toLocaleString() : '—'}
+              </span>
+            </div>
+            <div style="text-align:center;">
+              <select id="platform-${product.id}"
+                style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:100%;max-width:100px;"
+                onchange="updateBenefitPreview('${product.id}', ${salePrice})">
+                <option value="40" ${platformPercent === 40 ? 'selected' : ''}>40% / 60%</option>
+                <option value="45" ${platformPercent === 45 ? 'selected' : ''}>45% / 55%</option>
+                <option value="50" ${platformPercent === 50 ? 'selected' : ''}>50% / 50%</option>
+                <option value="55" ${platformPercent === 55 ? 'selected' : ''}>55% / 45%</option>
+                <option value="60" ${platformPercent === 60 ? 'selected' : ''}>60% / 40%</option>
+              </select>
+            </div>
+            <div id="summary-${product.id}" style="text-align:center;font-size:11px;line-height:1.5;">
+              ${cost > 0 ? `
+                <div style="color:#007bff;"><strong>Plataforma:</strong> $${platformProfit.toLocaleString()}</div>
+                <div style="color:#fd7e14;"><strong>Red:</strong> $${networkPayment.toLocaleString()}</div>
+              ` : '<span style="color:#999;">Ingrese el costo</span>'}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // Update benefit preview when cost or platform percent changes
+    window.updateBenefitPreview = function(productId, salePrice) {
+      const costInput = document.getElementById(`cost-${productId}`);
+      const platformSelect = document.getElementById(`platform-${productId}`);
+      const benefitSpan = document.getElementById(`benefit-${productId}`);
+      const summaryDiv = document.getElementById(`summary-${productId}`);
+
+      const cost = Number(costInput?.value) || 0;
+      const platformPercent = Number(platformSelect?.value) || 50;
+      const benefit = salePrice - cost;
+      const platformProfit = benefit > 0 ? Math.round(benefit * (platformPercent / 100)) : 0;
+      const networkPayment = benefit > 0 ? benefit - platformProfit : 0;
+
+      const benefitColor = benefit > 0 ? '#28a745' : (benefit < 0 ? '#dc3545' : '#666');
+
+      if (benefitSpan) {
+        benefitSpan.style.color = benefitColor;
+        benefitSpan.textContent = cost > 0 ? '$' + benefit.toLocaleString() : '—';
+      }
+
+      if (summaryDiv) {
+        if (cost > 0) {
+          summaryDiv.innerHTML = `
+            <div style="color:#007bff;"><strong>Plataforma:</strong> $${platformProfit.toLocaleString()}</div>
+            <div style="color:#fd7e14;"><strong>Red:</strong> $${networkPayment.toLocaleString()}</div>
+          `;
+        } else {
+          summaryDiv.innerHTML = '<span style="color:#999;">Ingrese el costo</span>';
+        }
+      }
+    };
+
+    // Save costs
+    document.getElementById('saveProfitsCostsBtn')?.addEventListener('click', () => {
+      profitsProducts.forEach(product => {
+        const costInput = document.getElementById(`cost-${product.id}`);
+        const platformSelect = document.getElementById(`platform-${product.id}`);
+
+        if (costInput && platformSelect) {
+          profitsProductCosts[product.id] = {
+            cost: Number(costInput.value) || 0,
+            platformPercent: Number(platformSelect.value) || 50
+          };
+        }
+      });
+
+      localStorage.setItem('profitsProductCosts', JSON.stringify(profitsProductCosts));
+      alert('Configuracion guardada correctamente');
+      updateProfitsReport();
+    });
+
+    // Filter orders by period
+    function filterOrdersByPeriod(orders, period) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+
+      return orders.filter(order => {
+        if (!order.createdAt) return false;
+        const orderDate = new Date(order.createdAt.seconds * 1000);
+
+        switch (period) {
+          case 'current':
+            return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+          case 'last':
+            const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+            return orderDate.getMonth() === lastMonth && orderDate.getFullYear() === lastMonthYear;
+          case 'last3':
+            const threeMonthsAgo = new Date(currentYear, currentMonth - 3, 1);
+            return orderDate >= threeMonthsAgo;
+          case 'last6':
+            const sixMonthsAgo = new Date(currentYear, currentMonth - 6, 1);
+            return orderDate >= sixMonthsAgo;
+          case 'year':
+            return orderDate.getFullYear() === currentYear;
+          case 'all':
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Normalize product name for better matching
+    function normalizeProductName(name) {
+      if (!name) return '';
+      return name
+        .toLowerCase()
+        .trim()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '') // Remove accents
+        .replace(/[-–—_]/g, ' ')    // Replace dashes with spaces
+        .replace(/\s+/g, ' ')       // Normalize multiple spaces
+        .replace(/\bkg\b/gi, 'kilo')
+        .replace(/\bkilos?\b/gi, 'kilo')
+        .replace(/\bunid\.?\b/gi, 'unidad')
+        .replace(/\bunidades?\b/gi, 'unidad')
+        .replace(/\bpaq\.?\b/gi, 'paquete')
+        .replace(/\bpaquetes?\b/gi, 'paquete')
+        .replace(/[^\w\s]/g, '')    // Remove punctuation
+        .trim();
+    }
+
+    // Extract core product words (main identifying words)
+    function extractCoreWords(name) {
+      const normalized = normalizeProductName(name);
+      // Common words to ignore for matching
+      const stopWords = ['de', 'la', 'el', 'los', 'las', 'un', 'una', 'unos', 'unas', 'con', 'sin', 'para', 'por', 'en', 'y', 'o', 'kilo', 'unidad', 'paquete', 'caja', 'bolsa', 'lata', 'botella', 'litro', 'ml', 'gr', 'g'];
+      return normalized.split(' ').filter(word => word.length > 1 && !stopWords.includes(word) && !/^\d+$/.test(word));
+    }
+
+    // Calculate similarity score between two product names
+    function calculateSimilarity(name1, name2) {
+      const words1 = extractCoreWords(name1);
+      const words2 = extractCoreWords(name2);
+
+      if (words1.length === 0 || words2.length === 0) return 0;
+
+      let matchedWords = 0;
+      words1.forEach(word1 => {
+        if (words2.some(word2 =>
+          word2 === word1 ||
+          word2.includes(word1) ||
+          word1.includes(word2)
+        )) {
+          matchedWords++;
+        }
+      });
+
+      // Return a score between 0 and 1
+      return matchedWords / Math.max(words1.length, words2.length);
+    }
+
+    // Helper function to find product by ID or name
+    function findProductMatch(order, products) {
+      // Try to find by productId first (matches both 'id' field and document ID)
+      const productId = order.productId || order.product?.id || null;
+      if (productId) {
+        // Try matching product.id field
+        let product = products.find(p => p.id === productId);
+        if (product) return product;
+
+        // Try matching document ID (docId)
+        product = products.find(p => p.docId === productId);
+        if (product) return product;
+
+        // Try case-insensitive and normalized ID match
+        const normalizedId = productId.toLowerCase().trim();
+        product = products.find(p =>
+          (p.id && p.id.toLowerCase().trim() === normalizedId) ||
+          (p.docId && p.docId.toLowerCase().trim() === normalizedId)
+        );
+        if (product) return product;
+      }
+
+      // Try to find by product name
+      const productName = order.productName || order.product || order.nombre || '';
+      if (!productName) return null;
+
+      const normalizedOrderName = normalizeProductName(productName);
+
+      // 1. Try exact normalized match first
+      let exactMatch = products.find(p =>
+        p.nombre && normalizeProductName(p.nombre) === normalizedOrderName
+      );
+      if (exactMatch) return exactMatch;
+
+      // 1.5 Try if the order name is contained in product name or vice versa (case insensitive)
+      const lowerOrderName = productName.toLowerCase().trim();
+      exactMatch = products.find(p => {
+        if (!p.nombre) return false;
+        const lowerProductName = p.nombre.toLowerCase().trim();
+        return lowerProductName.includes(lowerOrderName) || lowerOrderName.includes(lowerProductName);
+      });
+      if (exactMatch) {
+        console.log(`   📝 Match por contenido: "${productName}" → "${exactMatch.nombre}"`);
+        return exactMatch;
+      }
+
+      // 2. Try to match core words with high similarity
+      const orderCoreWords = extractCoreWords(productName);
+      if (orderCoreWords.length > 0) {
+        // Find best match by similarity score
+        let bestMatch = null;
+        let bestScore = 0;
+
+        products.forEach(p => {
+          if (!p.nombre) return;
+          const score = calculateSimilarity(productName, p.nombre);
+          if (score > bestScore) {
+            bestScore = score;
+            bestMatch = p;
+          }
+        });
+
+        // Lower threshold to 30% for better matching of single-word products like "Mantecaria"
+        if (bestMatch && bestScore >= 0.3) {
+          console.log(`   📝 Match encontrado: "${productName}" → "${bestMatch.nombre}" (score: ${(bestScore * 100).toFixed(0)}%)`);
+          return bestMatch;
+        }
+      }
+
+      // 3. Partial match as fallback (at least one main word in common)
+      // For single-word product names, be more flexible
+      const partialMatch = products.find(p => {
+        if (!p.nombre) return false;
+        const productWords = extractCoreWords(p.nombre);
+
+        // If order has only one core word, match if product contains it
+        if (orderCoreWords.length === 1) {
+          const orderWord = orderCoreWords[0];
+          return productWords.some(prodWord =>
+            prodWord === orderWord ||
+            (prodWord.length >= 3 && orderWord.length >= 3 &&
+             (prodWord.includes(orderWord) || orderWord.includes(prodWord)))
+          ) || normalizeProductName(p.nombre).includes(orderWord);
+        }
+
+        return orderCoreWords.some(orderWord =>
+          productWords.some(prodWord =>
+            prodWord === orderWord ||
+            (prodWord.length >= 4 && orderWord.length >= 4 &&
+             (prodWord.includes(orderWord) || orderWord.includes(prodWord)))
+          )
+        );
+      });
+
+      if (partialMatch) {
+        console.log(`   📝 Match parcial: "${productName}" → "${partialMatch.nombre}"`);
+        return partialMatch;
+      }
+
+      // 4. Last resort: try matching the first significant characters of the name
+      if (normalizedOrderName.length >= 4) {
+        const firstChars = normalizedOrderName.substring(0, Math.min(6, normalizedOrderName.length));
+        const charMatch = products.find(p => {
+          if (!p.nombre) return false;
+          const normalizedProductName = normalizeProductName(p.nombre);
+          return normalizedProductName.startsWith(firstChars) || firstChars.startsWith(normalizedProductName.substring(0, firstChars.length));
+        });
+        if (charMatch) {
+          console.log(`   📝 Match por prefijo: "${productName}" → "${charMatch.nombre}"`);
+          return charMatch;
+        }
+      }
+
+      console.log(`   ⚠️ Sin match para: "${productName}" (ID: ${productId || 'N/A'})`);
+      return null;
+    }
+
+    // Extract items from an order (handles single product or multi-item orders)
+    function extractOrderItems(order) {
+      const items = [];
+
+      // Check for items array (multi-item orders)
+      if (Array.isArray(order.items) && order.items.length > 0) {
+        order.items.forEach(item => {
+          items.push({
+            productId: item.productId || item.id || null,
+            productName: item.title || item.productName || item.nombre || '',
+            quantity: Number(item.quantity) || 1,
+            price: Number(item.unit_price || item.price || item.precio || 0),
+            totalPrice: Number(item.unit_price || item.price || item.precio || 0) * (Number(item.quantity) || 1)
+          });
+        });
+        return items;
+      }
+
+      // Check for productos array (alternate format)
+      if (Array.isArray(order.productos) && order.productos.length > 0) {
+        order.productos.forEach(item => {
+          items.push({
+            productId: item.productId || item.id || null,
+            productName: item.title || item.productName || item.nombre || '',
+            quantity: Number(item.quantity || item.cantidad) || 1,
+            price: Number(item.precio || item.price || 0),
+            totalPrice: Number(item.precio || item.price || 0) * (Number(item.quantity || item.cantidad) || 1)
+          });
+        });
+        return items;
+      }
+
+      // Single product order
+      const quantity = Number(order.quantity || order.cantidad) || 1;
+      const unitPrice = Number(order.price || order.precio) || 0;
+      const totalPrice = Number(order.totalPrice || order.priceTotal || order.amount || order.total) || (unitPrice * quantity);
+
+      items.push({
+        productId: order.productId || order.product?.id || null,
+        productName: order.productName || order.product || order.nombre || '',
+        quantity: quantity,
+        price: unitPrice || (totalPrice / quantity),
+        totalPrice: totalPrice
+      });
+
+      return items;
+    }
+
+    // Update profits report
+    function updateProfitsReport() {
+      const period = document.getElementById('profitsPeriodFilter')?.value || 'current';
+      const filteredOrders = filterOrdersByPeriod(profitsOrders, period);
+
+      console.log(`\n📊 ========= ACTUALIZANDO REPORTE DE GANANCIAS =========`);
+      console.log(`   Período seleccionado: ${period}`);
+      console.log(`   Total órdenes confirmadas: ${profitsOrders.length}`);
+      console.log(`   Órdenes en período: ${filteredOrders.length}`);
+      console.log(`   Total productos activos: ${profitsProducts.length}`);
+
+      // Calculate stats per product
+      const productStats = {};
+
+      profitsProducts.forEach(product => {
+        const savedCost = profitsProductCosts[product.id] || profitsProductCosts[product.docId] || {};
+        productStats[product.id] = {
+          product: product,
+          unitsSold: 0,
+          grossRevenue: 0,
+          salePrice: product.precioDistribuidor || product.precio || 0,
+          cost: savedCost.cost || 0,
+          platformPercent: savedCost.platformPercent || 50
+        };
+      });
+
+      // Also track unmatched products from orders
+      const unmatchedProducts = {};
+      let matchedOrdersCount = 0;
+      let unmatchedOrdersCount = 0;
+
+      // Aggregate order data - extract items from each order
+      filteredOrders.forEach((order, orderIndex) => {
+        const orderItems = extractOrderItems(order);
+
+        orderItems.forEach(item => {
+          // Try to find matching product
+          const matchedProduct = findProductMatch({
+            productId: item.productId,
+            productName: item.productName
+          }, profitsProducts);
+
+          if (matchedProduct && productStats[matchedProduct.id]) {
+            // Found matching product in our products list
+            productStats[matchedProduct.id].unitsSold += item.quantity;
+            productStats[matchedProduct.id].grossRevenue += item.totalPrice;
+            matchedOrdersCount++;
+
+            // Log first 5 successful matches for debugging
+            if (matchedOrdersCount <= 5) {
+              console.log(`   ✅ Match #${matchedOrdersCount}: "${item.productName}" (ID: ${item.productId || 'N/A'}) → "${matchedProduct.nombre}" (qty: ${item.quantity})`);
+            }
+          } else if (item.productName) {
+            // Track unmatched product by name for reporting
+            const key = (item.productName || '').toLowerCase().trim();
+            if (!unmatchedProducts[key]) {
+              unmatchedProducts[key] = {
+                product: {
+                  nombre: item.productName,
+                  id: item.productId || 'desconocido'
+                },
+                unitsSold: 0,
+                grossRevenue: 0,
+                salePrice: item.price,
+                cost: 0,
+                platformPercent: 50,
+                orders: []
+              };
+            }
+            unmatchedProducts[key].unitsSold += item.quantity;
+            unmatchedProducts[key].grossRevenue += item.totalPrice;
+            unmatchedProducts[key].orders.push(order.id);
+            unmatchedOrdersCount++;
+
+            // Update price if we have a better one
+            if (item.price > 0 && unmatchedProducts[key].salePrice === 0) {
+              unmatchedProducts[key].salePrice = item.price;
+            }
+
+            // Log all unmatched for debugging
+            console.log(`   ⚠️ Sin vincular: "${item.productName}" (ID: ${item.productId || 'N/A'}) - Orden: ${order.id.substring(0, 8)}...`);
+          }
+        });
+      });
+
+      // Debug logging for matching results
+      const matchedCount = Object.values(productStats).filter(s => s.unitsSold > 0).length;
+      const unmatchedCount = Object.keys(unmatchedProducts).length;
+      console.log(`\n📊 RESUMEN DE VINCULACIÓN:`);
+      console.log(`   - Items vinculados correctamente: ${matchedOrdersCount}`);
+      console.log(`   - Items sin vincular: ${unmatchedOrdersCount}`);
+      console.log(`   - Productos con ventas: ${matchedCount}`);
+
+      if (unmatchedCount > 0) {
+        console.log(`   - Productos diferentes sin vincular: ${unmatchedCount}`);
+        Object.entries(unmatchedProducts).forEach(([key, data]) => {
+          console.log(`      • "${data.product.nombre}" (ID: ${data.product.id}) - ${data.unitsSold} unidades, ${data.orders.length} órdenes`);
+        });
+      }
+      console.log(`========= FIN REPORTE =========\n`);
+
+      // Merge unmatched products into stats for display
+      Object.values(unmatchedProducts).forEach(unmatched => {
+        const key = `unmatched_${unmatched.product.nombre}`;
+        productStats[key] = unmatched;
+      });
+
+      // Calculate totals
+      let totalPlatformProfit = 0;
+      let totalNetworkPayment = 0;
+      let totalSales = 0;
+      let productsWithSales = 0;
+
+      // Render table
+      const tableBody = document.getElementById('profitsTable');
+      let tableHTML = '';
+
+      // Separate matched products from unmatched for better display
+      const matchedStats = [];
+      const unmatchedStats = [];
+
+      Object.entries(productStats).forEach(([key, stats]) => {
+        if (stats.unitsSold === 0) return;
+        if (key.startsWith('unmatched_')) {
+          unmatchedStats.push({ key, ...stats });
+        } else {
+          matchedStats.push({ key, ...stats });
+        }
+      });
+
+      // Render matched products first
+      matchedStats.forEach(stats => {
+        // Calculate benefit per unit (sale price - cost)
+        const benefitPerUnit = stats.salePrice - stats.cost;
+        const totalBenefit = benefitPerUnit * stats.unitsSold;
+
+        // Split the benefit between platform and network
+        const platformProfitPerUnit = benefitPerUnit > 0 ? Math.round(benefitPerUnit * (stats.platformPercent / 100)) : 0;
+        const networkPaymentPerUnit = benefitPerUnit > 0 ? benefitPerUnit - platformProfitPerUnit : 0;
+
+        const totalPlatformProfitProduct = platformProfitPerUnit * stats.unitsSold;
+        const totalNetworkPaymentProduct = networkPaymentPerUnit * stats.unitsSold;
+
+        totalSales += stats.grossRevenue;
+        totalPlatformProfit += totalPlatformProfitProduct;
+        totalNetworkPayment += totalNetworkPaymentProduct;
+        productsWithSales++;
+
+        const benefitColor = benefitPerUnit > 0 ? '#28a745' : (benefitPerUnit < 0 ? '#dc3545' : '#666');
+        const platformColor = totalPlatformProfitProduct > 0 ? '#007bff' : '#666';
+
+        tableHTML += `
+          <tr>
+            <td>
+              <strong>${stats.product.nombre}</strong>
+              <div style="font-size:11px;color:#999;">${stats.product.id}</div>
+            </td>
+            <td style="text-align:center;"><strong>${stats.unitsSold}</strong></td>
+            <td style="color:#28a745;">$${stats.salePrice.toLocaleString()}</td>
+            <td>${stats.cost > 0 ? '$' + stats.cost.toLocaleString() : '<span style="color:#999;">Sin configurar</span>'}</td>
+            <td style="color:${benefitColor};font-weight:600;">
+              ${stats.cost > 0 ? '$' + benefitPerUnit.toLocaleString() : '—'}
+              ${stats.cost > 0 ? '<div style="font-size:10px;color:#999;">' + stats.platformPercent + '% / ' + (100 - stats.platformPercent) + '%</div>' : ''}
+            </td>
+            <td style="color:${platformColor};font-weight:700;">
+              ${stats.cost > 0 ? '$' + totalPlatformProfitProduct.toLocaleString() : '—'}
+              ${stats.cost > 0 ? '<div style="font-size:10px;color:#999;">$' + platformProfitPerUnit.toLocaleString() + ' x ' + stats.unitsSold + '</div>' : ''}
+            </td>
+            <td style="color:#fd7e14;">
+              ${stats.cost > 0 ? '$' + totalNetworkPaymentProduct.toLocaleString() : '—'}
+              ${stats.cost > 0 ? '<div style="font-size:10px;color:#999;">$' + networkPaymentPerUnit.toLocaleString() + ' x ' + stats.unitsSold + '</div>' : ''}
+            </td>
+            <td>$${stats.grossRevenue.toLocaleString()}</td>
+            <td style="color:${platformColor};font-weight:700;font-size:16px;">
+              ${stats.cost > 0 ? '$' + totalPlatformProfitProduct.toLocaleString() : '—'}
+            </td>
+          </tr>
+        `;
+      });
+
+      // Render unmatched products with warning styling
+      if (unmatchedStats.length > 0) {
+        tableHTML += `
+          <tr>
+            <td colspan="9" style="background:#fff3cd;padding:12px;border-left:4px solid #ffc107;">
+              <strong style="color:#856404;">⚠️ Productos sin Vincular (${unmatchedStats.length})</strong>
+              <p style="margin:4px 0 0 0;font-size:12px;color:#856404;">
+                Estos productos en órdenes confirmadas no coinciden con ningún producto actual.
+                Posibles causas: nombre diferente, producto eliminado, o faltan datos.
+              </p>
+            </td>
+          </tr>
+        `;
+
+        unmatchedStats.forEach(stats => {
+          totalSales += stats.grossRevenue;
+          productsWithSales++;
+
+          tableHTML += `
+            <tr style="background:#fffbe6;">
+              <td>
+                <strong style="color:#856404;">${stats.product.nombre}</strong>
+                <div style="font-size:11px;color:#999;">
+                  ID original: ${stats.product.id}
+                  <span style="background:#ffc107;color:#856404;padding:2px 6px;border-radius:3px;font-size:10px;margin-left:8px;">SIN VINCULAR</span>
+                </div>
+              </td>
+              <td style="text-align:center;"><strong>${stats.unitsSold}</strong></td>
+              <td style="color:#28a745;">$${stats.salePrice.toLocaleString()}</td>
+              <td><span style="color:#999;">N/A</span></td>
+              <td><span style="color:#999;">—</span></td>
+              <td><span style="color:#999;">—</span></td>
+              <td><span style="color:#999;">—</span></td>
+              <td>$${stats.grossRevenue.toLocaleString()}</td>
+              <td><span style="color:#999;">—</span></td>
+            </tr>
+          `;
+        });
+      }
+
+      if (tableHTML === '') {
+        tableHTML = '<tr><td colspan="9" class="empty-state">No hay ventas en este período</td></tr>';
+      }
+
+      tableBody.innerHTML = tableHTML;
+
+      // Update summary cards
+      document.getElementById('profitsTotalProfit').textContent = `$${totalPlatformProfit.toLocaleString()}`;
+      document.getElementById('profitsTotalProfit').style.color = totalPlatformProfit >= 0 ? '#28a745' : '#dc3545';
+      document.getElementById('profitsTotalSales').textContent = `$${totalSales.toLocaleString()}`;
+      document.getElementById('profitsTotalNetwork').textContent = `$${totalNetworkPayment.toLocaleString()}`;
+
+      // Calculate average margin as percentage of sales
+      const avgMargin = totalSales > 0 ? (totalPlatformProfit / totalSales * 100) : 0;
+      document.getElementById('profitsAvgMargin').textContent = `${avgMargin.toFixed(1)}%`;
+
+      // Update monthly report
+      renderMonthlyProfitsChart();
+    }
+
+    // Render monthly profits chart
+    function renderMonthlyProfitsChart() {
+      const container = document.getElementById('profitsMonthlyReport');
+
+      // Group orders by month
+      const monthlyData = {};
+      const now = new Date();
+
+      // Initialize last 6 months
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthName = date.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
+        monthlyData[key] = { name: monthName, revenue: 0, platformProfit: 0, networkPayment: 0 };
+      }
+
+      // Aggregate data using the same extraction logic
+      profitsOrders.forEach(order => {
+        if (!order.createdAt) return;
+        const orderDate = new Date(order.createdAt.seconds * 1000);
+        const key = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}`;
+
+        if (monthlyData[key]) {
+          // Extract items from order using the helper function
+          const orderItems = extractOrderItems(order);
+
+          orderItems.forEach(item => {
+            // Find matching product
+            const matchedProduct = findProductMatch({
+              productId: item.productId,
+              productName: item.productName
+            }, profitsProducts);
+
+            // Get cost config - try matched product ID first, then item productId
+            let savedCost = {};
+            if (matchedProduct) {
+              savedCost = profitsProductCosts[matchedProduct.id] || {};
+            } else if (item.productId) {
+              savedCost = profitsProductCosts[item.productId] || {};
+            }
+
+            const productCost = savedCost.cost || 0;
+            const platformPercent = savedCost.platformPercent || 50;
+
+            // Get sale price from matched product or from order item
+            const salePrice = matchedProduct
+              ? (matchedProduct.precioDistribuidor || matchedProduct.precio || item.price || 0)
+              : item.price || 0;
+
+            // Calculate benefit and split
+            const benefitPerUnit = salePrice - productCost;
+            const platformProfitPerUnit = benefitPerUnit > 0 ? Math.round(benefitPerUnit * (platformPercent / 100)) : 0;
+            const networkPaymentPerUnit = benefitPerUnit > 0 ? benefitPerUnit - platformProfitPerUnit : 0;
+
+            monthlyData[key].revenue += item.totalPrice;
+            monthlyData[key].platformProfit += platformProfitPerUnit * item.quantity;
+            monthlyData[key].networkPayment += networkPaymentPerUnit * item.quantity;
+          });
+        }
+      });
+
+      // Find max for scaling
+      const maxProfit = Math.max(...Object.values(monthlyData).map(d => Math.abs(d.platformProfit)), 1);
+
+      let html = '<div style="display:flex;gap:12px;align-items:flex-end;justify-content:space-around;min-height:200px;padding:20px 0;">';
+
+      Object.values(monthlyData).forEach(data => {
+        const height = Math.abs(data.platformProfit) / maxProfit * 150;
+        const color = data.platformProfit >= 0 ? '#007bff' : '#dc3545';
+
+        html += `
+          <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+            <div style="font-weight:700;margin-bottom:8px;color:${color};">$${data.platformProfit.toLocaleString()}</div>
+            <div style="width:100%;max-width:60px;height:${Math.max(height, 10)}px;background:${color};border-radius:4px 4px 0 0;"></div>
+            <div style="font-size:12px;color:#666;margin-top:8px;text-align:center;">${data.name}</div>
+            <div style="font-size:11px;color:#999;">Ventas: $${data.revenue.toLocaleString()}</div>
+            <div style="font-size:10px;color:#fd7e14;">Red: $${data.networkPayment.toLocaleString()}</div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // Listen for period filter changes
+    document.getElementById('profitsPeriodFilter')?.addEventListener('change', updateProfitsReport);
+
+    // ============================================
+    // PURGE REPORTS SECTION (Commissions Deleted by Inactivity)
+    // ============================================
+
+    let purgeReportsData = [];
+
+    // Load purge reports from Firestore
+    async function loadPurgeReports() {
+      const container = document.getElementById('purgeReportsList');
+      try {
+        const purgeSnap = await getDocs(query(
+          collection(db, 'commissionsPurged'),
+          orderBy('executedAt', 'desc')
+        ));
+
+        purgeReportsData = purgeSnap.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        }));
+
+        console.log(`📊 Loaded ${purgeReportsData.length} purge reports`);
+        renderPurgeReports();
+      } catch (err) {
+        console.error('Error loading purge reports:', err);
+        container.innerHTML = '<div style="text-align:center;color:#dc3545;padding:20px;">Error al cargar informes de purga</div>';
+      }
+    }
+
+    // Filter purge reports based on selection
+    function filterPurgeReports() {
+      const filter = document.getElementById('purgeReportFilter')?.value || 'all';
+      const now = new Date();
+      const currentYear = now.getFullYear();
+
+      return purgeReportsData.filter(report => {
+        if (filter === 'all') return true;
+        if (filter === 'current_year') return report.year === currentYear;
+        if (filter === 'last_3') {
+          // Last 3 months
+          const reportDate = new Date(report.year, report.month - 1, 1);
+          const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+          return reportDate >= threeMonthsAgo;
+        }
+        return true;
+      });
+    }
+
+    // Render purge reports
+    function renderPurgeReports() {
+      const container = document.getElementById('purgeReportsList');
+      const filtered = filterPurgeReports();
+
+      // Update summary stats
+      let totalAmount = 0;
+      let totalPoints = 0;
+      let totalUsers = 0;
+
+      filtered.forEach(report => {
+        totalAmount += report.totalPurgedAmount || 0;
+        totalPoints += report.totalPurgedPoints || 0;
+        totalUsers += (report.purgedUsers || []).length;
+      });
+
+      document.getElementById('purgeReportCount').textContent = filtered.length;
+      document.getElementById('purgeTotalAmount').textContent = `$${totalAmount.toLocaleString()}`;
+      document.getElementById('purgeTotalPoints').textContent = totalPoints.toFixed(2);
+      document.getElementById('purgeTotalUsers').textContent = totalUsers;
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:#666;padding:40px;">No hay informes de comisiones eliminadas. Estos se generan automáticamente el día 1 de cada mes para distribuidores que no se activaron el mes anterior.</div>';
+        return;
+      }
+
+      let html = '';
+
+      filtered.forEach(report => {
+        const executedDate = report.executedAt?.seconds
+          ? new Date(report.executedAt.seconds * 1000).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+          : 'Fecha desconocida';
+
+        html += `
+          <div style="border:1px solid #e0e0e0;border-radius:8px;margin-bottom:16px;overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#f8f9fa,#e9ecef);padding:16px;border-bottom:1px solid #e0e0e0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <div>
+                  <h4 style="margin:0;color:#333;">${report.monthName} ${report.year}</h4>
+                  <small style="color:#666;">Ejecutado: ${executedDate}</small>
+                </div>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                  <div style="text-align:center;">
+                    <div style="font-size:11px;color:#666;text-transform:uppercase;">Distribuidores</div>
+                    <div style="font-weight:700;color:#333;">${report.totalDistributors || 0}</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:11px;color:#28a745;text-transform:uppercase;">Activos</div>
+                    <div style="font-weight:700;color:#28a745;">${report.activeDistributors || 0}</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:11px;color:#dc3545;text-transform:uppercase;">Inactivos</div>
+                    <div style="font-weight:700;color:#dc3545;">${report.inactiveDistributors || 0}</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:11px;color:#6c757d;text-transform:uppercase;">Purgados</div>
+                    <div style="font-weight:700;color:#c62828;">${(report.purgedUsers || []).length}</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:11px;color:#6c757d;text-transform:uppercase;">Total Eliminado</div>
+                    <div style="font-weight:700;color:#c62828;">$${(report.totalPurgedAmount || 0).toLocaleString()}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            ${(report.purgedUsers || []).length > 0 ? `
+              <div style="padding:0;">
+                <button onclick="togglePurgeDetails('${report.id}')"
+                        style="width:100%;padding:12px;background:#fff;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:14px;color:#333;border-bottom:1px solid #e0e0e0;">
+                  <span>Ver detalles de ${(report.purgedUsers || []).length} usuarios afectados</span>
+                  <span id="purge-toggle-${report.id}">▼</span>
+                </button>
+                <div id="purge-details-${report.id}" style="display:none;">
+                  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                      <tr style="background:#fafafa;">
+                        <th style="padding:10px;text-align:left;border-bottom:1px solid #e0e0e0;">Usuario</th>
+                        <th style="padding:10px;text-align:left;border-bottom:1px solid #e0e0e0;">Email</th>
+                        <th style="padding:10px;text-align:right;border-bottom:1px solid #e0e0e0;">Monto Eliminado</th>
+                        <th style="padding:10px;text-align:right;border-bottom:1px solid #e0e0e0;">Puntos Eliminados</th>
+                        <th style="padding:10px;text-align:center;border-bottom:1px solid #e0e0e0;">Comisiones</th>
+                        <th style="padding:10px;text-align:center;border-bottom:1px solid #e0e0e0;">Detalles</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${(report.purgedUsers || []).map(user => `
+                        <tr style="border-bottom:1px solid #f0f0f0;">
+                          <td style="padding:10px;">
+                            <div style="font-weight:500;">${user.username || 'Sin nombre'}</div>
+                            <div style="font-size:11px;color:#666;">${user.userId ? user.userId.substring(0, 10) + '...' : ''}</div>
+                          </td>
+                          <td style="padding:10px;color:#666;">${user.email || '-'}</td>
+                          <td style="padding:10px;text-align:right;color:#c62828;font-weight:500;">$${(user.purgedAmount || 0).toLocaleString()}</td>
+                          <td style="padding:10px;text-align:right;color:#ef6c00;">${(user.purgedPoints || 0).toFixed(2)}</td>
+                          <td style="padding:10px;text-align:center;">${user.commissionsCount || 0}</td>
+                          <td style="padding:10px;text-align:center;">
+                            <button onclick="showPurgedCommissions('${report.id}', '${user.userId}')"
+                                    style="padding:4px 8px;font-size:11px;background:#6c757d;color:#fff;border:none;border-radius:4px;cursor:pointer;">
+                              Ver
+                            </button>
+                          </td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ` : '<div style="padding:16px;text-align:center;color:#666;">No hubo usuarios purgados en este período</div>'}
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // Toggle purge report details
+    window.togglePurgeDetails = function(reportId) {
+      const details = document.getElementById(`purge-details-${reportId}`);
+      const toggle = document.getElementById(`purge-toggle-${reportId}`);
+      if (details.style.display === 'none') {
+        details.style.display = 'block';
+        toggle.textContent = '▲';
+      } else {
+        details.style.display = 'none';
+        toggle.textContent = '▼';
+      }
+    };
+
+    // Show purged commissions details for a specific user
+    window.showPurgedCommissions = function(reportId, userId) {
+      const report = purgeReportsData.find(r => r.id === reportId);
+      if (!report) return;
+
+      const user = (report.purgedUsers || []).find(u => u.userId === userId);
+      if (!user) return;
+
+      const commissions = user.purgedCommissions || [];
+
+      let tableRows = commissions.map(c => `
+        <tr>
+          <td style="padding:8px;border:1px solid #ddd;">${c.type || '-'}</td>
+          <td style="padding:8px;border:1px solid #ddd;">${c.action || '-'}</td>
+          <td style="padding:8px;border:1px solid #ddd;text-align:right;">$${(c.amount || 0).toLocaleString()}</td>
+          <td style="padding:8px;border:1px solid #ddd;text-align:right;">${(c.points || 0).toFixed(2)}</td>
+          <td style="padding:8px;border:1px solid #ddd;">${c.date ? new Date(c.date).toLocaleDateString('es-CO') : '-'}</td>
+          <td style="padding:8px;border:1px solid #ddd;">${c.fromUser || '-'}</td>
+        </tr>
+      `).join('');
+
+      if (commissions.length === 0) {
+        tableRows = '<tr><td colspan="6" style="padding:20px;text-align:center;color:#666;">No hay detalles disponibles</td></tr>';
+      }
+
+      Swal.fire({
+        title: `Comisiones Eliminadas - ${user.username || 'Usuario'}`,
+        html: `
+          <div style="text-align:left;margin-bottom:16px;">
+            <p><strong>Balance anterior:</strong> $${(user.previousBalance || 0).toLocaleString()}</p>
+            <p><strong>Balance nuevo:</strong> $${(user.newBalance || 0).toLocaleString()}</p>
+            <p><strong>Puntos grupales anteriores:</strong> ${(user.previousGroupPoints || 0).toFixed(2)}</p>
+            <p><strong>Puntos grupales nuevos:</strong> ${(user.newGroupPoints || 0).toFixed(2)}</p>
+          </div>
+          <div style="max-height:300px;overflow-y:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead>
+                <tr style="background:#f5f5f5;">
+                  <th style="padding:8px;border:1px solid #ddd;text-align:left;">Tipo</th>
+                  <th style="padding:8px;border:1px solid #ddd;text-align:left;">Descripción</th>
+                  <th style="padding:8px;border:1px solid #ddd;text-align:right;">Monto</th>
+                  <th style="padding:8px;border:1px solid #ddd;text-align:right;">Puntos</th>
+                  <th style="padding:8px;border:1px solid #ddd;">Fecha</th>
+                  <th style="padding:8px;border:1px solid #ddd;">De Usuario</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+        `,
+        width: '800px',
+        confirmButtonText: 'Cerrar'
+      });
+    };
+
+    // Listen for purge report filter changes
+    document.getElementById('purgeReportFilter')?.addEventListener('change', renderPurgeReports);
+
+    // Load purge reports when profits tab is activated (add to existing load)
+    const profitsTabBtn = document.querySelector('[data-tab="profits"]');
+    if (profitsTabBtn) {
+      profitsTabBtn.addEventListener('click', () => {
+        loadPurgeReports();
+      });
+    }
   </script>
 </body>
 </html>

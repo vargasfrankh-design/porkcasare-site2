@@ -256,7 +256,6 @@ function renderProductos() {
 
   const filteredProducts = getFilteredProducts();
   const tipo = (window.currentTipoRegistro || 'distribuidor').toLowerCase();
-  const unitLabel = tipo === 'restaurante' ? 'kilo' : 'paquete';
 
   if (filteredProducts.length === 0) {
     grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">No hay productos disponibles en esta categoría.</p>';
@@ -265,7 +264,7 @@ function renderProductos() {
     if (existingPagination) existingPagination.remove();
     return;
   }
-  
+
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
   const startIdx = (currentProductPage - 1) * PRODUCTS_PER_PAGE;
   const endIdx = startIdx + PRODUCTS_PER_PAGE;
@@ -277,10 +276,54 @@ function renderProductos() {
     const disabledStyle = isOutOfStock ? 'opacity:0.6;pointer-events:none;' : '';
     const buttonText = isOutOfStock ? 'No Disponible' : 'Comprar';
 
-    // Display points value in small gray text if product has points
-    const pointsDisplay = (prod.puntos && prod.puntos > 0)
-      ? `<p style="font-size:11px;color:#999;margin:4px 0 8px 0;">${prod.puntos} punto${prod.puntos !== 1 ? 's' : ''}</p>`
-      : '';
+    // Get the correct unit label based on user type with quantity
+    let unitLabel;
+    let quantityLabel = '';
+    if (tipo === 'restaurante') {
+      unitLabel = prod.unitRestaurant || prod.unit || 'kilo';
+      if (prod.quantityRestaurant) {
+        quantityLabel = `${prod.quantityRestaurant} ${unitLabel}${prod.quantityRestaurant !== 1 ? 's' : ''}`;
+      } else {
+        quantityLabel = unitLabel;
+      }
+    } else {
+      unitLabel = prod.unit || 'paquete';
+      if (prod.quantityDistributor) {
+        quantityLabel = `${prod.quantityDistributor} ${unitLabel}${prod.quantityDistributor !== 1 ? 's' : ''}`;
+      } else {
+        quantityLabel = unitLabel;
+      }
+    }
+
+    // Get the correct points display based on user type
+    const displayPoints = getDisplayPoints(prod);
+    let pointsDisplay = '';
+    if (displayPoints && displayPoints > 0) {
+      // Format points with up to 3 decimals for restaurants, 2 for others
+      const formattedPoints = tipo === 'restaurante'
+        ? displayPoints.toFixed(3).replace(/\.?0+$/, '')
+        : displayPoints.toFixed(2).replace(/\.?0+$/, '');
+
+      // Different styling based on user type - only show points, no quantity (quantity is shown with price)
+      if (tipo === 'distribuidor') {
+        pointsDisplay = `<p style="font-size:12px;color:#007bff;margin:4px 0 8px 0;font-weight:500;">
+          <span style="background:#e7f5ff;padding:2px 6px;border-radius:4px;">
+            ${formattedPoints} punto${parseFloat(formattedPoints) !== 1 ? 's' : ''}
+          </span>
+        </p>`;
+      } else if (tipo === 'restaurante') {
+        pointsDisplay = `<p style="font-size:12px;color:#fd7e14;margin:4px 0 8px 0;font-weight:500;">
+          <span style="background:#fff8e6;padding:2px 6px;border-radius:4px;">
+            ${formattedPoints} punto${parseFloat(formattedPoints) !== 1 ? 's' : ''}
+          </span>
+        </p>`;
+      } else if (tipo === 'cliente') {
+        // For clients, show reference points (distributor points)
+        pointsDisplay = `<p style="font-size:11px;color:#999;margin:4px 0 8px 0;">
+          Genera ${formattedPoints} punto${parseFloat(formattedPoints) !== 1 ? 's' : ''}
+        </p>`;
+      }
+    }
 
     return `
       <div class="product-card" data-id="${prod.id}" style="position:relative;${disabledStyle}">
@@ -288,7 +331,7 @@ function renderProductos() {
         <img src="${prod.imagen}" alt="${prod.nombre}">
         <h4 style="font-size:15px;margin:8px 0;min-height:40px;">${prod.nombre}</h4>
         <p style="font-size:13px;color:#666;min-height:36px;margin:4px 0;">${prod.descripcion}</p>
-        <p class="unit-price"><strong>${formatCOP(getDisplayPrice(prod))}</strong> por ${prod.unit || 'paquete'}</p>
+        <p class="unit-price"><strong>${formatCOP(getDisplayPrice(prod))}</strong> — ${quantityLabel}</p>
         ${pointsDisplay}
         <div class="quantity-selector">
           <button class="qty-btn qty-minus" data-id="${prod.id}" aria-label="Disminuir cantidad" ${isOutOfStock ? 'disabled' : ''}>−</button>
