@@ -39,8 +39,22 @@ class ShoppingCart {
     this.listeners.forEach(cb => cb(this.items));
   }
 
-  addItem(product, quantity = 1) {
-    const existingIndex = this.items.findIndex(item => item.productId === product.id);
+  addItem(product, quantity = 1, selectedVariant = null, variantPriceDiff = 0) {
+    // Prevent adding launch products that haven't been released yet
+    if (product.isLaunchProduct && product.launchDate) {
+      const launchTime = new Date(product.launchDate).getTime();
+      if (Date.now() < launchTime) {
+        console.warn('Cannot add launch product to cart:', product.nombre);
+        return false;
+      }
+    }
+
+    // For products with variants, create a unique key combining product ID and variant
+    const itemKey = selectedVariant ? `${product.id}:${selectedVariant}` : product.id;
+    const existingIndex = this.items.findIndex(item => {
+      const existingKey = item.selectedVariant ? `${item.productId}:${item.selectedVariant}` : item.productId;
+      return existingKey === itemKey;
+    });
 
     if (existingIndex >= 0) {
       // Update existing item
@@ -54,7 +68,9 @@ class ShoppingCart {
         unitPrice: 0, // Will be calculated based on user type
         unitPoints: 0, // Will be calculated based on user type
         quantity: quantity,
-        product: product // Store full product data for price calculation
+        product: product, // Store full product data for price calculation
+        selectedVariant: selectedVariant || null,
+        variantPriceDiff: variantPriceDiff || 0
       });
     }
 
@@ -92,7 +108,9 @@ class ShoppingCart {
     let totalPoints = 0;
 
     this.items.forEach(item => {
-      const unitPrice = priceCalculator(item.product);
+      const basePrice = priceCalculator(item.product);
+      const variantDiff = item.variantPriceDiff || 0;
+      const unitPrice = basePrice + variantDiff;
       const unitPoints = pointsCalculator(item.product);
       totalPrice += unitPrice * item.quantity;
       totalPoints += unitPoints * item.quantity;
@@ -129,13 +147,25 @@ export function initializeCartUI(getDisplayPrice, getDisplayPoints) {
     const quantityInput = card?.querySelector('.qty-input');
     const quantity = parseInt(quantityInput?.value) || 1;
 
-    cart.addItem(product, quantity);
+    // Get variant information if available
+    const variantSelect = card?.querySelector('.variant-select');
+    let selectedVariant = null;
+    let variantPriceDiff = 0;
+
+    if (variantSelect) {
+      selectedVariant = variantSelect.value || null;
+      const selectedOption = variantSelect.options[variantSelect.selectedIndex];
+      variantPriceDiff = parseFloat(selectedOption?.dataset?.priceDiff) || 0;
+    }
+
+    cart.addItem(product, quantity, selectedVariant, variantPriceDiff);
 
     // Reset quantity to 1
     if (quantityInput) quantityInput.value = 1;
 
-    // Show notification
-    showCartNotification(`${product.nombre} agregado al carrito`);
+    // Show notification with variant info
+    const variantInfo = selectedVariant ? ` (${selectedVariant})` : '';
+    showCartNotification(`${product.nombre}${variantInfo} agregado al carrito`);
   };
 }
 

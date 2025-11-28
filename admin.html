@@ -439,6 +439,7 @@
             <th>Precio Cliente</th>
             <th>Precio Rest.</th>
             <th>Puntos</th>
+            <th>Variantes</th>
             <th>Vendidas</th>
             <th>Destacado</th>
             <th>Estado</th>
@@ -1028,6 +1029,58 @@
             <input type="checkbox" id="productFeatured">
             <span style="font-weight:500;">⭐ Destacar (aparece de primero)</span>
           </label>
+        </div>
+
+        <!-- Product Variants Section -->
+        <div id="productVariantsSection" style="background:#f8f9fa;padding:16px;border-radius:10px;margin-bottom:16px;border:1px solid #e9ecef;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div>
+              <h4 style="margin:0;font-size:14px;color:#495057;">🏷️ Variantes del Producto</h4>
+              <small style="color:#6c757d;">Ej: Seco, Semi-seco, Dulce para vinos</small>
+            </div>
+            <button type="button" id="addVariantBtn" class="btn-primary" style="padding:6px 12px;font-size:12px;">+ Agregar Variante</button>
+          </div>
+
+          <div id="variantsContainer">
+            <!-- Variants will be dynamically added here -->
+          </div>
+
+          <div id="noVariantsMessage" style="text-align:center;padding:20px;color:#6c757d;font-size:13px;font-style:italic;">
+            Sin variantes. Usa el botón "Agregar Variante" para añadir opciones.
+          </div>
+        </div>
+
+        <!-- Producto de Lanzamiento Section -->
+        <div id="launchProductSection" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:16px;border-radius:10px;margin-bottom:16px;">
+          <div style="margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:white;">
+              <input type="checkbox" id="productIsLaunch" style="width:18px;height:18px;">
+              <span style="font-weight:600;">🚀 Producto de Lanzamiento</span>
+            </label>
+            <small style="color:rgba(255,255,255,0.85);margin-left:26px;display:block;margin-top:4px;">El producto aparecerá bloqueado con cuenta regresiva hasta la fecha de lanzamiento</small>
+          </div>
+
+          <div id="launchConfigFields" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.3);">
+            <h4 style="margin:0 0 12px 0;font-size:13px;color:white;">Configuración del Lanzamiento</h4>
+
+            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+              <div style="flex:1;min-width:180px;">
+                <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;color:white;">Fecha y hora de lanzamiento *</label>
+                <input type="datetime-local" id="productLaunchDate" style="width:100%;padding:10px;border:none;border-radius:6px;font-size:14px;box-sizing:border-box;">
+                <small style="color:rgba(255,255,255,0.75);font-size:10px;">Cuando el contador llegue a cero, el producto estará disponible</small>
+              </div>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.15);padding:10px;border-radius:6px;margin-top:10px;">
+              <p style="margin:0;font-size:12px;color:white;">
+                <strong>📌 Comportamiento:</strong><br>
+                • El producto aparecerá visible pero bloqueado<br>
+                • Imagen desenfocada, sin descripción completa<br>
+                • Contador regresivo en tiempo real<br>
+                • Al finalizar: se activa automáticamente según disponibilidad
+              </p>
+            </div>
+          </div>
         </div>
 
         <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding-top:10px;border-top:1px solid #eee;">
@@ -2744,7 +2797,20 @@
       table.innerHTML = allProducts.map(prod => {
         const statusBadges = [];
         if (prod.hidden) statusBadges.push('<span style="background:#6c757d;color:white;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">OCULTO</span>');
-        if (prod.outOfStock) statusBadges.push('<span style="background:#fd7e14;color:white;padding:2px 6px;border-radius:3px;font-size:11px;">AGOTADO</span>');
+        if (prod.outOfStock) statusBadges.push('<span style="background:#fd7e14;color:white;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">AGOTADO</span>');
+
+        // Launch product status
+        if (prod.isLaunchProduct && prod.launchDate) {
+          const launchTime = new Date(prod.launchDate).getTime();
+          const now = Date.now();
+          if (now < launchTime) {
+            const launchDateFormatted = new Date(prod.launchDate).toLocaleString('es-CO', {
+              day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+            });
+            statusBadges.push(`<span style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;" title="Lanza: ${launchDateFormatted}">🚀 LANZAMIENTO</span>`);
+          }
+        }
+
         const statusHtml = statusBadges.length > 0 ? statusBadges.join('') : '<span style="color:#28a745;">✓ Activo</span>';
 
         const featuredHtml = prod.featured ? '<span style="font-size:20px;" title="Producto destacado">⭐</span>' : '<span style="color:#ccc;">—</span>';
@@ -2767,6 +2833,12 @@
         const ptsRestaurante = (prod.puntosRestaurante || 0).toFixed(3).replace(/\.?0+$/, '');
         const pointsHtml = `<span style="font-size:11px;"><span style="background:#e7f5ff;padding:2px 4px;border-radius:3px;color:#007bff;">D: ${ptsDistribuidor}</span><br><span style="background:#fff8e6;padding:2px 4px;border-radius:3px;color:#fd7e14;margin-top:2px;display:inline-block;">R: ${ptsRestaurante}</span></span>`;
 
+        // Variants display
+        const variants = prod.variants || [];
+        const variantsHtml = variants.length > 0
+          ? `<span style="font-size:11px;">${variants.map(v => `<span style="background:#e6f9f0;padding:2px 6px;border-radius:3px;color:#0d6d45;margin-right:2px;display:inline-block;margin-bottom:2px;">${v.name}${v.priceDiff ? ` (${v.priceDiff > 0 ? '+' : ''}$${v.priceDiff})` : ''}</span>`).join('')}</span>`
+          : '<span style="color:#ccc;">—</span>';
+
         return `
           <tr>
             <td><img src="${prod.imagen || '/images/productos/inicio.jpg'}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;"></td>
@@ -2778,6 +2850,7 @@
             <td>${prod.precioCliente ? formatCOP(prod.precioCliente) : 'N/A'}</td>
             <td>${prod.precioRestaurante ? formatCOP(prod.precioRestaurante) : 'N/A'}</td>
             <td>${pointsHtml}</td>
+            <td>${variantsHtml}</td>
             <td style="text-align:center;">${unitsSoldHtml}</td>
             <td style="text-align:center;">${featuredHtml}</td>
             <td>${statusHtml}</td>
@@ -2792,10 +2865,133 @@
 
     document.getElementById('previewTypeSelector').addEventListener('change', renderProductsPreview);
 
+    // Toggle launch product config fields visibility
+    document.getElementById('productIsLaunch').addEventListener('change', function() {
+      document.getElementById('launchConfigFields').style.display = this.checked ? 'block' : 'none';
+      if (!this.checked) {
+        document.getElementById('productLaunchDate').value = '';
+      }
+    });
+
+    // ==========================================
+    // PRODUCT VARIANTS MANAGEMENT
+    // ==========================================
+
+    let productVariants = []; // Store current product variants
+
+    function renderVariantsContainer() {
+      const container = document.getElementById('variantsContainer');
+      const noVariantsMsg = document.getElementById('noVariantsMessage');
+
+      if (productVariants.length === 0) {
+        container.innerHTML = '';
+        noVariantsMsg.style.display = 'block';
+        return;
+      }
+
+      noVariantsMsg.style.display = 'none';
+      container.innerHTML = productVariants.map((variant, index) => `
+        <div class="variant-item" data-index="${index}" style="display:flex;align-items:center;gap:10px;padding:10px;background:white;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+          <div style="flex:1;">
+            <input type="text" class="variant-name" value="${variant.name || ''}" placeholder="Nombre de la variante (ej: Seco)"
+              style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;">
+          </div>
+          <div style="width:100px;">
+            <input type="number" class="variant-price-diff" value="${variant.priceDiff || 0}" placeholder="Diferencia $"
+              style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" title="Diferencia de precio (+/- del precio base)">
+          </div>
+          <div style="width:80px;">
+            <input type="number" class="variant-stock" value="${variant.stock !== undefined ? variant.stock : ''}" placeholder="Stock" min="0"
+              style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" title="Stock disponible (vacío = ilimitado)">
+          </div>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;">
+            <input type="checkbox" class="variant-default" ${variant.isDefault ? 'checked' : ''}>
+            Por defecto
+          </label>
+          <button type="button" class="btn-danger remove-variant-btn" data-index="${index}" style="padding:6px 10px;font-size:12px;">✕</button>
+        </div>
+      `).join('');
+
+      // Add event listeners to variant inputs
+      container.querySelectorAll('.variant-name').forEach((input, idx) => {
+        input.addEventListener('input', (e) => {
+          productVariants[idx].name = e.target.value;
+        });
+      });
+      container.querySelectorAll('.variant-price-diff').forEach((input, idx) => {
+        input.addEventListener('input', (e) => {
+          productVariants[idx].priceDiff = parseFloat(e.target.value) || 0;
+        });
+      });
+      container.querySelectorAll('.variant-stock').forEach((input, idx) => {
+        input.addEventListener('input', (e) => {
+          const val = e.target.value.trim();
+          productVariants[idx].stock = val === '' ? null : parseInt(val);
+        });
+      });
+      container.querySelectorAll('.variant-default').forEach((checkbox, idx) => {
+        checkbox.addEventListener('change', (e) => {
+          // Only one can be default
+          if (e.target.checked) {
+            productVariants.forEach((v, i) => v.isDefault = (i === idx));
+          } else {
+            productVariants[idx].isDefault = false;
+          }
+          renderVariantsContainer();
+        });
+      });
+      container.querySelectorAll('.remove-variant-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          productVariants.splice(idx, 1);
+          renderVariantsContainer();
+        });
+      });
+    }
+
+    // Add variant button
+    document.getElementById('addVariantBtn').addEventListener('click', () => {
+      productVariants.push({
+        name: '',
+        priceDiff: 0,
+        stock: null,
+        isDefault: productVariants.length === 0 // First variant is default
+      });
+      renderVariantsContainer();
+    });
+
+    // Get variants data for saving
+    function getVariantsData() {
+      // Filter out empty variants
+      return productVariants.filter(v => v.name && v.name.trim() !== '').map(v => ({
+        name: v.name.trim(),
+        priceDiff: v.priceDiff || 0,
+        stock: v.stock,
+        isDefault: v.isDefault || false
+      }));
+    }
+
+    // Reset variants when opening modal
+    function resetVariants() {
+      productVariants = [];
+      renderVariantsContainer();
+    }
+
+    // Load variants from product data
+    function loadVariants(variants) {
+      productVariants = Array.isArray(variants) ? [...variants] : [];
+      renderVariantsContainer();
+    }
+
     document.getElementById('addProductBtn').addEventListener('click', () => {
       document.getElementById('productModalTitle').textContent = 'Crear Producto';
       document.getElementById('productForm').reset();
       document.getElementById('productEditId').value = '';
+      // Reset launch product fields
+      document.getElementById('launchConfigFields').style.display = 'none';
+      document.getElementById('productLaunchDate').value = '';
+      // Reset product variants
+      resetVariants();
       document.getElementById('productModal').style.display = 'flex';
     });
 
@@ -2805,7 +3001,7 @@
 
     document.getElementById('productForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      
+
       const editId = document.getElementById('productEditId').value;
       const productData = {
         id: document.getElementById('productId').value.trim(),
@@ -2827,8 +3023,21 @@
         availableFor: [],
         hidden: document.getElementById('productHidden').checked,
         outOfStock: document.getElementById('productOutOfStock').checked,
-        featured: document.getElementById('productFeatured').checked || false
+        featured: document.getElementById('productFeatured').checked || false,
+        // Product variants
+        variants: getVariantsData(),
+        // Launch Product fields
+        isLaunchProduct: document.getElementById('productIsLaunch').checked || false,
+        launchDate: document.getElementById('productIsLaunch').checked && document.getElementById('productLaunchDate').value
+          ? new Date(document.getElementById('productLaunchDate').value).toISOString()
+          : null
       };
+
+      // Validation: if launch product is checked, launch date is required
+      if (productData.isLaunchProduct && !productData.launchDate) {
+        alert('Por favor ingrese la fecha y hora de lanzamiento');
+        return;
+      }
 
       if (document.getElementById('productAvailDistributor').checked) {
         productData.availableFor.push('distribuidor');
@@ -2885,6 +3094,22 @@
       document.getElementById('productHidden').checked = product.hidden || false;
       document.getElementById('productOutOfStock').checked = product.outOfStock || false;
       document.getElementById('productFeatured').checked = product.featured || false;
+
+      // Launch product fields
+      document.getElementById('productIsLaunch').checked = product.isLaunchProduct || false;
+      if (product.launchDate) {
+        // Convert ISO date to datetime-local format
+        const launchDate = new Date(product.launchDate);
+        const localDateStr = launchDate.toISOString().slice(0, 16);
+        document.getElementById('productLaunchDate').value = localDateStr;
+      } else {
+        document.getElementById('productLaunchDate').value = '';
+      }
+      // Toggle launch config visibility
+      document.getElementById('launchConfigFields').style.display = product.isLaunchProduct ? 'block' : 'none';
+
+      // Load product variants
+      loadVariants(product.variants || []);
 
       document.getElementById('productModal').style.display = 'flex';
     };

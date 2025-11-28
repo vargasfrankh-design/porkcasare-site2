@@ -46,7 +46,12 @@ document.addEventListener("DOMContentLoaded", () => {
       window.currentTipoRegistro = userRole.toString().toLowerCase();
       window.currentUserRole = userRole.toString().toLowerCase();
 
-      
+      // Expose user points and Master status globally for product filtering
+      const personalPoints = Number(userData.personalPoints ?? userData.puntos ?? 0);
+      window.currentUserPoints = personalPoints;
+      window.currentUserIsMaster = personalPoints >= 50 || userData.isMaster === true;
+
+
 
       // Disparar personalPointsReady para garantizar que otros scripts (productos, alerta) reaccionen
       const _personalPoints = Number(userData.personalPoints ?? userData.puntos ?? 0);
