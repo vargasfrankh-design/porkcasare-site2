@@ -66,6 +66,13 @@ async function loadProductsFromFirestore() {
       .map(d => ({ docId: d.id, ...d.data() }))
       .filter(p => !p.deleted && !p.hidden)
       .sort((a, b) => {
+        // Priority 1: Launch products (Super Destacados) go first
+        const aIsLaunch = a.isLaunchProduct && a.launchDate && new Date(a.launchDate).getTime() > Date.now();
+        const bIsLaunch = b.isLaunchProduct && b.launchDate && new Date(b.launchDate).getTime() > Date.now();
+        if (aIsLaunch && !bIsLaunch) return -1;
+        if (!aIsLaunch && bIsLaunch) return 1;
+
+        // Priority 2: Featured products come next
         if (a.featured && !b.featured) return -1;
         if (!a.featured && b.featured) return 1;
         return 0;
@@ -110,6 +117,56 @@ function formatCOP(num) {
   }).format(num);
 }
 
+/**
+ * Get the selected variant price adjustment for a product card
+ * @param {HTMLElement} card - The product card element
+ * @returns {number} - The price difference from the variant (can be 0, positive, or negative)
+ */
+function getSelectedVariantPriceDiff(card) {
+  const variantSelect = card.querySelector('.variant-select');
+  if (!variantSelect) return 0;
+
+  const selectedOption = variantSelect.options[variantSelect.selectedIndex];
+  return parseFloat(selectedOption.dataset.priceDiff) || 0;
+}
+
+/**
+ * Get the selected variant name for a product card
+ * @param {HTMLElement} card - The product card element
+ * @returns {string|null} - The variant name or null if no variant selected
+ */
+function getSelectedVariantName(card) {
+  const variantSelect = card.querySelector('.variant-select');
+  if (!variantSelect) return null;
+  return variantSelect.value || null;
+}
+
+function onVariantChange(e) {
+  const prodId = e.currentTarget.dataset.id;
+  const prod = productos.find((p) => p.id === prodId);
+  if (!prod) return;
+
+  const card = document.querySelector(`.product-card[data-id="${prodId}"]`);
+  const input = card.querySelector('.qty-input');
+  const quantity = parseInt(input.value) || 1;
+
+  // Get variant price adjustment
+  const variantPriceDiff = getSelectedVariantPriceDiff(card);
+
+  // Update unit price display
+  const basePrice = getDisplayPrice(prod);
+  const adjustedPrice = basePrice + variantPriceDiff;
+  const unitPriceEl = card.querySelector('.unit-price strong');
+  if (unitPriceEl) {
+    unitPriceEl.textContent = formatCOP(adjustedPrice);
+  }
+
+  // Update total price
+  const totalPrice = adjustedPrice * quantity;
+  const totalPriceEl = card.querySelector('.total-price');
+  totalPriceEl.innerHTML = `<strong>Total: ${formatCOP(totalPrice)}</strong>`;
+}
+
 function onQuantityChange(e) {
   const prodId = e.currentTarget.dataset.id;
   const prod = productos.find((p) => p.id === prodId);
@@ -129,7 +186,10 @@ function onQuantityChange(e) {
 
   input.value = quantity;
 
-  const unitPrice = getDisplayPrice(prod);
+  // Get variant price adjustment
+  const variantPriceDiff = getSelectedVariantPriceDiff(card);
+
+  const unitPrice = getDisplayPrice(prod) + variantPriceDiff;
   const totalPrice = unitPrice * quantity;
   const totalPriceEl = card.querySelector('.total-price');
   totalPriceEl.innerHTML = `<strong>Total: ${formatCOP(totalPrice)}</strong>`;
@@ -177,6 +237,100 @@ function getDisplayPoints(prod){
   return prod.puntos || 0;
 }
 
+// ==========================================
+// LAUNCH PRODUCT FUNCTIONS
+// ==========================================
+
+/**
+ * Check if a product is in launch countdown state
+ * @param {Object} prod - The product object
+ * @returns {boolean} - True if product is in launch state (countdown active)
+ */
+function isLaunchProduct(prod) {
+  if (!prod.isLaunchProduct || !prod.launchDate) return false;
+  const launchTime = new Date(prod.launchDate).getTime();
+  const now = Date.now();
+  return now < launchTime;
+}
+
+/**
+ * Calculate time remaining until launch
+ * @param {string} launchDate - ISO date string
+ * @returns {Object} - Object with days, hours, minutes, seconds
+ */
+function getTimeRemaining(launchDate) {
+  const launchTime = new Date(launchDate).getTime();
+  const now = Date.now();
+  const diff = Math.max(0, launchTime - now);
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+  return { days, hours, minutes, seconds, total: diff };
+}
+
+/**
+ * Format countdown display
+ * @param {Object} time - Object with days, hours, minutes, seconds
+ * @returns {string} - Formatted countdown string
+ */
+function formatCountdown(time) {
+  const pad = (n) => String(n).padStart(2, '0');
+  if (time.days > 0) {
+    return `${time.days}d ${pad(time.hours)}:${pad(time.minutes)}:${pad(time.seconds)}`;
+  }
+  return `${pad(time.hours)}:${pad(time.minutes)}:${pad(time.seconds)}`;
+}
+
+// Store interval references for cleanup
+let countdownIntervals = [];
+
+/**
+ * Start countdown timers for all launch products
+ */
+function startCountdownTimers() {
+  // Clear existing intervals
+  countdownIntervals.forEach(interval => clearInterval(interval));
+  countdownIntervals = [];
+
+  const launchProducts = productos.filter(p => isLaunchProduct(p));
+
+  launchProducts.forEach(prod => {
+    const countdownEl = document.getElementById(`countdown-${prod.id}`);
+    if (!countdownEl) return;
+
+    const updateCountdown = () => {
+      const time = getTimeRemaining(prod.launchDate);
+
+      if (time.total <= 0) {
+        // Countdown finished - reload products to show normal state
+        clearInterval(interval);
+        countdownEl.innerHTML = '<span style="color:#28a745;font-weight:600;">¡Disponible ahora!</span>';
+        // Reload products after a short delay
+        setTimeout(() => {
+          loadProductsFromFirestore().then(() => renderProductos());
+        }, 1500);
+        return;
+      }
+
+      countdownEl.innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.9);margin-bottom:4px;">🚀 LANZAMIENTO EN</div>
+          <div style="font-family:monospace;font-size:18px;font-weight:700;color:white;letter-spacing:1px;">
+            ${formatCountdown(time)}
+          </div>
+        </div>
+      `;
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    countdownIntervals.push(interval);
+  });
+}
+
 function getFilteredProducts(){
   const tipo = (window.currentTipoRegistro || 'distribuidor').toLowerCase();
   const selectedCategory = window.selectedCategory || 'todas';
@@ -185,10 +339,28 @@ function getFilteredProducts(){
     if (!prod.availableFor) return true;
     const matchesType = prod.availableFor.includes(tipo);
     const matchesCategory = selectedCategory === 'todas' || prod.categoria === selectedCategory;
+
+    // Hide "Paquete Master" for Master distributors (those with 50+ points)
+    if (prod.id === 'paquete-master' && tipo === 'distribuidor') {
+      const userPersonalPoints = window.currentUserPoints || 0;
+      const isMaster = window.currentUserIsMaster || false;
+      if (userPersonalPoints >= 50 || isMaster) {
+        return false; // Hide product for Master distributors
+      }
+    }
+
     return matchesType && matchesCategory;
   }).sort((a, b) => {
+    // Priority 1: Launch products (Super Destacados) go first
+    const aIsLaunch = isLaunchProduct(a);
+    const bIsLaunch = isLaunchProduct(b);
+    if (aIsLaunch && !bIsLaunch) return -1;
+    if (!aIsLaunch && bIsLaunch) return 1;
+
+    // Priority 2: Featured products come next
     if (a.featured && !b.featured) return -1;
     if (!a.featured && b.featured) return 1;
+
     return 0;
   });
 }
@@ -271,6 +443,40 @@ function renderProductos() {
   const productsToShow = filteredProducts.slice(startIdx, endIdx);
 
   grid.innerHTML = productsToShow.map((prod) => {
+    // Check if product is in launch state
+    const inLaunchState = isLaunchProduct(prod);
+
+    // For launch products, render a special locked card
+    if (inLaunchState) {
+      return `
+        <div class="product-card product-launch" data-id="${prod.id}" style="position:relative;overflow:hidden;">
+          <span style="position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;z-index:2;">🚀 PRÓXIMAMENTE</span>
+          <div style="position:relative;">
+            <img src="${prod.imagen}" alt="${prod.nombre}" style="filter:blur(6px) grayscale(30%);opacity:0.7;">
+            <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(102,126,234,0.85) 0%,rgba(118,75,162,0.85) 100%);display:flex;align-items:center;justify-content:center;border-radius:8px;">
+              <div id="countdown-${prod.id}" style="text-align:center;padding:10px;">
+                <div style="font-size:11px;color:rgba(255,255,255,0.9);margin-bottom:4px;">🚀 LANZAMIENTO EN</div>
+                <div style="font-family:monospace;font-size:18px;font-weight:700;color:white;letter-spacing:1px;">--:--:--</div>
+              </div>
+            </div>
+          </div>
+          <h4 style="font-size:15px;margin:8px 0;min-height:40px;">${prod.nombre}</h4>
+          <p style="font-size:13px;color:#999;min-height:36px;margin:4px 0;font-style:italic;">Información disponible al momento del lanzamiento</p>
+          <p class="unit-price" style="color:#999;"><strong>Precio próximamente</strong></p>
+          <div class="quantity-selector" style="opacity:0.4;pointer-events:none;">
+            <button class="qty-btn qty-minus" disabled>−</button>
+            <input type="number" class="qty-input" value="1" min="1" max="99" readonly disabled>
+            <button class="qty-btn qty-plus" disabled>+</button>
+          </div>
+          <p class="total-price" style="color:#999;"><strong>Espera el lanzamiento</strong></p>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn small" disabled style="flex:1;background:#ccc;color:#666;cursor:not-allowed;">🛒 Agregar</button>
+            <button class="btn small" disabled style="flex:1;background:#ccc;color:#666;cursor:not-allowed;">Próximamente</button>
+          </div>
+        </div>
+      `;
+    }
+
     const isOutOfStock = prod.outOfStock || false;
     const outOfStockBadge = isOutOfStock ? '<span style="position:absolute;top:12px;right:12px;background:#fd7e14;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">AGOTADO</span>' : '';
     const disabledStyle = isOutOfStock ? 'opacity:0.6;pointer-events:none;' : '';
@@ -325,12 +531,32 @@ function renderProductos() {
       }
     }
 
+    // Variants selector HTML
+    const variants = prod.variants || [];
+    let variantSelectorHtml = '';
+    if (variants.length > 0) {
+      const defaultVariant = variants.find(v => v.isDefault) || variants[0];
+      variantSelectorHtml = `
+        <div class="variant-selector" style="margin:8px 0;">
+          <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">Variante:</label>
+          <select class="variant-select" data-id="${prod.id}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:white;">
+            ${variants.map(v => `
+              <option value="${v.name}" data-price-diff="${v.priceDiff || 0}" ${v.name === defaultVariant.name ? 'selected' : ''}>
+                ${v.name}${v.priceDiff ? ` (${v.priceDiff > 0 ? '+' : ''}${formatCOP(v.priceDiff)})` : ''}
+              </option>
+            `).join('')}
+          </select>
+        </div>
+      `;
+    }
+
     return `
       <div class="product-card" data-id="${prod.id}" style="position:relative;${disabledStyle}">
         ${outOfStockBadge}
         <img src="${prod.imagen}" alt="${prod.nombre}">
         <h4 style="font-size:15px;margin:8px 0;min-height:40px;">${prod.nombre}</h4>
         <p style="font-size:13px;color:#666;min-height:36px;margin:4px 0;">${prod.descripcion}</p>
+        ${variantSelectorHtml}
         <p class="unit-price"><strong>${formatCOP(getDisplayPrice(prod))}</strong> — ${quantityLabel}</p>
         ${pointsDisplay}
         <div class="quantity-selector">
@@ -359,6 +585,11 @@ function renderProductos() {
     input.addEventListener("change", onQuantityChange);
   });
 
+  // Add event listeners for variant selectors
+  document.querySelectorAll(".variant-select").forEach((select) => {
+    select.addEventListener("change", onVariantChange);
+  });
+
   document.querySelectorAll(".btn-buy").forEach((btn) => {
     btn.addEventListener("click", onBuyClick);
   });
@@ -371,6 +602,9 @@ function renderProductos() {
   });
 
   renderProductPagination(totalPages);
+
+  // Start countdown timers for launch products
+  startCountdownTimers();
 }
 
 function renderProductPagination(totalPages) {
@@ -713,9 +947,19 @@ async function onBuyClick(e) {
   const prod = productos.find((p) => p.id === prodId);
   if (!prod) return;
 
+  // Prevent buying launch products that haven't been released yet
+  if (isLaunchProduct(prod)) {
+    alert("Este producto aún no está disponible. Por favor espera al lanzamiento.");
+    return;
+  }
+
   const card = document.querySelector(`.product-card[data-id="${prodId}"]`);
   const quantityInput = card.querySelector('.qty-input');
   const quantity = parseInt(quantityInput.value) || 1;
+
+  // Get selected variant info
+  const selectedVariant = getSelectedVariantName(card);
+  const variantPriceDiff = getSelectedVariantPriceDiff(card);
 
   const buyerUid = auth.currentUser.uid;
 
@@ -801,7 +1045,8 @@ async function onBuyClick(e) {
     const buyerUsername = buyerData?.usuario || buyerData?.nombre || 'Usuario desconocido';
     const buyerType = (buyerData?.tipoRegistro || 'distribuidor').toLowerCase();
 
-    const unitPrice = getDisplayPrice(prod);
+    // Calculate price including variant adjustment
+    const unitPrice = getDisplayPrice(prod) + variantPriceDiff;
     const totalPrice = unitPrice * quantity;
     const productPoints = getDisplayPoints(prod);
     const totalPoints = productPoints * quantity;
@@ -827,7 +1072,10 @@ async function onBuyClick(e) {
       createdAt: new Date().toISOString(),
       isInitial: prod.id === "paquete-inicio",
       initialBonusPaid: false,
-      paymentMethod: "efectivo_transferencia"
+      paymentMethod: "efectivo_transferencia",
+      // Variant information
+      selectedVariant: selectedVariant || null,
+      variantPriceDiff: variantPriceDiff || 0
     };
 
     // Si pickup, añadir pickupInfo
@@ -849,15 +1097,20 @@ async function onBuyClick(e) {
 
       // NO agregamos puntos aquí - solo se agregan cuando el admin confirma la compra
       // Solo guardamos el historial de la compra pendiente
+      const historyAction = selectedVariant
+        ? `Compra pendiente: ${prod.nombre} - ${selectedVariant} (x${quantity})`
+        : `Compra pendiente: ${prod.nombre} (x${quantity})`;
+
       await updateDoc(doc(db, "usuarios", buyerUid), {
         history: arrayUnion({
-          action: `Compra pendiente: ${prod.nombre} (x${quantity})`,
+          action: historyAction,
           amount: totalPrice,
           points: totalPoints,
           quantity: quantity,
           orderId: orderRef.id,
           date: new Date().toISOString(),
-          type: "pending_purchase"
+          type: "pending_purchase",
+          variant: selectedVariant || null
         })
       });
     } catch (err) {
