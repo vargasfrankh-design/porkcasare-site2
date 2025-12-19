@@ -94,6 +94,208 @@
     }
     .product-badge.hidden { background: #6c757d; }
     .product-badge.outofstock { background: #fd7e14; }
+
+    /* Grouped Orders Styles */
+    .user-orders-group {
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow: hidden;
+      border: 1px solid #e9ecef;
+    }
+    .user-orders-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      cursor: pointer;
+      transition: background 0.2s;
+      border-bottom: 1px solid transparent;
+    }
+    .user-orders-header:hover {
+      background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    }
+    .user-orders-header.expanded {
+      border-bottom-color: #dee2e6;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .user-details h4 {
+      margin: 0;
+      font-size: 16px;
+      color: #333;
+    }
+    .user-details p {
+      margin: 4px 0 0 0;
+      font-size: 13px;
+      color: #6c757d;
+    }
+    .orders-summary {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .orders-count {
+      background: #007bff;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .orders-total {
+      font-size: 15px;
+      font-weight: 600;
+      color: #28a745;
+    }
+    .expand-icon {
+      font-size: 20px;
+      color: #6c757d;
+      transition: transform 0.3s;
+    }
+    .user-orders-header.expanded .expand-icon {
+      transform: rotate(180deg);
+    }
+    .user-orders-content {
+      display: none;
+      padding: 0;
+    }
+    .user-orders-content.expanded {
+      display: block;
+    }
+    .order-card {
+      border-bottom: 1px solid #f1f3f4;
+      padding: 20px;
+      background: #fff;
+    }
+    .order-card:last-child {
+      border-bottom: none;
+    }
+    .order-card:hover {
+      background: #fafbfc;
+    }
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed #e9ecef;
+    }
+    .order-id {
+      font-family: monospace;
+      font-size: 13px;
+      background: #f8f9fa;
+      padding: 4px 10px;
+      border-radius: 4px;
+      color: #495057;
+    }
+    .order-status {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .order-status.pending { background: #fff3cd; color: #856404; }
+    .order-status.pending_delivery { background: #cce5ff; color: #004085; }
+    .order-status.pending_mp { background: #d4edda; color: #155724; }
+    .order-status.pending_cash { background: #e2d6f5; color: #563d7c; }
+    .order-products {
+      margin-bottom: 16px;
+    }
+    .product-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .product-item:last-child {
+      margin-bottom: 0;
+    }
+    .product-info {
+      flex: 1;
+    }
+    .product-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .product-variants {
+      font-size: 13px;
+      color: #6c757d;
+    }
+    .product-variants span {
+      display: inline-block;
+      margin-right: 12px;
+    }
+    .product-pricing {
+      text-align: right;
+    }
+    .product-qty {
+      font-size: 13px;
+      color: #6c757d;
+      margin-bottom: 2px;
+    }
+    .product-price {
+      font-weight: 700;
+      color: #28a745;
+    }
+    .order-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid #e9ecef;
+    }
+    .order-total {
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+    }
+    .order-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .order-actions button {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 6px;
+    }
+    .empty-orders-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6c757d;
+    }
+    .empty-orders-state h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      color: #495057;
+    }
+    .pending-orders-container {
+      max-width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -184,21 +386,17 @@
 
     <!-- Tab: Órdenes Pendientes -->
     <div id="tab-pending" class="tab-content">
-      <h2>Órdenes Pendientes</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>ID de Orden</th>
-            <th>Usuario</th>
-            <th>Producto</th>
-            <th>Cantidad</th>
-            <th>Precio</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="pendingOrdersTable"></tbody>
-      </table>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h2 style="margin:0;">Órdenes Pendientes</h2>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <span id="pendingOrdersSummary" style="font-size:14px;color:#6c757d;"></span>
+          <button id="expandAllOrders" class="btn-secondary" style="font-size:13px;padding:6px 12px;">Expandir Todo</button>
+          <button id="collapseAllOrders" class="btn-secondary" style="font-size:13px;padding:6px 12px;">Colapsar Todo</button>
+        </div>
+      </div>
+      <div id="pendingOrdersGrouped" class="pending-orders-container">
+        <!-- Grouped orders will be rendered here -->
+      </div>
     </div>
 
     <!-- Tab: Órdenes Confirmadas -->
@@ -754,13 +952,18 @@
 
         <!-- Purged Commissions Report Section -->
         <div style="background:white;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-top:24px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
             <h3 style="margin:0;border-bottom:2px solid #dc3545;padding-bottom:8px;">Informe de Comisiones Eliminadas por Inactividad</h3>
-            <select id="purgeReportFilter" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button id="manualPurgeBtn" onclick="executeManualPurge()" style="background:linear-gradient(135deg,#c62828,#b71c1c);color:white;border:none;padding:10px 20px;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;" title="Ejecutar purga del mes anterior manualmente">
+                <span style="font-size:16px;">🧹</span> Ejecutar Purga Manual
+              </button>
+              <select id="purgeReportFilter" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
               <option value="all">Todos los meses</option>
               <option value="current_year">Este año</option>
               <option value="last_3">Últimos 3 meses</option>
             </select>
+            </div>
           </div>
 
           <div class="stats-grid" style="margin-bottom:20px;">
@@ -1296,11 +1499,12 @@
         // Don't filter out any orders - show all including test users
         const filteredOrders = orders;
 
-        const pending = filteredOrders.filter(o => o.status === 'pending' || o.status === 'pending_delivery').sort((a, b) => a.id.localeCompare(b.id));
+        const pending = filteredOrders.filter(o => o.status === 'pending' || o.status === 'pending_delivery' || o.status === 'pending_mp' || o.status === 'pending_cash').sort((a, b) => a.id.localeCompare(b.id));
         const confirmed = filteredOrders.filter(o => o.status === 'confirmed');
         const rejected = filteredOrders.filter(o => o.status === 'rejected');
 
-        renderOrderTable('pendingOrdersTable', pending, true);
+        // Use new grouped rendering for pending orders
+        renderGroupedPendingOrders(pending);
         renderOrderTable('confirmedOrdersTable', confirmed, false);
         renderOrderTable('rejectedOrdersTable', rejected, false);
       } catch (err) {
@@ -1363,9 +1567,440 @@
             <td>${order.rejectionReason || 'N/A'}</td>
           `;
         }
-        
+
         table.appendChild(row);
       });
+    }
+
+    // Store pending orders globally for updates
+    let pendingOrdersData = [];
+
+    // Group orders by user
+    function groupOrdersByUser(orders) {
+      const grouped = {};
+      orders.forEach(order => {
+        const key = order.buyerUid || 'unknown';
+        if (!grouped[key]) {
+          grouped[key] = {
+            buyerUid: order.buyerUid,
+            buyerUsername: order.buyerUsername || 'Usuario desconocido',
+            orders: []
+          };
+        }
+        // Update username if we have a better one
+        if (order.buyerUsername && order.buyerUsername !== 'Usuario desconocido') {
+          grouped[key].buyerUsername = order.buyerUsername;
+        }
+        grouped[key].orders.push(order);
+      });
+      return Object.values(grouped);
+    }
+
+    // Get user initials for avatar
+    function getUserInitials(name) {
+      if (!name || name === 'Usuario desconocido') return '?';
+      const parts = name.trim().split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    }
+
+    // Get status label in Spanish
+    function getStatusLabel(status) {
+      const labels = {
+        'pending': 'Pendiente',
+        'pending_delivery': 'Pendiente Entrega',
+        'pending_mp': 'Pendiente MP',
+        'pending_cash': 'Pendiente Efectivo'
+      };
+      return labels[status] || status;
+    }
+
+    // Calculate order total price
+    function calculateOrderTotal(order) {
+      const quantity = Number(order.quantity) || 1;
+      return Number(order.totalPrice) || Number(order.priceTotal) || (Number(order.price) * quantity) || 0;
+    }
+
+    // Get products from order (handles multiple formats)
+    function getOrderProducts(order) {
+      const products = [];
+
+      // Check for items array (cart orders)
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          products.push({
+            name: item.title || item.productName || item.nombre || 'Producto',
+            quantity: Number(item.quantity) || 1,
+            price: Number(item.unit_price) || Number(item.precio) || 0,
+            points: Number(item.points) || Number(item.puntos) || 0,
+            variant: item.variant || item.variante || null,
+            size: item.size || item.talla || item.tamano || null,
+            color: item.color || null
+          });
+        });
+      }
+      // Check for productos array (alternative format)
+      else if (order.productos && Array.isArray(order.productos)) {
+        order.productos.forEach(prod => {
+          products.push({
+            name: prod.nombre || prod.productName || 'Producto',
+            quantity: Number(prod.quantity) || Number(prod.cantidad) || 1,
+            price: Number(prod.precio) || Number(prod.price) || 0,
+            points: Number(prod.puntos) || Number(prod.points) || 0,
+            variant: prod.variant || prod.variante || null,
+            size: prod.size || prod.talla || prod.tamano || null,
+            color: prod.color || null
+          });
+        });
+      }
+      // Single product order
+      else {
+        const quantity = Number(order.quantity) || 1;
+        const unitPrice = Number(order.price) || (calculateOrderTotal(order) / quantity) || 0;
+        products.push({
+          name: order.productName || order.product || order.nombre || 'Producto',
+          quantity: quantity,
+          price: unitPrice,
+          points: Number(order.totalPoints) || Number(order.points) || Number(order.puntos) || 0,
+          variant: order.variant || order.variante || null,
+          size: order.size || order.talla || order.tamano || null,
+          color: order.color || null
+        });
+      }
+
+      return products;
+    }
+
+    // Render grouped pending orders
+    function renderGroupedPendingOrders(orders) {
+      pendingOrdersData = orders;
+      const container = document.getElementById('pendingOrdersGrouped');
+      const summaryEl = document.getElementById('pendingOrdersSummary');
+
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      if (orders.length === 0) {
+        container.innerHTML = `
+          <div class="empty-orders-state">
+            <h3>No hay ordenes pendientes</h3>
+            <p>Todas las ordenes han sido procesadas</p>
+          </div>
+        `;
+        if (summaryEl) summaryEl.textContent = '';
+        return;
+      }
+
+      const groupedOrders = groupOrdersByUser(orders);
+      const totalAmount = orders.reduce((sum, o) => sum + calculateOrderTotal(o), 0);
+
+      if (summaryEl) {
+        summaryEl.textContent = `${groupedOrders.length} usuario(s) | ${orders.length} orden(es) | Total: $${totalAmount.toLocaleString()}`;
+      }
+
+      groupedOrders.forEach(userGroup => {
+        const userTotal = userGroup.orders.reduce((sum, o) => sum + calculateOrderTotal(o), 0);
+        const initials = getUserInitials(userGroup.buyerUsername);
+        const ordersCount = userGroup.orders.length;
+
+        const groupEl = document.createElement('div');
+        groupEl.className = 'user-orders-group';
+        groupEl.dataset.userId = userGroup.buyerUid;
+
+        groupEl.innerHTML = `
+          <div class="user-orders-header" onclick="toggleUserOrders('${userGroup.buyerUid}')">
+            <div class="user-info">
+              <div class="user-avatar">${initials}</div>
+              <div class="user-details">
+                <h4>${userGroup.buyerUsername}</h4>
+                <p>ID: ${userGroup.buyerUid ? userGroup.buyerUid.substring(0, 12) + '...' : 'N/A'}</p>
+              </div>
+            </div>
+            <div class="orders-summary">
+              <span class="orders-count">${ordersCount} ${ordersCount === 1 ? 'orden' : 'ordenes'}</span>
+              <span class="orders-total">$${userTotal.toLocaleString()}</span>
+              <span class="expand-icon">&#9660;</span>
+            </div>
+          </div>
+          <div class="user-orders-content" id="orders-${userGroup.buyerUid}">
+            ${userGroup.orders.map(order => renderOrderCard(order)).join('')}
+          </div>
+        `;
+
+        container.appendChild(groupEl);
+      });
+
+      // Setup expand/collapse all buttons
+      setupExpandCollapseButtons();
+    }
+
+    // Render individual order card
+    function renderOrderCard(order) {
+      const products = getOrderProducts(order);
+      const orderTotal = calculateOrderTotal(order);
+      const statusLabel = getStatusLabel(order.status);
+
+      const productsHtml = products.map(prod => {
+        const variantParts = [];
+        if (prod.size) variantParts.push(`Talla: ${prod.size}`);
+        if (prod.color) variantParts.push(`Color: ${prod.color}`);
+        if (prod.variant) variantParts.push(prod.variant);
+
+        const variantsHtml = variantParts.length > 0
+          ? `<div class="product-variants">${variantParts.map(v => `<span>${v}</span>`).join('')}</div>`
+          : '';
+
+        const productTotal = prod.price * prod.quantity;
+
+        return `
+          <div class="product-item">
+            <div class="product-info">
+              <div class="product-name">${prod.name}</div>
+              ${variantsHtml}
+              ${prod.points > 0 ? `<div class="product-variants"><span>${prod.points} pts</span></div>` : ''}
+            </div>
+            <div class="product-pricing">
+              <div class="product-qty">x${prod.quantity}</div>
+              <div class="product-price">$${productTotal.toLocaleString()}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="order-card" data-order-id="${order.id}">
+          <div class="order-header">
+            <span class="order-id">Orden: ${order.id.substring(0, 16)}...</span>
+            <span class="order-status ${order.status}">${statusLabel}</span>
+          </div>
+          <div class="order-products">
+            ${productsHtml}
+          </div>
+          <div class="order-footer">
+            <div class="order-total">Total: $${orderTotal.toLocaleString()}</div>
+            <div class="order-actions">
+              <button class="btn-success" onclick="confirmOrderInline('${order.id}', this)">Confirmar</button>
+              <button class="btn-danger" onclick="rejectOrderInline('${order.id}', this)">Rechazar</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Toggle user orders expand/collapse
+    window.toggleUserOrders = function(userId) {
+      const contentEl = document.getElementById(`orders-${userId}`);
+      const headerEl = contentEl?.previousElementSibling;
+
+      if (contentEl && headerEl) {
+        contentEl.classList.toggle('expanded');
+        headerEl.classList.toggle('expanded');
+      }
+    };
+
+    // Setup expand/collapse all buttons
+    function setupExpandCollapseButtons() {
+      const expandBtn = document.getElementById('expandAllOrders');
+      const collapseBtn = document.getElementById('collapseAllOrders');
+
+      if (expandBtn) {
+        expandBtn.onclick = function() {
+          document.querySelectorAll('.user-orders-content').forEach(el => el.classList.add('expanded'));
+          document.querySelectorAll('.user-orders-header').forEach(el => el.classList.add('expanded'));
+        };
+      }
+
+      if (collapseBtn) {
+        collapseBtn.onclick = function() {
+          document.querySelectorAll('.user-orders-content').forEach(el => el.classList.remove('expanded'));
+          document.querySelectorAll('.user-orders-header').forEach(el => el.classList.remove('expanded'));
+        };
+      }
+    }
+
+    // Confirm order inline (without full page reload)
+    window.confirmOrderInline = async function(orderId, buttonEl) {
+      if (!currentUser) return;
+
+      const orderCard = buttonEl.closest('.order-card');
+      const actionsDiv = buttonEl.parentElement;
+
+      // Disable buttons and show loading
+      actionsDiv.innerHTML = '<span style="color:#6c757d;font-size:13px;">Procesando...</span>';
+
+      try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch("/.netlify/functions/confirm-order", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ orderId, action: 'confirm' })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          console.error("Error confirmando orden:", data);
+          alert("Error confirmando orden:\n\n" + (data.error || "Error desconocido") +
+                (data.details ? "\n\nDetalles: " + data.details : ""));
+          // Restore buttons
+          actionsDiv.innerHTML = `
+            <button class="btn-success" onclick="confirmOrderInline('${orderId}', this)">Confirmar</button>
+            <button class="btn-danger" onclick="rejectOrderInline('${orderId}', this)">Rechazar</button>
+          `;
+          return;
+        }
+
+        // Success - animate removal
+        orderCard.style.transition = 'all 0.3s ease';
+        orderCard.style.backgroundColor = '#d4edda';
+        orderCard.querySelector('.order-status').textContent = 'Confirmada';
+        orderCard.querySelector('.order-status').className = 'order-status';
+        orderCard.querySelector('.order-status').style.background = '#28a745';
+        orderCard.querySelector('.order-status').style.color = 'white';
+
+        setTimeout(() => {
+          orderCard.style.opacity = '0';
+          orderCard.style.transform = 'translateX(20px)';
+          setTimeout(() => {
+            removeOrderFromView(orderId);
+            // Refresh stats
+            loadStats();
+          }, 300);
+        }, 800);
+
+      } catch (err) {
+        console.error("Error en confirmOrderInline:", err);
+        alert("Error confirmando orden: " + err.message);
+        // Restore buttons
+        actionsDiv.innerHTML = `
+          <button class="btn-success" onclick="confirmOrderInline('${orderId}', this)">Confirmar</button>
+          <button class="btn-danger" onclick="rejectOrderInline('${orderId}', this)">Rechazar</button>
+        `;
+      }
+    };
+
+    // Reject order inline (without full page reload)
+    window.rejectOrderInline = async function(orderId, buttonEl) {
+      if (!currentUser) return;
+
+      const reason = prompt("Motivo del rechazo (opcional):");
+
+      const orderCard = buttonEl.closest('.order-card');
+      const actionsDiv = buttonEl.parentElement;
+
+      // Disable buttons and show loading
+      actionsDiv.innerHTML = '<span style="color:#6c757d;font-size:13px;">Procesando...</span>';
+
+      try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch("/.netlify/functions/confirm-order", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ orderId, action: 'reject', rejectionReason: reason })
+        });
+
+        if (!res.ok) {
+          alert("Error rechazando: " + res.status);
+          // Restore buttons
+          actionsDiv.innerHTML = `
+            <button class="btn-success" onclick="confirmOrderInline('${orderId}', this)">Confirmar</button>
+            <button class="btn-danger" onclick="rejectOrderInline('${orderId}', this)">Rechazar</button>
+          `;
+          return;
+        }
+
+        // Success - animate removal
+        orderCard.style.transition = 'all 0.3s ease';
+        orderCard.style.backgroundColor = '#f8d7da';
+        orderCard.querySelector('.order-status').textContent = 'Rechazada';
+        orderCard.querySelector('.order-status').className = 'order-status';
+        orderCard.querySelector('.order-status').style.background = '#dc3545';
+        orderCard.querySelector('.order-status').style.color = 'white';
+
+        setTimeout(() => {
+          orderCard.style.opacity = '0';
+          orderCard.style.transform = 'translateX(-20px)';
+          setTimeout(() => {
+            removeOrderFromView(orderId);
+            // Refresh stats
+            loadStats();
+          }, 300);
+        }, 800);
+
+      } catch (err) {
+        console.error('Error en rejectOrderInline:', err);
+        alert("Error rechazando orden: " + err.message);
+        // Restore buttons
+        actionsDiv.innerHTML = `
+          <button class="btn-success" onclick="confirmOrderInline('${orderId}', this)">Confirmar</button>
+          <button class="btn-danger" onclick="rejectOrderInline('${orderId}', this)">Rechazar</button>
+        `;
+      }
+    };
+
+    // Remove order from view and update user group
+    function removeOrderFromView(orderId) {
+      const orderCard = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
+      if (!orderCard) return;
+
+      const userGroup = orderCard.closest('.user-orders-group');
+      const userId = userGroup?.dataset.userId;
+
+      // Remove from data
+      pendingOrdersData = pendingOrdersData.filter(o => o.id !== orderId);
+
+      // Remove card from DOM
+      orderCard.remove();
+
+      // Check if user group is now empty
+      if (userGroup) {
+        const remainingCards = userGroup.querySelectorAll('.order-card');
+        if (remainingCards.length === 0) {
+          userGroup.remove();
+        } else {
+          // Update user group header
+          const countEl = userGroup.querySelector('.orders-count');
+          const totalEl = userGroup.querySelector('.orders-total');
+
+          const userOrders = pendingOrdersData.filter(o => o.buyerUid === userId);
+          const userTotal = userOrders.reduce((sum, o) => sum + calculateOrderTotal(o), 0);
+
+          if (countEl) {
+            countEl.textContent = `${userOrders.length} ${userOrders.length === 1 ? 'orden' : 'ordenes'}`;
+          }
+          if (totalEl) {
+            totalEl.textContent = `$${userTotal.toLocaleString()}`;
+          }
+        }
+      }
+
+      // Update summary
+      const summaryEl = document.getElementById('pendingOrdersSummary');
+      if (summaryEl) {
+        const groupedOrders = groupOrdersByUser(pendingOrdersData);
+        const totalAmount = pendingOrdersData.reduce((sum, o) => sum + calculateOrderTotal(o), 0);
+
+        if (pendingOrdersData.length === 0) {
+          summaryEl.textContent = '';
+          document.getElementById('pendingOrdersGrouped').innerHTML = `
+            <div class="empty-orders-state">
+              <h3>No hay ordenes pendientes</h3>
+              <p>Todas las ordenes han sido procesadas</p>
+            </div>
+          `;
+        } else {
+          summaryEl.textContent = `${groupedOrders.length} usuario(s) | ${pendingOrdersData.length} orden(es) | Total: $${totalAmount.toLocaleString()}`;
+        }
+      }
     }
 
     let allDistributors = [];
@@ -4036,7 +4671,7 @@
 
         profitsOrders = ordersSnap.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter(o => o.status === 'confirmed');
+          .filter(o => o.status === 'confirmed' || o.status === 'confirmado');
 
         // Debug logging
         console.log('📊 Profits Data Loaded:');
@@ -5018,6 +5653,102 @@
         loadPurgeReports();
       });
     }
+
+    // Execute manual purge of inactive commissions
+    async function executeManualPurge() {
+      // Get current date info for the confirmation message
+      const now = new Date();
+      const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+      const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      const monthName = monthNames[prevMonth];
+
+      const result = await Swal.fire({
+        title: 'Ejecutar Purga Manual',
+        html: `
+          <div style="text-align:left;font-size:14px;">
+            <p><strong>Esta accion eliminara las comisiones de ${monthName} ${prevYear}</strong> de todos los distribuidores que NO realizaron compras personales durante ese mes.</p>
+            <p style="color:#c62828;font-weight:500;">Esta accion NO se puede deshacer.</p>
+            <p>Se recomienda ejecutar esta purga el <strong>primer dia de cada mes</strong>.</p>
+          </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#c62828',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Si, ejecutar purga',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (!result.isConfirmed) return;
+
+      const btn = document.getElementById('manualPurgeBtn');
+      const originalContent = btn.innerHTML;
+      btn.innerHTML = '<span style="font-size:16px;">⏳</span> Ejecutando...';
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+
+      try {
+        const response = await fetch('/.netlify/functions/purge-inactive-commissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          await Swal.fire({
+            title: 'Purga Completada',
+            html: `
+              <div style="text-align:left;font-size:14px;">
+                <p><strong>Mes procesado:</strong> ${monthName} ${prevYear}</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px;">
+                  <div style="background:#e8f5e9;padding:10px;border-radius:6px;text-align:center;">
+                    <div style="font-size:12px;color:#2e7d32;">Distribuidores Activos</div>
+                    <div style="font-size:20px;font-weight:700;color:#2e7d32;">${data.summary.activeDistributors}</div>
+                  </div>
+                  <div style="background:#ffebee;padding:10px;border-radius:6px;text-align:center;">
+                    <div style="font-size:12px;color:#c62828;">Usuarios Purgados</div>
+                    <div style="font-size:20px;font-weight:700;color:#c62828;">${data.summary.purgedUsers}</div>
+                  </div>
+                  <div style="background:#fff3e0;padding:10px;border-radius:6px;text-align:center;">
+                    <div style="font-size:12px;color:#ef6c00;">Total COP Eliminado</div>
+                    <div style="font-size:20px;font-weight:700;color:#ef6c00;">$${data.summary.totalPurgedAmount.toLocaleString()}</div>
+                  </div>
+                  <div style="background:#fce4ec;padding:10px;border-radius:6px;text-align:center;">
+                    <div style="font-size:12px;color:#ad1457;">Puntos Eliminados</div>
+                    <div style="font-size:20px;font-weight:700;color:#ad1457;">${data.summary.totalPurgedPoints.toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
+            `,
+            icon: 'success',
+            confirmButtonText: 'Cerrar'
+          });
+
+          // Reload purge reports to show the new entry
+          await loadPurgeReports();
+        } else {
+          throw new Error(data.error || 'Error desconocido');
+        }
+      } catch (err) {
+        console.error('Error executing manual purge:', err);
+        Swal.fire({
+          title: 'Error',
+          text: `No se pudo ejecutar la purga: ${err.message}`,
+          icon: 'error',
+          confirmButtonText: 'Cerrar'
+        });
+      } finally {
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    }
+
+    // Make the function globally accessible
+    window.executeManualPurge = executeManualPurge;
   </script>
 </body>
 </html>

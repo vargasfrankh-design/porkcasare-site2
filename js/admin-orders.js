@@ -214,7 +214,7 @@ async function onConfirmClick(e) {
 
     // update orden: estado confirmado
     await updateDoc(orderRef, {
-      status: "confirmado",
+      status: "confirmed",
       confirmedAt: new Date().toISOString(),
       confirmedBy: auth.currentUser ? auth.currentUser.uid : null
     });
