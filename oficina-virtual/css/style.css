@@ -13,6 +13,121 @@ body {
   padding: 20px;
 }
 
+/* ========== Shipping Ticker Banner ========== */
+.shipping-ticker {
+  background: linear-gradient(135deg, #a8d4f5 0%, #8ec5ed 50%, #7ab8e8 100%);
+  color: #1a5276;
+  padding: 10px 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 100;
+  margin: 0 0 16px 0;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(142, 197, 237, 0.35);
+}
+
+.shipping-ticker-track {
+  width: 100%;
+  overflow: hidden;
+}
+
+.shipping-ticker-content {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  /* Animation is applied dynamically via JavaScript for seamless looping */
+}
+
+/* Pausa al hover para mejor lectura */
+.shipping-ticker:hover .shipping-ticker-content {
+  animation-play-state: paused;
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  transition: opacity 0.2s ease;
+}
+
+.ticker-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.ticker-separator {
+  color: rgba(26, 82, 118, 0.4);
+  font-size: 10px;
+  padding: 0 12px;
+}
+
+/* Estilo clickeable para términos y condiciones */
+.ticker-item.ticker-link {
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(26, 82, 118, 0.4);
+  padding-bottom: 2px;
+  transition: all 0.2s ease;
+}
+
+.ticker-item.ticker-link:hover {
+  color: #0d3a5c;
+  border-bottom-color: #0d3a5c;
+}
+
+/* Animación del ticker */
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Responsive: ajustes para móvil */
+@media (max-width: 768px) {
+  .shipping-ticker {
+    padding: 8px 0;
+    margin: 0 0 12px 0;
+  }
+
+  .ticker-item {
+    font-size: 13px;
+    padding: 0 6px;
+  }
+
+  .ticker-icon {
+    font-size: 14px;
+  }
+
+  .ticker-separator {
+    padding: 0 8px;
+  }
+}
+
+/* Preferencia de movimiento reducido - respeta accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  .shipping-ticker-content {
+    animation: none;
+  }
+
+  .shipping-ticker {
+    padding: 12px 16px;
+  }
+
+  .shipping-ticker-track {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+/* ========== End Shipping Ticker Banner ========== */
+
 /* Barra superior */
 .nav {
   background-color: #4a90e2; /* Azul tenue */
