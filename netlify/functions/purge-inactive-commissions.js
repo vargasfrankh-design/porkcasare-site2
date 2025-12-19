@@ -1,10 +1,10 @@
 // netlify/functions/purge-inactive-commissions.js
 //
-// PURGA AUTOMÁTICA DE COMISIONES DE USUARIOS INACTIVOS
+// PURGA MANUAL DE COMISIONES DE USUARIOS INACTIVOS
 //
-// Este scheduled function se ejecuta automáticamente el primer día de cada mes
-// a las 00:01 UTC para eliminar las comisiones del mes anterior de usuarios
-// que no se activaron (no realizaron compras personales).
+// Esta función se ejecuta manualmente desde el panel de administración
+// el primer día de cada mes para eliminar las comisiones del mes anterior
+// de usuarios que no se activaron (no realizaron compras personales).
 //
 // PROCESO:
 // 1. Obtiene todos los distribuidores
@@ -14,6 +14,9 @@
 //    - Reduce los groupPoints correspondientes
 //    - Registra las comisiones eliminadas en la colección 'commissionsPurged'
 // 4. Genera un reporte detallado para el panel de administración
+//
+// NOTA: Esta función debe ser ejecutada MANUALMENTE por el administrador
+// todos los primeros de cada mes desde la sección de Ganancias en Administración.
 
 const admin = require('firebase-admin');
 
@@ -230,7 +233,7 @@ exports.handler = async (req) => {
         purgedCommissionsCount: commissions.length,
         month: monthNumber,
         year: year,
-        by: 'system_scheduled'
+        by: 'admin_manual'
       };
 
       await userRef.update({
@@ -315,9 +318,4 @@ exports.handler = async (req) => {
       })
     };
   }
-};
-
-// Schedule: Run at 00:01 on the 1st day of every month (UTC)
-exports.config = {
-  schedule: '1 0 1 * *'
 };
