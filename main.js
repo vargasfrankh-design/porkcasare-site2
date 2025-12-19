@@ -20,57 +20,9 @@ async function isUsernameTaken(username) {
   return !snap.empty;
 }
 
-// ---------- Datos de ubicación ----------
-const dataUbicacion = {
-  "Colombia": {
-    "Boyacá": ["Tunja", "Duitama", "Sogamoso"],
-    "Cundinamarca": ["Bogotá", "Soacha", "Chía"]
-  },
-  "Ecuador": {
-    "Pichincha": ["Quito", "Cayambe"],
-    "Guayas": ["Guayaquil", "Daule"]
-  }
-};
-
-// ---------- Poblar selects de ubicación ----------
-const paisSelect = document.getElementById("pais");
-const provinciaSelect = document.getElementById("provincia");
-const ciudadSelect = document.getElementById("ciudad");
-
-if (paisSelect) {
-  Object.keys(dataUbicacion).forEach(pais => {
-    const option = document.createElement("option");
-    option.value = pais;
-    option.textContent = pais;
-    paisSelect.appendChild(option);
-  });
-
-  paisSelect.addEventListener("change", () => {
-    provinciaSelect.innerHTML = "<option value=''>Seleccione...</option>";
-    ciudadSelect.innerHTML = "<option value=''>Seleccione...</option>";
-
-    const provincias = Object.keys(dataUbicacion[paisSelect.value] || {});
-    provincias.forEach(prov => {
-      const option = document.createElement("option");
-      option.value = prov;
-      option.textContent = prov;
-      provinciaSelect.appendChild(option);
-    });
-  });
-}
-
-if (provinciaSelect) {
-  provinciaSelect.addEventListener("change", () => {
-    ciudadSelect.innerHTML = "<option value=''>Seleccione...</option>";
-    const ciudades = dataUbicacion[paisSelect.value]?.[provinciaSelect.value] || [];
-    ciudades.forEach(ciudad => {
-      const option = document.createElement("option");
-      option.value = ciudad;
-      option.textContent = ciudad;
-      ciudadSelect.appendChild(option);
-    });
-  });
-}
+// ---------- Ubicación ahora manejada por location.js con autocomplete ----------
+// Los datos de ubicación se cargan desde data/colombia.json
+// y el autocompletado se maneja en js/location.js
 
 // ---------- Evento de envío del formulario ----------
 const form = document.getElementById("registerForm");
@@ -93,8 +45,9 @@ if (form) {
     // Obtener datos del formulario
     const tipoRegistro = document.getElementById("tipoRegistro")?.value;
     const pais = document.getElementById("pais")?.value;
-    const provincia = document.getElementById("provincia")?.value;
-    const ciudad = document.getElementById("ciudad")?.value;
+    // Obtener departamento y ciudad desde el sistema de autocomplete
+    const provincia = window.locationAutocomplete ? window.locationAutocomplete.getDepartment() : "";
+    const ciudad = window.locationAutocomplete ? window.locationAutocomplete.getCity() : "";
     const usuario = (document.getElementById("usuario")?.value || "").trim();
     const password = (document.getElementById("password")?.value || "").trim();
     const confirmPassword = (document.getElementById("confirmPassword")?.value || "").trim();
@@ -137,6 +90,17 @@ if (form) {
     }
     if (!numericRegex.test(celular)) {
       errores.push("El celular debe contener solo números.");
+    }
+
+    // Validar ubicación
+    if (!provincia) {
+      errores.push("Debes seleccionar un departamento.");
+    }
+    if (!ciudad) {
+      errores.push("Debes seleccionar una ciudad/municipio.");
+    }
+    if (provincia && ciudad && window.locationAutocomplete && !window.locationAutocomplete.validateCity()) {
+      errores.push("La ciudad seleccionada no pertenece al departamento indicado.");
     }
 
     // Validar patrocinador

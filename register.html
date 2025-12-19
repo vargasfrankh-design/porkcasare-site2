@@ -34,6 +34,101 @@
       background-color: #e9ecef;
       cursor: not-allowed;
     }
+
+    /* Estilos para autocompletado de ubicación */
+    .autocomplete-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .autocomplete-input {
+      width: 100%;
+    }
+
+    .autocomplete-input:disabled {
+      background-color: #e9ecef;
+      cursor: not-allowed;
+    }
+
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 250px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ced4da;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      display: none;
+    }
+
+    .autocomplete-dropdown.show {
+      display: block;
+    }
+
+    .autocomplete-item {
+      padding: 10px 15px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+
+    .autocomplete-item:hover,
+    .autocomplete-item.selected {
+      background-color: #e7f3ff;
+      color: #0d6efd;
+    }
+
+    .autocomplete-no-results {
+      padding: 10px 15px;
+      color: #6c757d;
+      font-style: italic;
+      text-align: center;
+    }
+
+    /* Mejoras para móviles */
+    @media (max-width: 768px) {
+      .autocomplete-dropdown {
+        max-height: 200px;
+      }
+
+      .autocomplete-item {
+        padding: 12px 15px;
+        font-size: 16px; /* Evita zoom en iOS */
+      }
+
+      .autocomplete-input {
+        font-size: 16px; /* Evita zoom en iOS */
+      }
+    }
+
+    /* Scrollbar personalizado para el dropdown */
+    .autocomplete-dropdown::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .autocomplete-dropdown::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    .autocomplete-dropdown::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+
+    .autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+      background: #a1a1a1;
+    }
+
     .loading-overlay {
       display: none;
       position: fixed;

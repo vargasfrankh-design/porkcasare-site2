@@ -122,6 +122,68 @@
     </div>
   </nav>
 
+  <!-- Banner informativo de envíos (ticker animado) -->
+  <div class="shipping-ticker" role="marquee" aria-label="Información de envíos">
+    <div class="shipping-ticker-track">
+      <div class="shipping-ticker-content" id="tickerContent">
+        <span class="ticker-item"><span class="ticker-icon">🚚</span> Envíos a nivel nacional <span class="ticker-icon">🇨🇴</span></span>
+        <span class="ticker-separator">•</span>
+        <span class="ticker-item"><span class="ticker-icon">📦</span> No aplica contra entrega</span>
+        <span class="ticker-separator">•</span>
+        <span class="ticker-item"><span class="ticker-icon">❄️</span> No aplica para productos en frío</span>
+        <span class="ticker-separator">•</span>
+        <span class="ticker-item ticker-link" onclick="window.open('https://wa.me/573125929316?text=Hola,%20quiero%20conocer%20los%20términos%20y%20condiciones', '_blank')"><span class="ticker-icon">📄</span> Aplica términos y condiciones</span>
+        <span class="ticker-separator">•</span>
+      </div>
+    </div>
+  </div>
+  <script>
+  /* Ticker seamless infinite loop - ensures content is always visible */
+  (function() {
+    function initTicker() {
+      var content = document.getElementById('tickerContent');
+      if (!content) return;
+
+      var track = content.parentElement;
+
+      // Clone the content multiple times to ensure seamless loop
+      var originalHTML = content.innerHTML;
+      // Add enough copies to fill at least 3x the viewport width
+      content.innerHTML = originalHTML + originalHTML + originalHTML + originalHTML;
+
+      // Get the width of one set of content
+      var tempDiv = document.createElement('div');
+      tempDiv.style.cssText = 'display:inline-flex;visibility:hidden;position:absolute;white-space:nowrap;';
+      tempDiv.innerHTML = originalHTML;
+      document.body.appendChild(tempDiv);
+      var singleSetWidth = tempDiv.offsetWidth;
+      document.body.removeChild(tempDiv);
+
+      // Calculate animation duration based on content width for consistent speed
+      var speed = 50; // pixels per second
+      var duration = singleSetWidth / speed;
+
+      // Apply custom animation with calculated duration
+      content.style.animationDuration = duration + 's';
+
+      // Create dynamic keyframes for perfect loop
+      var styleSheet = document.createElement('style');
+      styleSheet.textContent = '@keyframes ticker-scroll-dynamic { 0% { transform: translateX(0); } 100% { transform: translateX(-' + singleSetWidth + 'px); } }';
+      document.head.appendChild(styleSheet);
+
+      content.style.animationName = 'ticker-scroll-dynamic';
+      content.style.animationTimingFunction = 'linear';
+      content.style.animationIterationCount = 'infinite';
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTicker);
+    } else {
+      initTicker();
+    }
+  })();
+  </script>
+
   <!-- Alerta de activación -->
   <div id="activationAlert" class="activation-alert" style="display:none;">
     ⚠️ Debes realizar una compra mínima de 50 puntos para activar tu código y comenzar a recibir bonos y pagos.
