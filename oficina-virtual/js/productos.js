@@ -50,6 +50,153 @@ const POINT_VALUE = 2800;
 const POINTS_PER_PACKAGE = 10;
 const POINTS_PER_KG = 10 / 3;
 
+// Shipping cost constants (legacy fallbacks)
+const SHIPPING_COST_YOPAL = 5000;      // $5,000 COP for Yopal (legacy)
+const SHIPPING_COST_OTHER = 16000;     // $16,000 COP for other cities (legacy)
+const SHIPPING_COST_PICKUP = 0;        // Free for office pickup
+
+// Default UE-based shipping rates
+const DEFAULT_SHIPPING_RATES = {
+  yopal: {
+    '1_5': 5000,
+    '6_10': 8000,
+    '11_plus': 12000
+  },
+  other: {
+    '1_3': 16000,
+    '4_6': 22000,
+    '7_10': 30000,
+    '11_15': 40000,
+    '16_plus': 50000
+  }
+};
+
+// Global shipping rates (loaded from Firestore)
+let shippingRates = { ...DEFAULT_SHIPPING_RATES };
+
+/**
+ * Load shipping rates from Firestore config
+ */
+async function loadShippingRates() {
+  try {
+    const configRef = doc(db, "config", "shippingRates");
+    const configSnap = await getDoc(configRef);
+
+    if (configSnap.exists()) {
+      const data = configSnap.data();
+      shippingRates = {
+        yopal: data.yopal || DEFAULT_SHIPPING_RATES.yopal,
+        other: data.other || DEFAULT_SHIPPING_RATES.other
+      };
+      console.log('✅ Shipping rates loaded from config');
+    } else {
+      shippingRates = { ...DEFAULT_SHIPPING_RATES };
+      console.log('ℹ️ Using default shipping rates');
+    }
+  } catch (err) {
+    console.warn('Error loading shipping rates, using defaults:', err);
+    shippingRates = { ...DEFAULT_SHIPPING_RATES };
+  }
+}
+
+/**
+ * Calculate shipping cost based on total UE and city
+ * @param {number} totalUE - Total shipping units for the order
+ * @param {string} city - Destination city
+ * @param {string} deliveryMethod - 'home' or 'pickup'
+ * @returns {number} - Shipping cost in COP
+ */
+function calculateShippingCostByUE(totalUE, city, deliveryMethod) {
+  if (deliveryMethod === 'pickup') {
+    return SHIPPING_COST_PICKUP;
+  }
+
+  // If totalUE is 0 or invalid, use legacy calculation
+  if (!totalUE || totalUE <= 0) {
+    return calculateShippingCost(city, deliveryMethod);
+  }
+
+  // Normalize city name for comparison (remove accents, lowercase)
+  const normalizedCity = (city || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  const isYopal = normalizedCity === 'yopal' || normalizedCity.includes('yopal');
+
+  if (isYopal) {
+    // Yopal rates based on UE
+    if (totalUE <= 5) return shippingRates.yopal['1_5'];
+    if (totalUE <= 10) return shippingRates.yopal['6_10'];
+    return shippingRates.yopal['11_plus'];
+  } else {
+    // Other cities rates based on UE
+    if (totalUE <= 3) return shippingRates.other['1_3'];
+    if (totalUE <= 6) return shippingRates.other['4_6'];
+    if (totalUE <= 10) return shippingRates.other['7_10'];
+    if (totalUE <= 15) return shippingRates.other['11_15'];
+    return shippingRates.other['16_plus'];
+  }
+}
+
+/**
+ * Calculate total UE for a single product and quantity
+ * @param {Object} product - Product object with shippingUnits field
+ * @param {number} quantity - Quantity of the product
+ * @returns {number} - Total UE for this product
+ */
+function getProductUE(product, quantity = 1) {
+  const ue = product.shippingUnits || 2; // Default to 2 if not set
+  return ue * quantity;
+}
+
+/**
+ * Calculate total UE for multiple cart items
+ * @param {Array} items - Array of cart items with product and quantity
+ * @returns {number} - Total UE for all items
+ */
+function calculateTotalUE(items) {
+  return items.reduce((total, item) => {
+    const product = item.product || item;
+    const quantity = item.quantity || 1;
+    return total + getProductUE(product, quantity);
+  }, 0);
+}
+
+/**
+ * Get shipping message based on city
+ * @param {string} city - Destination city
+ * @returns {string} - Shipping message to display
+ */
+function getShippingMessage(city) {
+  const normalizedCity = (city || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  const isYopal = normalizedCity === 'yopal' || normalizedCity.includes('yopal');
+
+  if (isYopal) {
+    return 'Envío local Yopal – tarifa según pedido';
+  }
+  return 'Envío nacional calculado según ciudad de destino';
+}
+
+/**
+ * Legacy: Calculate shipping cost based on user's city and delivery method
+ * Used as fallback when UE is not available
+ * @param {string} city - User's city
+ * @param {string} deliveryMethod - 'home' or 'pickup'
+ * @returns {number} - Shipping cost in COP
+ */
+function calculateShippingCost(city, deliveryMethod) {
+  if (deliveryMethod === 'pickup') {
+    return SHIPPING_COST_PICKUP;
+  }
+
+  // Normalize city name for comparison (remove accents, lowercase)
+  const normalizedCity = (city || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
+  // Check if city is Yopal (with various possible spellings)
+  if (normalizedCity === 'yopal' || normalizedCity.includes('yopal')) {
+    return SHIPPING_COST_YOPAL;
+  }
+
+  return SHIPPING_COST_OTHER;
+}
+
 // NOTE: The following constants are LEGACY and NOT USED in the actual commission system
 // All commission calculations happen server-side in netlify/functions/confirm-order.js
 // These are kept for reference only
@@ -666,7 +813,8 @@ function renderProductPagination(totalPages) {
 
 // --- Modal grande para que el cliente edite y confirme sus datos ---
 // Incluye opción de 'A domicilio' o 'Recoger en oficina'
-function showCustomerFormModal(initial = {}) {
+// Con cálculo dinámico de costo de envío basado en UE (Unidades de Envío)
+function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.style.position = 'fixed';
@@ -829,6 +977,69 @@ function showCustomerFormModal(initial = {}) {
     pickupInfo.style.display = 'none';
     box.appendChild(pickupInfo);
 
+    // --- Shipping cost display section ---
+    const shippingCostSection = document.createElement('div');
+    shippingCostSection.style.marginTop = '16px';
+    shippingCostSection.style.padding = '16px';
+    shippingCostSection.style.borderRadius = '10px';
+    shippingCostSection.style.background = 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';
+    shippingCostSection.style.border = '1px solid #86efac';
+
+    const updateShippingDisplay = () => {
+      const deliveryMethod = dmPickup.radio.checked ? 'pickup' : 'home';
+      const city = fCiudad.input.value.trim();
+      // Use UE-based calculation if totalUE is provided, otherwise fall back to legacy
+      const shippingCost = totalUE > 0 ? calculateShippingCostByUE(totalUE, city, deliveryMethod) : calculateShippingCost(city, deliveryMethod);
+      const total = subtotal + shippingCost;
+
+      if (deliveryMethod === 'pickup') {
+        shippingCostSection.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-weight:600;color:#166534;">📦 Subtotal productos:</span>
+            <span style="font-weight:700;color:#166534;">${formatCOP(subtotal)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="color:#166534;">🏢 Recoger en oficina:</span>
+            <span style="font-weight:600;color:#16a34a;">GRATIS</span>
+          </div>
+          <div style="border-top:1px solid #86efac;padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;font-size:16px;color:#166534;">💰 TOTAL A PAGAR:</span>
+            <span style="font-weight:700;font-size:18px;color:#166534;">${formatCOP(total)}</span>
+          </div>
+        `;
+      } else {
+        const cityDisplay = city || '(ingresa la ciudad)';
+        const isYopal = city && (city.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes('yopal'));
+        const shippingMessage = getShippingMessage(city);
+        const shippingLabel = `🚚 ${shippingMessage}:`;
+
+        shippingCostSection.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-weight:600;color:#166534;">📦 Subtotal productos:</span>
+            <span style="font-weight:700;color:#166534;">${formatCOP(subtotal)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="color:#166534;">${shippingLabel}</span>
+            <span style="font-weight:600;color:#ea580c;">${formatCOP(shippingCost)}</span>
+          </div>
+          ${!city ? '<p style="font-size:12px;color:#9ca3af;margin:4px 0 8px 0;">ℹ️ El costo de envío se calcula automáticamente según la ciudad de destino</p>' : ''}
+          <div style="border-top:1px solid #86efac;padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;font-size:16px;color:#166534;">💰 TOTAL A PAGAR:</span>
+            <span style="font-weight:700;font-size:18px;color:#166534;">${formatCOP(total)}</span>
+          </div>
+        `;
+      }
+    };
+
+    box.appendChild(shippingCostSection);
+
+    // Initialize shipping display
+    updateShippingDisplay();
+
+    // Update shipping display when city changes
+    fCiudad.input.addEventListener('input', updateShippingDisplay);
+    fCiudad.input.addEventListener('change', updateShippingDisplay);
+
     // Determine initial delivery method
     const initialDM = initial.deliveryMethod || initial.delivery || 'home';
     if (initialDM === 'pickup') {
@@ -843,7 +1054,7 @@ function showCustomerFormModal(initial = {}) {
       fCiudad.wrapper.style.display = '';
     }
 
-    // When delivery method changes, show/hide address fields
+    // When delivery method changes, show/hide address fields and update shipping
     const updateDeliveryUI = (method) => {
       if (method === 'pickup') {
         pickupInfo.style.display = 'block';
@@ -854,6 +1065,7 @@ function showCustomerFormModal(initial = {}) {
         fDireccion.wrapper.style.display = '';
         fCiudad.wrapper.style.display = '';
       }
+      updateShippingDisplay();
     };
     dmHome.radio.addEventListener('change', () => updateDeliveryUI('home'));
     dmPickup.radio.addEventListener('change', () => updateDeliveryUI('pickup'));
@@ -891,6 +1103,10 @@ function showCustomerFormModal(initial = {}) {
 
     btnConfirm.addEventListener('click', () => {
       const deliveryMethod = dmPickup.radio.checked ? 'pickup' : 'home';
+      const city = fCiudad.input.value.trim();
+
+      // Calculate shipping cost using UE if available
+      const shippingCost = totalUE > 0 ? calculateShippingCostByUE(totalUE, city, deliveryMethod) : calculateShippingCost(city, deliveryMethod);
 
       const payload = {
         firstName: fNombre.input.value.trim(),
@@ -898,9 +1114,11 @@ function showCustomerFormModal(initial = {}) {
         email: fEmail.input.value.trim(),
         phone: fTelefono.input.value.trim(),
         address: fDireccion.input.value.trim(),
-        city: fCiudad.input.value.trim(),
+        city: city,
         notes: ta.value.trim(),
-        deliveryMethod
+        deliveryMethod,
+        shippingCost,
+        totalUE: totalUE // Include total UE in payload
       };
 
       // Validaciones
@@ -1032,7 +1250,14 @@ async function onBuyClick(e) {
   });
 
   // ---------- Modal grande: pedir/editar datos del cliente (devuelve payload o null) ----------
-  const customerData = await showCustomerFormModal(initialBuyerProfile);
+  // Calculate subtotal for shipping display
+  const unitPriceForSubtotal = getDisplayPrice(prod) + variantPriceDiff;
+  const subtotal = unitPriceForSubtotal * quantity;
+
+  // Calculate total UE (Shipping Units) for this product
+  const totalUE = getProductUE(prod, quantity);
+
+  const customerData = await showCustomerFormModal(initialBuyerProfile, subtotal, totalUE);
   if (!customerData) {
     // usuario canceló en modal grande -> NO guardamos nada
     return;
@@ -1051,14 +1276,23 @@ async function onBuyClick(e) {
     const productPoints = getDisplayPoints(prod);
     const totalPoints = productPoints * quantity;
 
+    // Get shipping cost from customer data
+    const shippingCost = customerData.shippingCost || 0;
+    const grandTotal = totalPrice + shippingCost;
+
     const orderObj = {
       productId: prod.id,
       productName: prod.nombre,
       price: unitPrice,
       quantity: quantity,
       totalPrice: totalPrice,
+      shippingCost: shippingCost,
+      grandTotal: grandTotal,
       points: productPoints,
       totalPoints: totalPoints,
+      // UE (Shipping Units) data
+      shippingUnits: prod.shippingUnits || 2, // UE per unit
+      totalShippingUnits: totalUE, // Total UE for this order
       buyerUid,
       buyerUsername,
       buyerType,
@@ -1104,7 +1338,9 @@ async function onBuyClick(e) {
       await updateDoc(doc(db, "usuarios", buyerUid), {
         history: arrayUnion({
           action: historyAction,
-          amount: totalPrice,
+          amount: grandTotal,
+          subtotal: totalPrice,
+          shippingCost: shippingCost,
           points: totalPoints,
           quantity: quantity,
           orderId: orderRef.id,
@@ -1144,6 +1380,7 @@ document.addEventListener('personalPointsReady', async (e) => {
 document.addEventListener("DOMContentLoaded", async () => {
   await loadProductsFromFirestore();
   await loadCategoriesIntoSelector();
+  await loadShippingRates(); // Load UE shipping rates
   renderProductos();
 
   // Initialize shopping cart UI
@@ -1193,6 +1430,10 @@ window.proceedToCheckout = async function() {
 
   // Calculate totals
   const { totalPrice, totalPoints } = cart.getTotals(getDisplayPrice, getDisplayPoints);
+
+  // Calculate total UE (Shipping Units) for entire cart
+  const cartTotalUE = calculateTotalUE(cartItems);
+  console.log(`Cart total UE: ${cartTotalUE}`);
 
   // Show payment confirmation modal (visual only)
   await new Promise((resolve) => {
@@ -1283,7 +1524,7 @@ window.proceedToCheckout = async function() {
         <div style="display:flex;gap:12px;">
           <label style="flex:1;padding:12px;border:2px solid #ddd;border-radius:6px;cursor:pointer;text-align:center;transition:all 0.2s;">
             <input type="radio" name="deliveryMethod" value="home" checked style="margin-right:6px;">
-            Entrega a domicilio
+            Envío a domicilio
           </label>
           <label style="flex:1;padding:12px;border:2px solid #ddd;border-radius:6px;cursor:pointer;text-align:center;transition:all 0.2s;">
             <input type="radio" name="deliveryMethod" value="pickup" style="margin-right:6px;">
@@ -1297,7 +1538,27 @@ window.proceedToCheckout = async function() {
       </div>
       <div id="cityField" style="margin-bottom:16px;">
         <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Ciudad</label>
-        <input type="text" name="city" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+        <input type="text" name="city" required value="${initialBuyerProfile.ciudad || ''}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+      </div>
+      <div id="pickupInfoSection" style="display:none;margin-bottom:16px;padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #86efac;">
+        <strong style="color:#166534;">📍 Recoger en oficina:</strong><br>
+        <span style="color:#166534;">Dirección: Carrera 14 #21 04, Ciudad Yopal.</span><br>
+        <span style="color:#166534;">Horario: Lun-Sab 7:00 - 17:00.</span>
+      </div>
+      <div id="shippingCostSection" style="margin-bottom:20px;padding:16px;background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border-radius:10px;border:1px solid #86efac;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-weight:600;color:#166534;">📦 Subtotal productos:</span>
+          <span style="font-weight:700;color:#166534;">$${totalPrice.toLocaleString()}</span>
+        </div>
+        <div id="shippingCostLine" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="color:#166534;">🚚 ${getShippingMessage('')}:</span>
+          <span id="shippingCostValue" style="font-weight:600;color:#ea580c;">$${calculateShippingCostByUE(cartTotalUE, '', 'home').toLocaleString()}</span>
+        </div>
+        <p id="shippingHint" style="font-size:12px;color:#9ca3af;margin:4px 0 8px 0;">ℹ️ El costo de envío se calcula automáticamente según la ciudad de destino</p>
+        <div style="border-top:1px solid #86efac;padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;font-size:16px;color:#166534;">💰 TOTAL A PAGAR:</span>
+          <span id="grandTotalValue" style="font-weight:700;font-size:18px;color:#166534;">$${(totalPrice + calculateShippingCostByUE(cartTotalUE, '', 'home')).toLocaleString()}</span>
+        </div>
       </div>
       <div style="margin-bottom:20px;">
         <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Notas adicionales (opcional)</label>
@@ -1309,26 +1570,71 @@ window.proceedToCheckout = async function() {
       </div>
     `;
 
-    // Toggle address/city fields based on delivery method
+    // Toggle address/city fields based on delivery method and update shipping cost
     const toggleAddressFields = () => {
       const deliveryMethod = form.querySelector('input[name="deliveryMethod"]:checked').value;
       const addressField = form.querySelector('#addressField');
       const cityField = form.querySelector('#cityField');
       const addressInput = form.querySelector('input[name="address"]');
       const cityInput = form.querySelector('input[name="city"]');
+      const pickupInfoSection = form.querySelector('#pickupInfoSection');
+      const shippingCostLine = form.querySelector('#shippingCostLine');
+      const shippingCostValue = form.querySelector('#shippingCostValue');
+      const shippingHint = form.querySelector('#shippingHint');
+      const grandTotalValue = form.querySelector('#grandTotalValue');
 
       if (deliveryMethod === 'pickup') {
         addressField.style.display = 'none';
         cityField.style.display = 'none';
         addressInput.required = false;
         cityInput.required = false;
+        pickupInfoSection.style.display = 'block';
+        shippingCostLine.innerHTML = '<span style="color:#166534;">🏢 Recoger en oficina:</span><span style="font-weight:600;color:#16a34a;">GRATIS</span>';
+        shippingHint.style.display = 'none';
+        grandTotalValue.textContent = '$' + totalPrice.toLocaleString();
       } else {
         addressField.style.display = 'block';
         cityField.style.display = 'block';
         addressInput.required = true;
         cityInput.required = true;
+        pickupInfoSection.style.display = 'none';
+        shippingHint.style.display = 'block';
+        updateShippingCost();
       }
     };
+
+    // Update shipping cost based on city using UE calculation
+    const updateShippingCost = () => {
+      const deliveryMethod = form.querySelector('input[name="deliveryMethod"]:checked').value;
+      if (deliveryMethod === 'pickup') return;
+
+      const cityInput = form.querySelector('input[name="city"]');
+      const city = cityInput.value.trim();
+      // Use UE-based shipping calculation
+      const shippingCost = calculateShippingCostByUE(cartTotalUE, city, deliveryMethod);
+      const grandTotal = totalPrice + shippingCost;
+
+      const shippingCostValue = form.querySelector('#shippingCostValue');
+      const grandTotalValue = form.querySelector('#grandTotalValue');
+      const shippingHint = form.querySelector('#shippingHint');
+      const shippingCostLine = form.querySelector('#shippingCostLine');
+
+      // Update shipping label with appropriate message
+      const shippingMessage = getShippingMessage(city);
+      shippingCostLine.innerHTML = `<span style="color:#166534;">🚚 ${shippingMessage}:</span><span id="shippingCostValue" style="font-weight:600;color:#ea580c;">$${shippingCost.toLocaleString()}</span>`;
+      grandTotalValue.textContent = '$' + grandTotal.toLocaleString();
+
+      // Update hint visibility
+      if (city) {
+        shippingHint.style.display = 'none';
+      } else {
+        shippingHint.style.display = 'block';
+      }
+    };
+
+    // Add event listener for city input
+    form.querySelector('input[name="city"]').addEventListener('input', updateShippingCost);
+    form.querySelector('input[name="city"]').addEventListener('change', updateShippingCost);
 
     form.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
       radio.addEventListener('change', toggleAddressFields);
@@ -1344,15 +1650,22 @@ window.proceedToCheckout = async function() {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const formData = new FormData(form);
+      const deliveryMethod = formData.get('deliveryMethod');
+      const city = formData.get('city');
+      // Use UE-based shipping calculation
+      const shippingCost = calculateShippingCostByUE(cartTotalUE, city, deliveryMethod);
+
       const customerData = {
         firstName: formData.get('firstName'),
         lastName: formData.get('lastName'),
         email: formData.get('email'),
         phone: formData.get('phone'),
-        deliveryMethod: formData.get('deliveryMethod'),
+        deliveryMethod: deliveryMethod,
         address: formData.get('address'),
-        city: formData.get('city'),
-        notes: formData.get('notes')
+        city: city,
+        notes: formData.get('notes'),
+        shippingCost: shippingCost,
+        totalUE: cartTotalUE // Include total UE in customer data
       };
       document.body.removeChild(overlay);
       resolve(customerData);
@@ -1367,23 +1680,38 @@ window.proceedToCheckout = async function() {
     // Create orders for each item in cart
     try {
       const orderIds = [];
+      const shippingCost = customerData.shippingCost || 0;
+      let isFirstOrder = true;
 
       for (const item of cartItems) {
         const prod = item.product;
         const unitPrice = getDisplayPrice(prod);
         const productPoints = getDisplayPoints(prod);
         const quantity = item.quantity;
-        const totalPrice = unitPrice * quantity;
+        const itemTotalPrice = unitPrice * quantity;
         const totalPoints = productPoints * quantity;
+
+        // Calculate UE for this item
+        const itemUE = getProductUE(prod, quantity);
+
+        // Only add shipping cost to the first order
+        const orderShippingCost = isFirstOrder ? shippingCost : 0;
+        const grandTotal = itemTotalPrice + orderShippingCost;
 
         const orderObj = {
           productId: prod.id,
           productName: prod.nombre,
           price: unitPrice,
           quantity: quantity,
-          totalPrice: totalPrice,
+          totalPrice: itemTotalPrice,
+          shippingCost: orderShippingCost,
+          grandTotal: grandTotal,
           points: productPoints,
           totalPoints: totalPoints,
+          // UE (Shipping Units) data
+          shippingUnits: prod.shippingUnits || 2, // UE per unit
+          totalShippingUnits: itemUE, // Total UE for this product
+          cartTotalUE: isFirstOrder ? cartTotalUE : null, // Store cart total UE only on first order
           buyerUid,
           buyerUsername,
           buyerType,
@@ -1418,7 +1746,9 @@ window.proceedToCheckout = async function() {
           await updateDoc(doc(db, "usuarios", buyerUid), {
             history: arrayUnion({
               action: `Compra pendiente: ${prod.nombre} (x${quantity})`,
-              amount: totalPrice,
+              amount: grandTotal,
+              subtotal: itemTotalPrice,
+              shippingCost: orderShippingCost,
               points: totalPoints,
               quantity: quantity,
               orderId: orderRef.id,
@@ -1429,6 +1759,8 @@ window.proceedToCheckout = async function() {
         } catch (err) {
           console.error("Error actualizando historial:", err);
         }
+
+        isFirstOrder = false;
       }
 
       // Clear cart

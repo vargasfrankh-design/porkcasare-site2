@@ -333,6 +333,7 @@
       <button class="tab-button" data-tab="inventory">Inventario</button>
       <button class="tab-button" data-tab="products">Productos</button>
       <button class="tab-button" data-tab="categories">Categorías</button>
+      <button class="tab-button" data-tab="shipping">Tarifas de Envío</button>
       <button class="tab-button" data-tab="calculator">Calculadora de Puntos</button>
       <button class="tab-button" data-tab="profits">Ganancias</button>
     </div>
@@ -669,6 +670,165 @@
           <!-- Categories will be rendered here -->
         </tbody>
       </table>
+    </div>
+
+    <!-- Tab: Tarifas de Envío (UE) -->
+    <div id="tab-shipping" class="tab-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+        <h2 style="margin:0;">Configuración de Tarifas de Envío (UE)</h2>
+        <button id="saveShippingRatesBtn" class="btn-primary" style="padding:10px 20px;">💾 Guardar Cambios</button>
+      </div>
+
+      <div style="background:#fff3cd;padding:16px;border-radius:8px;margin-bottom:24px;border-left:4px solid #ffc107;">
+        <h4 style="margin:0 0 8px 0;color:#856404;">📦 Sistema de Unidades de Envío (UE)</h4>
+        <p style="margin:0;color:#856404;font-size:13px;">
+          El costo de envío se calcula automáticamente según el <strong>total de UE</strong> del pedido y la <strong>ciudad de destino</strong>.<br>
+          <strong>Fórmula:</strong> UE_total = Σ (UE_producto × cantidad)<br>
+          <strong>Ejemplo:</strong> 2 vinos (UE=2) + 3 jabones (UE=1) = UE_total de 7
+        </p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(450px,1fr));gap:24px;">
+        <!-- Tarifas para Yopal -->
+        <div style="background:#f0fdf4;padding:20px;border-radius:12px;border:2px solid #86efac;">
+          <h3 style="margin:0 0 16px 0;color:#166534;font-size:16px;">🏠 Envío Local - Yopal</h3>
+          <p style="color:#166534;font-size:12px;margin:0 0 16px 0;">Mensaje mostrado: "Envío local Yopal – tarifa según pedido"</p>
+
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#dcfce7;">
+                <th style="padding:10px;text-align:left;border-bottom:2px solid #86efac;font-size:13px;">Rango UE</th>
+                <th style="padding:10px;text-align:right;border-bottom:2px solid #86efac;font-size:13px;">Tarifa (COP)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #dcfce7;font-size:13px;">1 – 5 UE</td>
+                <td style="padding:10px;border-bottom:1px solid #dcfce7;text-align:right;">
+                  <input type="number" id="yopal_1_5" value="5000" min="0" style="width:100px;padding:6px;border:1px solid #86efac;border-radius:4px;text-align:right;">
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #dcfce7;font-size:13px;">6 – 10 UE</td>
+                <td style="padding:10px;border-bottom:1px solid #dcfce7;text-align:right;">
+                  <input type="number" id="yopal_6_10" value="8000" min="0" style="width:100px;padding:6px;border:1px solid #86efac;border-radius:4px;text-align:right;">
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:10px;font-size:13px;">+10 UE</td>
+                <td style="padding:10px;text-align:right;">
+                  <input type="number" id="yopal_11_plus" value="12000" min="0" style="width:100px;padding:6px;border:1px solid #86efac;border-radius:4px;text-align:right;">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tarifas para Otras Ciudades -->
+        <div style="background:#eff6ff;padding:20px;border-radius:12px;border:2px solid #93c5fd;">
+          <h3 style="margin:0 0 16px 0;color:#1e40af;font-size:16px;">🚚 Envío Nacional - Otras Ciudades</h3>
+          <p style="color:#1e40af;font-size:12px;margin:0 0 16px 0;">Mensaje mostrado: "Envío nacional calculado según ciudad de destino"</p>
+
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#dbeafe;">
+                <th style="padding:10px;text-align:left;border-bottom:2px solid #93c5fd;font-size:13px;">Rango UE</th>
+                <th style="padding:10px;text-align:right;border-bottom:2px solid #93c5fd;font-size:13px;">Tarifa (COP)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #dbeafe;font-size:13px;">1 – 3 UE</td>
+                <td style="padding:10px;border-bottom:1px solid #dbeafe;text-align:right;">
+                  <input type="number" id="other_1_3" value="16000" min="0" style="width:100px;padding:6px;border:1px solid #93c5fd;border-radius:4px;text-align:right;">
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #dbeafe;font-size:13px;">4 – 6 UE</td>
+                <td style="padding:10px;border-bottom:1px solid #dbeafe;text-align:right;">
+                  <input type="number" id="other_4_6" value="22000" min="0" style="width:100px;padding:6px;border:1px solid #93c5fd;border-radius:4px;text-align:right;">
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #dbeafe;font-size:13px;">7 – 10 UE</td>
+                <td style="padding:10px;border-bottom:1px solid #dbeafe;text-align:right;">
+                  <input type="number" id="other_7_10" value="30000" min="0" style="width:100px;padding:6px;border:1px solid #93c5fd;border-radius:4px;text-align:right;">
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #dbeafe;font-size:13px;">11 – 15 UE</td>
+                <td style="padding:10px;border-bottom:1px solid #dbeafe;text-align:right;">
+                  <input type="number" id="other_11_15" value="40000" min="0" style="width:100px;padding:6px;border:1px solid #93c5fd;border-radius:4px;text-align:right;">
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:10px;font-size:13px;">+15 UE (especial)</td>
+                <td style="padding:10px;text-align:right;">
+                  <input type="number" id="other_16_plus" value="50000" min="0" style="width:100px;padding:6px;border:1px solid #93c5fd;border-radius:4px;text-align:right;">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Simulador de Envío -->
+      <div style="background:#f8f9fa;padding:20px;border-radius:12px;margin-top:24px;border:1px solid #dee2e6;">
+        <h3 style="margin:0 0 16px 0;color:#495057;font-size:16px;">🧮 Simulador de Costo de Envío</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:end;">
+          <div>
+            <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:500;">Total UE del pedido:</label>
+            <input type="number" id="simTotalUE" value="7" min="1" style="width:100px;padding:8px;border:1px solid #ddd;border-radius:4px;">
+          </div>
+          <div>
+            <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:500;">Ciudad:</label>
+            <select id="simCity" style="padding:8px;border:1px solid #ddd;border-radius:4px;">
+              <option value="yopal">Yopal</option>
+              <option value="other">Otra ciudad</option>
+            </select>
+          </div>
+          <button id="simCalculateBtn" class="btn-primary" style="padding:8px 16px;">Calcular</button>
+          <div id="simResult" style="padding:12px 20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border-radius:8px;font-weight:600;display:none;">
+            Costo: $0
+          </div>
+        </div>
+      </div>
+
+      <!-- Referencia de UE por tipo de producto -->
+      <div style="background:#fff;padding:20px;border-radius:12px;margin-top:24px;border:1px solid #dee2e6;">
+        <h3 style="margin:0 0 16px 0;color:#495057;font-size:16px;">📋 Guía de Clasificación UE</h3>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#f8f9fa;">
+              <th style="padding:10px;text-align:left;border-bottom:2px solid #dee2e6;font-size:13px;">UE</th>
+              <th style="padding:10px;text-align:left;border-bottom:2px solid #dee2e6;font-size:13px;">Descripción</th>
+              <th style="padding:10px;text-align:left;border-bottom:2px solid #dee2e6;font-size:13px;">Ejemplos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:10px;border-bottom:1px solid #eee;font-weight:600;color:#16a34a;">1</td>
+              <td style="padding:10px;border-bottom:1px solid #eee;">Pequeño / Liviano</td>
+              <td style="padding:10px;border-bottom:1px solid #eee;color:#666;font-size:13px;">Jabones, accesorios pequeños, especias</td>
+            </tr>
+            <tr>
+              <td style="padding:10px;border-bottom:1px solid #eee;font-weight:600;color:#ca8a04;">2</td>
+              <td style="padding:10px;border-bottom:1px solid #eee;">Mediano / Frágil</td>
+              <td style="padding:10px;border-bottom:1px solid #eee;color:#666;font-size:13px;">Vinos, botellas, productos frágiles</td>
+            </tr>
+            <tr>
+              <td style="padding:10px;border-bottom:1px solid #eee;font-weight:600;color:#ea580c;">3</td>
+              <td style="padding:10px;border-bottom:1px solid #eee;">Grande / Frágil</td>
+              <td style="padding:10px;border-bottom:1px solid #eee;color:#666;font-size:13px;">Canastas, kits de regalo, cajas grandes</td>
+            </tr>
+            <tr>
+              <td style="padding:10px;font-weight:600;color:#dc2626;">4</td>
+              <td style="padding:10px;">Caja Pesada</td>
+              <td style="padding:10px;color:#666;font-size:13px;">Paquetes de carne 15kg, productos a granel</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Tab: Calculadora de Puntos -->
@@ -1183,6 +1343,24 @@
           </div>
         </div>
 
+        <!-- Unidades de Envío (UE) Configuration -->
+        <div style="background:#fff3cd;padding:14px;border-radius:8px;margin-bottom:14px;border-left:4px solid #ffc107;">
+          <h4 style="margin:0 0 10px 0;font-size:13px;color:#856404;">📦 Unidades de Envío (UE)</h4>
+          <p style="font-size:11px;color:#856404;margin:0 0 10px 0;">El valor de UE determina el costo de envío. No se muestra al usuario.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <div style="flex:1;min-width:200px;">
+              <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;">Unidades de Envío (UE)</label>
+              <select id="productShippingUnits" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;background:white;">
+                <option value="1">1 - Pequeño/Liviano (ej: jabones, accesorios)</option>
+                <option value="2" selected>2 - Mediano/Frágil (ej: vinos, botellas)</option>
+                <option value="3">3 - Grande/Frágil (ej: canastas, kits)</option>
+                <option value="4">4 - Caja Pesada (ej: paquetes de carne 15kg)</option>
+              </select>
+              <small style="color:#856404;font-size:10px;">Afecta el cálculo del costo de envío por pedido</small>
+            </div>
+          </div>
+        </div>
+
         <div style="margin-bottom:14px;">
           <label style="display:block;margin-bottom:6px;font-weight:500;font-size:13px;">Categoría</label>
           <select id="productCategory" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
@@ -1392,7 +1570,8 @@
         loadStats(),
         loadInventory(),
         loadProducts(),
-        loadCategories()
+        loadCategories(),
+        loadShippingRates()
       ]);
     }
 
@@ -3650,6 +3829,7 @@
         puntosDistribuidor: parseFloat(document.getElementById('productPointsDistributor').value) || 0,
         puntosRestaurante: parseFloat(document.getElementById('productPointsRestaurant').value) || 0,
         puntos: parseFloat(document.getElementById('productPointsDistributor').value) || 0, // backward compatibility
+        shippingUnits: parseInt(document.getElementById('productShippingUnits').value) || 2, // UE: Unidades de Envío
         unit: document.getElementById('productUnit').value,
         unitRestaurant: document.getElementById('productUnitRestaurant').value,
         quantityDistributor: parseFloat(document.getElementById('productQuantityDistributor').value) || null,
@@ -3720,6 +3900,7 @@
       document.getElementById('productUnitRestaurant').value = product.unitRestaurant || 'kilo';
       document.getElementById('productQuantityDistributor').value = product.quantityDistributor || '';
       document.getElementById('productQuantityRestaurant').value = product.quantityRestaurant || '';
+      document.getElementById('productShippingUnits').value = product.shippingUnits || 2; // UE: Unidades de Envío
       document.getElementById('productCategory').value = product.categoria || 'carnes';
 
       document.getElementById('productAvailDistributor').checked = (product.availableFor || []).includes('distribuidor');
@@ -3913,10 +4094,138 @@
       const selector = document.getElementById('productCategory');
       if (!selector) return;
 
-      selector.innerHTML = allCategories.map(cat => 
+      selector.innerHTML = allCategories.map(cat =>
         `<option value="${cat.slug}">${cat.nombre}</option>`
       ).join('');
     }
+
+    // =============================================
+    // SHIPPING RATES (UE) MANAGEMENT
+    // =============================================
+
+    // Default shipping rates
+    const DEFAULT_SHIPPING_RATES = {
+      yopal: {
+        '1_5': 5000,
+        '6_10': 8000,
+        '11_plus': 12000
+      },
+      other: {
+        '1_3': 16000,
+        '4_6': 22000,
+        '7_10': 30000,
+        '11_15': 40000,
+        '16_plus': 50000
+      }
+    };
+
+    let shippingRates = { ...DEFAULT_SHIPPING_RATES };
+
+    async function loadShippingRates() {
+      try {
+        const configRef = doc(db, "config", "shippingRates");
+        const configSnap = await getDoc(configRef);
+
+        if (configSnap.exists()) {
+          const data = configSnap.data();
+          shippingRates = {
+            yopal: data.yopal || DEFAULT_SHIPPING_RATES.yopal,
+            other: data.other || DEFAULT_SHIPPING_RATES.other
+          };
+        } else {
+          // Create default config if it doesn't exist
+          await setDoc(configRef, DEFAULT_SHIPPING_RATES);
+          shippingRates = { ...DEFAULT_SHIPPING_RATES };
+        }
+
+        // Update form inputs with loaded values
+        updateShippingFormInputs();
+        console.log('✅ Shipping rates loaded:', shippingRates);
+      } catch (err) {
+        console.error('Error loading shipping rates:', err);
+        shippingRates = { ...DEFAULT_SHIPPING_RATES };
+        updateShippingFormInputs();
+      }
+    }
+
+    function updateShippingFormInputs() {
+      // Yopal rates
+      const yopal_1_5 = document.getElementById('yopal_1_5');
+      const yopal_6_10 = document.getElementById('yopal_6_10');
+      const yopal_11_plus = document.getElementById('yopal_11_plus');
+
+      if (yopal_1_5) yopal_1_5.value = shippingRates.yopal['1_5'] || 5000;
+      if (yopal_6_10) yopal_6_10.value = shippingRates.yopal['6_10'] || 8000;
+      if (yopal_11_plus) yopal_11_plus.value = shippingRates.yopal['11_plus'] || 12000;
+
+      // Other cities rates
+      const other_1_3 = document.getElementById('other_1_3');
+      const other_4_6 = document.getElementById('other_4_6');
+      const other_7_10 = document.getElementById('other_7_10');
+      const other_11_15 = document.getElementById('other_11_15');
+      const other_16_plus = document.getElementById('other_16_plus');
+
+      if (other_1_3) other_1_3.value = shippingRates.other['1_3'] || 16000;
+      if (other_4_6) other_4_6.value = shippingRates.other['4_6'] || 22000;
+      if (other_7_10) other_7_10.value = shippingRates.other['7_10'] || 30000;
+      if (other_11_15) other_11_15.value = shippingRates.other['11_15'] || 40000;
+      if (other_16_plus) other_16_plus.value = shippingRates.other['16_plus'] || 50000;
+    }
+
+    async function saveShippingRates() {
+      const newRates = {
+        yopal: {
+          '1_5': parseInt(document.getElementById('yopal_1_5').value) || 5000,
+          '6_10': parseInt(document.getElementById('yopal_6_10').value) || 8000,
+          '11_plus': parseInt(document.getElementById('yopal_11_plus').value) || 12000
+        },
+        other: {
+          '1_3': parseInt(document.getElementById('other_1_3').value) || 16000,
+          '4_6': parseInt(document.getElementById('other_4_6').value) || 22000,
+          '7_10': parseInt(document.getElementById('other_7_10').value) || 30000,
+          '11_15': parseInt(document.getElementById('other_11_15').value) || 40000,
+          '16_plus': parseInt(document.getElementById('other_16_plus').value) || 50000
+        },
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        await setDoc(doc(db, "config", "shippingRates"), newRates);
+        shippingRates = newRates;
+        alert('✅ Tarifas de envío guardadas correctamente');
+      } catch (err) {
+        console.error('Error saving shipping rates:', err);
+        alert('❌ Error al guardar las tarifas: ' + err.message);
+      }
+    }
+
+    function calculateShippingFromRates(totalUE, isYopal) {
+      if (isYopal) {
+        if (totalUE <= 5) return shippingRates.yopal['1_5'];
+        if (totalUE <= 10) return shippingRates.yopal['6_10'];
+        return shippingRates.yopal['11_plus'];
+      } else {
+        if (totalUE <= 3) return shippingRates.other['1_3'];
+        if (totalUE <= 6) return shippingRates.other['4_6'];
+        if (totalUE <= 10) return shippingRates.other['7_10'];
+        if (totalUE <= 15) return shippingRates.other['11_15'];
+        return shippingRates.other['16_plus'];
+      }
+    }
+
+    // Shipping tab event listeners
+    document.getElementById('saveShippingRatesBtn')?.addEventListener('click', saveShippingRates);
+
+    document.getElementById('simCalculateBtn')?.addEventListener('click', () => {
+      const totalUE = parseInt(document.getElementById('simTotalUE').value) || 1;
+      const city = document.getElementById('simCity').value;
+      const isYopal = city === 'yopal';
+      const cost = calculateShippingFromRates(totalUE, isYopal);
+
+      const resultEl = document.getElementById('simResult');
+      resultEl.textContent = `Costo: $${cost.toLocaleString('es-CO')}`;
+      resultEl.style.display = 'block';
+    });
 
     // Helper function to check if user is active this month
     function checkIfUserActiveThisMonth(userData) {
