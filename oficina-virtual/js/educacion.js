@@ -4,30 +4,11 @@
  * Content is managed by administrators and displayed as links to distributors
  */
 
-import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getFirestore, collection, getDocs, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { db } from '/src/firebase-config.js';
+import { collection, getDocs, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
 
-// Firebase configuration (uses existing config from the app)
-let db = null;
-
-/**
- * Initialize Firestore connection
- */
-function initFirestore() {
-  try {
-    const apps = getApps();
-    if (apps.length > 0) {
-      db = getFirestore(apps[0]);
-    } else {
-      // Fallback: try to get existing firebase instance
-      if (window.firebase && window.firebase.firestore) {
-        db = window.firebase.firestore();
-      }
-    }
-  } catch (e) {
-    console.debug('[educacion.js] Firestore init:', e.message);
-  }
-}
+// Track if content has been loaded to avoid duplicate loads
+let contentLoaded = false;
 
 /**
  * Escape HTML to prevent XSS
@@ -115,31 +96,42 @@ function showPlaceholder(container, icon, message) {
 /**
  * Load and render education content from Firestore
  */
-async function loadEducationContent() {
-  if (!db) {
-    initFirestore();
-  }
-
-  if (!db) {
-    console.debug('[educacion.js] Firestore not available, showing placeholders');
+async function loadEducationContent(forceReload = false) {
+  // Skip if already loaded (unless forced)
+  if (contentLoaded && !forceReload) {
+    console.log('[educacion.js] Content already loaded, skipping');
     return;
   }
 
+  if (!db) {
+    console.warn('[educacion.js] Firestore database not available - cannot load education content');
+    return;
+  }
+
+  console.log('[educacion.js] Loading education content from Firestore...');
+
   try {
-    // Load PEC del Mes
-    await loadPECContent();
+    // Load all content types in parallel for better performance
+    const results = await Promise.allSettled([
+      loadPECContent(),
+      loadVideosContent(),
+      loadDocumentsContent(),
+      loadLinksContent()
+    ]);
 
-    // Load Videos
-    await loadVideosContent();
+    // Log any failures
+    results.forEach((result, index) => {
+      const types = ['PEC', 'Videos', 'Documents', 'Links'];
+      if (result.status === 'rejected') {
+        console.error(`[educacion.js] Failed to load ${types[index]}:`, result.reason);
+      }
+    });
 
-    // Load Documents/Books
-    await loadDocumentsContent();
-
-    // Load Links
-    await loadLinksContent();
+    contentLoaded = true;
+    console.log('[educacion.js] Education content loaded successfully');
 
   } catch (error) {
-    console.debug('[educacion.js] Error loading content:', error.message);
+    console.error('[educacion.js] Error loading education content:', error);
   }
 }
 
@@ -148,7 +140,11 @@ async function loadEducationContent() {
  */
 async function loadPECContent() {
   const container = document.getElementById('pecDelMes');
-  if (!container || !db) return;
+  if (!container) {
+    console.log('[educacion.js] PEC container not found');
+    return;
+  }
+  if (!db) return;
 
   try {
     const q = query(
@@ -159,6 +155,7 @@ async function loadPECContent() {
     );
 
     const snapshot = await getDocs(q);
+    console.log(`[educacion.js] PEC query returned ${snapshot.size} documents`);
 
     if (snapshot.empty) {
       showPlaceholder(container, '📋', 'El PEC del mes se cargará desde administración.');
@@ -171,7 +168,8 @@ async function loadPECContent() {
       container.appendChild(renderResourceLink(data, 'pec'));
     });
   } catch (e) {
-    console.debug('[educacion.js] PEC load error:', e.message);
+    console.error('[educacion.js] PEC load error:', e);
+    showPlaceholder(container, '⚠️', 'Error al cargar el PEC.');
   }
 }
 
@@ -180,7 +178,11 @@ async function loadPECContent() {
  */
 async function loadVideosContent() {
   const container = document.getElementById('videosEducativos');
-  if (!container || !db) return;
+  if (!container) {
+    console.log('[educacion.js] Videos container not found');
+    return;
+  }
+  if (!db) return;
 
   try {
     const q = query(
@@ -191,6 +193,7 @@ async function loadVideosContent() {
     );
 
     const snapshot = await getDocs(q);
+    console.log(`[educacion.js] Videos query returned ${snapshot.size} documents`);
 
     if (snapshot.empty) {
       showPlaceholder(container, '▶️', 'Los videos se cargarán desde administración.');
@@ -203,39 +206,66 @@ async function loadVideosContent() {
       container.appendChild(renderResourceLink(data, 'video'));
     });
   } catch (e) {
-    console.debug('[educacion.js] Videos load error:', e.message);
+    console.error('[educacion.js] Videos load error:', e);
+    showPlaceholder(container, '⚠️', 'Error al cargar los videos.');
   }
 }
 
 /**
  * Load documents and books content
+ * Uses separate queries to avoid requiring additional composite indexes for 'in' operator
  */
 async function loadDocumentsContent() {
   const container = document.getElementById('librosDocumentos');
-  if (!container || !db) return;
+  if (!container) {
+    console.log('[educacion.js] Documents container not found');
+    return;
+  }
+  if (!db) return;
 
   try {
-    const q = query(
-      collection(db, 'educacion'),
-      where('tipo', 'in', ['documento', 'libro']),
-      where('activo', '==', true),
-      orderBy('fecha', 'desc')
-    );
+    // Run separate queries for 'documento' and 'libro' types to avoid composite index issues with 'in' operator
+    const [docsSnapshot, librosSnapshot] = await Promise.all([
+      getDocs(query(
+        collection(db, 'educacion'),
+        where('tipo', '==', 'documento'),
+        where('activo', '==', true),
+        orderBy('fecha', 'desc')
+      )),
+      getDocs(query(
+        collection(db, 'educacion'),
+        where('tipo', '==', 'libro'),
+        where('activo', '==', true),
+        orderBy('fecha', 'desc')
+      ))
+    ]);
 
-    const snapshot = await getDocs(q);
+    // Combine results and sort by date
+    const allDocs = [];
+    docsSnapshot.forEach(doc => allDocs.push({ id: doc.id, ...doc.data() }));
+    librosSnapshot.forEach(doc => allDocs.push({ id: doc.id, ...doc.data() }));
 
-    if (snapshot.empty) {
+    // Sort by fecha descending
+    allDocs.sort((a, b) => {
+      const dateA = a.fecha?.toDate ? a.fecha.toDate() : new Date(0);
+      const dateB = b.fecha?.toDate ? b.fecha.toDate() : new Date(0);
+      return dateB - dateA;
+    });
+
+    console.log(`[educacion.js] Documents query returned ${allDocs.length} documents (${docsSnapshot.size} documentos + ${librosSnapshot.size} libros)`);
+
+    if (allDocs.length === 0) {
       showPlaceholder(container, '📄', 'Los libros y documentos se cargarán desde administración.');
       return;
     }
 
     container.innerHTML = '';
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      container.appendChild(renderResourceLink(data, data.tipo || 'document'));
+    allDocs.forEach(item => {
+      container.appendChild(renderResourceLink(item, item.tipo || 'document'));
     });
   } catch (e) {
-    console.debug('[educacion.js] Documents load error:', e.message);
+    console.error('[educacion.js] Documents load error:', e);
+    showPlaceholder(container, '⚠️', 'Error al cargar los documentos.');
   }
 }
 
@@ -244,7 +274,11 @@ async function loadDocumentsContent() {
  */
 async function loadLinksContent() {
   const container = document.getElementById('enlacesUtiles');
-  if (!container || !db) return;
+  if (!container) {
+    console.log('[educacion.js] Links container not found');
+    return;
+  }
+  if (!db) return;
 
   try {
     const q = query(
@@ -255,6 +289,7 @@ async function loadLinksContent() {
     );
 
     const snapshot = await getDocs(q);
+    console.log(`[educacion.js] Links query returned ${snapshot.size} documents`);
 
     if (snapshot.empty) {
       showPlaceholder(container, '🌐', 'Los enlaces se cargarán desde administración.');
@@ -267,7 +302,8 @@ async function loadLinksContent() {
       container.appendChild(renderResourceLink(data, 'link'));
     });
   } catch (e) {
-    console.debug('[educacion.js] Links load error:', e.message);
+    console.error('[educacion.js] Links load error:', e);
+    showPlaceholder(container, '⚠️', 'Error al cargar los enlaces.');
   }
 }
 
@@ -278,8 +314,11 @@ if (document.readyState === 'loading') {
   loadEducationContent();
 }
 
-// Also load when education tab is shown
-window.addEventListener('tab-educacion-shown', loadEducationContent);
+// Also load when education tab is shown (force reload to ensure fresh content)
+window.addEventListener('tab-educacion-shown', () => {
+  console.log('[educacion.js] Education tab shown, loading content...');
+  loadEducationContent(true); // Force reload when tab is shown
+});
 
 // Export for external use
 export { loadEducationContent };

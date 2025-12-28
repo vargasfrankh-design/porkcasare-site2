@@ -759,7 +759,7 @@
         activeContent.style.animation = '';
       }
 
-      // If switching to duplicacion tab, trigger tree refresh if needed
+      // Dispatch custom event for tabs that need it
       if (tabName === 'duplicacion') {
         // Dispatch a custom event that the tree can listen to
         window.dispatchEvent(new CustomEvent('tab-duplicacion-shown'));
@@ -768,6 +768,9 @@
         setTimeout(() => {
           window.dispatchEvent(new Event('resize'));
         }, 100);
+      } else if (tabName === 'educacion') {
+        // Dispatch event so education module can refresh content
+        window.dispatchEvent(new CustomEvent('tab-educacion-shown'));
       }
 
       // Store active tab in sessionStorage for persistence during session
