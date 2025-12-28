@@ -766,50 +766,130 @@ body {
   flex-wrap: wrap;
 }
 
-/* Productos: mayor anchura y grid más fluido - ajustado para 4 productos por fila */
+/* Productos: grid compacto para mostrar más productos por página */
 .product-grid {
   width: 100%;
   margin-top: 18px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);  /* Exactly 4 products per row */
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));  /* Más productos por fila con tamaño compacto */
+  gap: 12px;
   box-sizing: border-box;
 }
 
 .product-card {
   background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 10px;
   text-align: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  transition: transform 0.18s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: transform 0.18s, box-shadow 0.18s;
   display: flex;
   flex-direction: column;
-  min-height: 420px;
+  min-height: 280px;  /* Altura reducida */
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.product-card img {
+  width: 100%;
+  height: 100px;  /* Imagen más pequeña */
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 8px;
 }
 
 .product-card h4 {
-  font-size: 15px;
-  margin: 8px 0;
-  min-height: 40px;
+  font-size: 13px;
+  margin: 6px 0;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
+  line-height: 1.3;
 }
 
 .product-card > p:not(.unit-price):not(.total-price) {
-  font-size: 13px;
+  font-size: 11px;
   color: #666;
-  min-height: 36px;
+  min-height: 28px;
+  margin: 2px 0;
+  line-height: 1.3;
+}
+
+.product-card .unit-price {
+  font-size: 12px;
+  color: #666;
+  margin: 2px 0;
+}
+
+.product-card .total-price {
+  font-size: 14px;
+  color: #007bff;
+  margin: 4px 0;
+  font-weight: 600;
+}
+
+/* Selector de cantidad compacto */
+.product-card .quantity-selector {
+  margin: 6px 0;
+  gap: 4px;
+}
+
+.product-card .qty-btn {
+  width: 26px;
+  height: 26px;
+  font-size: 14px;
+}
+
+.product-card .qty-input {
+  width: 40px;
+  height: 26px;
+  font-size: 13px;
+}
+
+.product-card .btn {
+  padding: 6px 10px;
+  font-size: 12px;
+  margin-top: auto;
+}
+
+/* Points badge en las tarjetas de producto */
+.product-card .points-badge {
+  font-size: 11px;
+  padding: 3px 6px;
   margin: 4px 0;
 }
 
-/* Responsive adjustment: 2 columns on tablets, 1 column on mobile */
-@media (max-width: 1024px) {
+/* Responsive adjustment: 3-4 columns on tablets, 2 columns on mobile */
+@media (max-width: 1200px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
   .product-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .product-card {
+    min-height: 260px;
+    padding: 8px;
+  }
+
+  .product-card img {
+    height: 90px;
+  }
+
+  .product-card h4 {
+    font-size: 12px;
+    min-height: 28px;
   }
 }
 
@@ -932,10 +1012,14 @@ body {
     min-width: 110px;
   }
 
-  /* Productos: una columna por fila en móvil */
+  /* Productos: dos columnas en móvil para mejor uso del espacio */
   .product-grid {
-    grid-template-columns: 1fr !important;
-    gap: 14px !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .product-card {
+    min-height: 250px !important;
   }
 
   /* Historial: más alto para hacer scroll cómodo */
@@ -985,6 +1069,12 @@ body {
 
 .node-circle {
   transition: all 0.3s ease;
+}
+
+/* Ensure node elements handle touch/click properly without triggering zoom */
+.node {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .node:hover .node-circle {
@@ -1300,5 +1390,1483 @@ body {
     flex-direction: column;
     align-items: flex-start;
     font-size: 13px;
+  }
+}
+
+/* ========== Section Tabs (Educación, Consumo, Duplicación) ========== */
+.section-tabs-container {
+  margin: 24px 0 20px 0;
+  padding: 0;
+}
+
+.section-tabs {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.section-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.section-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.5));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.section-tab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  border-color: rgba(102, 126, 234, 0.3);
+  color: #475569;
+}
+
+.section-tab:hover::before {
+  opacity: 1;
+}
+
+.section-tab.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.35);
+  transform: translateY(-2px);
+}
+
+.section-tab.active::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
+  opacity: 1;
+}
+
+.section-tab.active:hover {
+  box-shadow: 0 10px 28px rgba(102, 126, 234, 0.45);
+}
+
+.tab-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tab-label {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* Tab content areas */
+.tab-content {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Education section styles */
+.education-category {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+}
+
+.education-category-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.category-icon {
+  font-size: 22px;
+}
+
+.education-content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.education-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  border-radius: 10px;
+  border: 2px dashed #e2e8f0;
+  text-align: center;
+  color: #64748b;
+  min-height: 140px;
+}
+
+.placeholder-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.education-placeholder p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Education content cards (for admin-uploaded content) */
+.education-card {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.education-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: #667eea;
+}
+
+.education-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.education-card-description {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.education-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #667eea;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.education-card-link:hover {
+  color: #764ba2;
+}
+
+/* Video embed container */
+.video-container {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 aspect ratio */
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+}
+
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Responsive adjustments for tabs */
+@media (max-width: 768px) {
+  .section-tabs {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .section-tab {
+    padding: 12px 16px;
+    font-size: 13px;
+    flex: 1;
+    justify-content: center;
+    min-width: 100px;
+  }
+
+  .tab-icon {
+    font-size: 18px;
+  }
+
+  .tab-label {
+    font-size: 12px;
+  }
+
+  .education-category {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .education-category-title {
+    font-size: 16px;
+  }
+
+  .education-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .education-placeholder {
+    padding: 30px 16px;
+    min-height: 120px;
+  }
+
+  .placeholder-icon {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-tabs {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .section-tab {
+    width: 100%;
+    justify-content: center;
+  }
+}
+/* ========== End Section Tabs ========== */
+
+/* ========== Duplicación Section - Expanded View ========== */
+.duplicacion-expanded {
+  max-width: 100% !important;
+  width: 100%;
+}
+
+/* Network Statistics Grid */
+.network-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.network-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.network-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.network-stat-card .stat-icon {
+  font-size: 32px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.network-stat-card.primary .stat-icon { background: linear-gradient(135deg, #e3f2fd, #bbdefb); }
+.network-stat-card.secondary .stat-icon { background: linear-gradient(135deg, #f3e5f5, #e1bee7); }
+.network-stat-card.success .stat-icon { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
+.network-stat-card.warning .stat-icon { background: linear-gradient(135deg, #fff3e0, #ffe0b2); }
+
+.network-stat-card .stat-content {
+  flex: 1;
+}
+
+.network-stat-card .stat-label {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.network-stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.network-stat-card.primary .stat-value { color: #1976d2; }
+.network-stat-card.secondary .stat-value { color: #7b1fa2; }
+.network-stat-card.success .stat-value { color: #388e3c; }
+.network-stat-card.warning .stat-value { color: #f57c00; }
+
+/* Levels Section */
+.network-levels-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.network-levels-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.levels-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.level-card {
+  flex: 1;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+
+.level-card:hover {
+  transform: translateY(-2px);
+  border-color: #667eea;
+}
+
+.level-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.level-points {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.level-card.level-1 { border-left: 4px solid #2196f3; }
+.level-card.level-2 { border-left: 4px solid #4caf50; }
+.level-card.level-3 { border-left: 4px solid #ff9800; }
+.level-card.level-4 { border-left: 4px solid #9c27b0; }
+.level-card.level-5 { border-left: 4px solid #f44336; }
+
+/* Bonuses Section */
+.network-bonuses-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.network-bonuses-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.bonuses-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.bonus-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border: 1px solid #bbf7d0;
+}
+
+.bonus-card .bonus-icon {
+  font-size: 28px;
+}
+
+.bonus-card .bonus-info {
+  flex: 1;
+}
+
+.bonus-card .bonus-label {
+  font-size: 12px;
+  color: #166534;
+  margin-bottom: 4px;
+}
+
+.bonus-card .bonus-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #15803d;
+}
+
+/* Network Controls - Expanded */
+.network-controls-expanded {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.network-controls-expanded .controls-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stat-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  min-width: 140px;
+}
+
+.stat-mini-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.stat-mini-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.stat-mini-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.stat-mini-sub strong {
+  color: #475569;
+}
+
+.controls-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.controls-actions label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.controls-actions select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
+  background: #fff;
+}
+
+/* Network Group Info */
+.network-group-info-expanded {
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0d47a1;
+  border-left: 5px solid #2196f3;
+}
+
+/* Map Container - Full Width */
+.map-container-expanded {
+  width: 100%;
+}
+
+.tree-wrap-expanded {
+  width: 100%;
+  height: 600px !important;
+  min-height: 500px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: auto;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+/* Responsive adjustments for Duplicación */
+@media (max-width: 1024px) {
+  .network-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bonuses-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .network-controls-expanded .controls-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controls-actions {
+    margin-left: 0;
+    margin-top: 12px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .network-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .levels-grid {
+    flex-direction: column;
+  }
+
+  .level-card {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .tree-wrap-expanded {
+    height: 450px !important;
+  }
+}
+/* ========== End Duplicación Section ========== */
+
+/* ========== Educación Section - Expanded Links Layout ========== */
+.education-section-expanded {
+  width: 100%;
+  max-width: 100%;
+}
+
+.education-header {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  color: #fff;
+  text-align: center;
+}
+
+.education-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.education-header p {
+  margin: 0;
+  font-size: 15px;
+  opacity: 0.9;
+}
+
+/* Resources Grid - 2x2 layout */
+.education-resources-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  width: 100%;
+}
+
+/* Resource Category Card */
+.resource-category {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.category-icon-large {
+  font-size: 36px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.category-title-wrap {
+  flex: 1;
+}
+
+.category-title-wrap h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.category-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+  display: block;
+}
+
+/* Resource Links List - Full height */
+.resource-links-list {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: 350px;
+}
+
+/* Compact placeholder */
+.education-placeholder-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(180deg, #fafafa, #f5f5f5);
+  border-radius: 12px;
+  border: 2px dashed #e0e0e0;
+  text-align: center;
+  color: #9e9e9e;
+  flex: 1;
+}
+
+.education-placeholder-compact .placeholder-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+  opacity: 0.5;
+}
+
+.education-placeholder-compact p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Resource Link Item (for links loaded from DB) */
+.resource-link-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.resource-link-item:hover {
+  background: #f1f5f9;
+  border-color: #667eea;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.resource-link-icon {
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  flex-shrink: 0;
+}
+
+.resource-link-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.resource-link-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-link-description {
+  font-size: 12px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-link-arrow {
+  font-size: 18px;
+  color: #94a3b8;
+  transition: transform 0.2s;
+}
+
+.resource-link-item:hover .resource-link-arrow {
+  transform: translateX(4px);
+  color: #667eea;
+}
+
+/* Type-specific icons for links */
+.resource-link-item[data-type="youtube"] .resource-link-icon { background: #fee2e2; }
+.resource-link-item[data-type="tiktok"] .resource-link-icon { background: #fce7f3; }
+.resource-link-item[data-type="pdf"] .resource-link-icon { background: #fef3c7; }
+.resource-link-item[data-type="document"] .resource-link-icon { background: #dbeafe; }
+.resource-link-item[data-type="link"] .resource-link-icon { background: #e0e7ff; }
+
+/* Responsive for Education */
+@media (max-width: 900px) {
+  .education-resources-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .resource-category {
+    min-height: 250px;
+  }
+
+  .resource-links-list {
+    max-height: 280px;
+  }
+}
+
+@media (max-width: 600px) {
+  .education-header {
+    padding: 20px 16px;
+  }
+
+  .education-header h2 {
+    font-size: 20px;
+  }
+
+  .category-header {
+    padding: 16px;
+  }
+
+  .category-icon-large {
+    width: 48px;
+    height: 48px;
+    font-size: 28px;
+  }
+
+  .category-title-wrap h3 {
+    font-size: 16px;
+  }
+}
+/* ========== End Educación Section ========== */
+
+/* ========== Category Filters (Consumo Section) ========== */
+.category-filters-container {
+  margin: 16px 0 20px 0;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(102, 126, 234, 0.4) transparent;
+}
+
+.category-filters-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.category-filters-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.category-filters-container::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.3);
+  border-radius: 3px;
+}
+
+.category-filters {
+  display: flex;
+  gap: 10px;
+  padding: 4px;
+  min-width: max-content;
+}
+
+.category-filter-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  min-width: 80px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.category-filter-btn:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.category-filter-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.35);
+}
+
+.category-filter-btn .category-emoji {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.category-filter-btn .category-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.category-filter-btn.active .category-name {
+  color: #fff;
+}
+
+/* ========== Improved Product Grid (4 products per page, aligned) ========== */
+.consumo-section {
+  width: 100%;
+}
+
+.consumo-section h2 {
+  margin-bottom: 12px;
+}
+
+/* Product Grid - 4 columns on desktop */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+  box-sizing: border-box;
+}
+
+/* Product Cards - consistent styling */
+.product-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+  position: relative;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.product-card img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.product-card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 8px 0;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.3;
+  color: #1e293b;
+}
+
+.product-card > p:not(.unit-price):not(.total-price) {
+  font-size: 12px;
+  color: #64748b;
+  min-height: 32px;
+  margin: 4px 0;
+  line-height: 1.3;
+}
+
+.product-card .unit-price {
+  font-size: 13px;
+  color: #475569;
+  margin: 4px 0;
+}
+
+.product-card .total-price {
+  font-size: 15px;
+  color: #007bff;
+  margin: 6px 0;
+  font-weight: 600;
+}
+
+/* Quantity selector - compact */
+.product-card .quantity-selector {
+  margin: 8px 0;
+  gap: 6px;
+}
+
+.product-card .qty-btn {
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+}
+
+.product-card .qty-input {
+  width: 44px;
+  height: 30px;
+  font-size: 14px;
+}
+
+.product-card .btn {
+  padding: 8px 12px;
+  font-size: 12px;
+  margin-top: auto;
+}
+
+/* Points badge in product cards */
+.product-card .points-badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  margin: 4px 0;
+}
+
+/* ========== Improved Duplicación Section ========== */
+.duplicacion-expanded {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+}
+
+/* Network Stats - full width */
+.network-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.network-stat-card {
+  padding: 16px;
+}
+
+.network-stat-card .stat-icon {
+  font-size: 28px;
+  width: 50px;
+  height: 50px;
+}
+
+.network-stat-card .stat-value {
+  font-size: 24px;
+}
+
+/* Levels Grid */
+.levels-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.level-card {
+  flex: 1 1 calc(20% - 10px);
+  min-width: 100px;
+}
+
+/* Tree Container - full width */
+.map-container-expanded {
+  width: 100%;
+  overflow: visible;
+}
+
+.tree-wrap-expanded {
+  width: 100%;
+  min-height: 500px;
+  height: auto;
+  max-height: 700px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ========== Improved Educación Section ========== */
+.education-section-expanded {
+  width: 100%;
+}
+
+.education-resources-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.resource-category {
+  min-height: 280px;
+}
+
+.resource-links-list {
+  max-height: 320px;
+}
+
+/* ========== Global Container & Alignment Fixes ========== */
+.container {
+  max-width: 1280px;
+  width: 100%;
+  padding: 16px 20px;
+  margin: 20px auto;
+  box-sizing: border-box;
+}
+
+.card {
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Section tabs - improved visibility */
+.section-tabs-container {
+  margin: 20px 0;
+  width: 100%;
+}
+
+.section-tabs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+}
+
+.section-tab {
+  padding: 12px 24px;
+  min-width: 120px;
+  justify-content: center;
+}
+
+/* Tab content alignment */
+.tab-content {
+  width: 100%;
+  padding: 0;
+}
+
+/* History section alignment */
+.history-section {
+  width: 100%;
+  margin-top: 20px;
+  padding: 0;
+}
+
+.history-section h2 {
+  font-size: 1.1rem;
+  margin-bottom: 14px;
+  color: #1e293b;
+}
+
+/* ========== Responsive Breakpoints ========== */
+
+/* Large tablets and small desktops */
+@media (max-width: 1200px) {
+  .product-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .network-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bonuses-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Tablets */
+@media (max-width: 992px) {
+  .container {
+    padding: 12px 16px;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .product-card {
+    min-height: 320px;
+    padding: 12px;
+  }
+
+  .product-card img {
+    height: 110px;
+  }
+
+  .network-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .education-resources-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .category-filter-btn {
+    padding: 10px 14px;
+    min-width: 72px;
+  }
+
+  .category-filter-btn .category-emoji {
+    font-size: 22px;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+
+  .container {
+    padding: 10px 12px;
+    margin: 10px auto;
+  }
+
+  .card {
+    padding: 16px 14px;
+  }
+
+  /* Section tabs - mobile */
+  .section-tabs {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .section-tab {
+    padding: 10px 16px;
+    min-width: 100px;
+    flex: 1;
+  }
+
+  .tab-icon {
+    font-size: 18px;
+  }
+
+  .tab-label {
+    font-size: 12px;
+  }
+
+  /* Category filters - mobile */
+  .category-filters-container {
+    margin: 12px -12px;
+    padding: 0 12px;
+  }
+
+  .category-filter-btn {
+    padding: 10px 12px;
+    min-width: 68px;
+    border-radius: 10px;
+  }
+
+  .category-filter-btn .category-emoji {
+    font-size: 20px;
+  }
+
+  .category-filter-btn .category-name {
+    font-size: 11px;
+  }
+
+  /* Product grid - mobile */
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .product-card {
+    min-height: 300px;
+    padding: 10px;
+  }
+
+  .product-card img {
+    height: 100px;
+  }
+
+  .product-card h4 {
+    font-size: 13px;
+    min-height: 32px;
+  }
+
+  .product-card .unit-price {
+    font-size: 12px;
+  }
+
+  .product-card .total-price {
+    font-size: 14px;
+  }
+
+  /* Network stats - mobile */
+  .network-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .network-stat-card {
+    padding: 14px;
+  }
+
+  .network-stat-card .stat-value {
+    font-size: 22px;
+  }
+
+  /* Levels grid - mobile */
+  .levels-grid {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .level-card {
+    flex: 1 1 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 12px 16px;
+  }
+
+  /* Bonuses - mobile */
+  .bonuses-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* Tree - mobile with scroll */
+  .tree-wrap-expanded {
+    min-height: 400px;
+    max-height: 500px;
+    overflow: auto;
+  }
+
+  /* Education - mobile */
+  .education-header {
+    padding: 18px 14px;
+  }
+
+  .education-header h2 {
+    font-size: 18px;
+  }
+
+  .resource-category {
+    min-height: 240px;
+  }
+
+  .resource-links-list {
+    max-height: 260px;
+    padding: 12px;
+  }
+
+  .resource-link-item {
+    padding: 12px;
+  }
+
+  .category-header {
+    padding: 14px;
+  }
+
+  .category-icon-large {
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .section-tabs {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .section-tab {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .product-card {
+    min-height: 280px;
+    padding: 8px;
+  }
+
+  .product-card img {
+    height: 90px;
+  }
+
+  .product-card h4 {
+    font-size: 12px;
+    min-height: 28px;
+  }
+
+  .product-card .quantity-selector {
+    gap: 4px;
+  }
+
+  .product-card .qty-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+
+  .product-card .qty-input {
+    width: 36px;
+    height: 26px;
+    font-size: 12px;
+  }
+
+  .product-card .btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  /* Controls row - mobile */
+  .network-controls-expanded .controls-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .stat-mini {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .controls-actions {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+}
+
+/* ========== Navigation buttons visibility fix ========== */
+.section-tab {
+  position: relative;
+  z-index: 10;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure buttons are always clickable */
+.section-tab::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+}
+
+/* Category filter buttons - clickable area */
+.category-filter-btn {
+  position: relative;
+  z-index: 10;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Product buttons - clickable */
+.product-card .btn,
+.product-card .qty-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ========== Print styles ========== */
+@media print {
+  .section-tabs-container,
+  .category-filters-container {
+    display: none;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

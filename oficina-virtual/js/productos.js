@@ -308,8 +308,11 @@ async function loadProductsFromFirestore() {
         if (!a.featured && b.featured) return 1;
         return 0;
       });
-    
+
     console.log('Productos cargados desde Firestore:', productos.length);
+    // Log unique categories for debugging
+    const uniqueCategories = [...new Set(productos.map(p => p.categoria).filter(Boolean))];
+    console.log('Categorías encontradas en productos:', uniqueCategories);
   } catch (err) {
     console.error('Error loading products from Firestore:', err);
     productos = [];
@@ -320,20 +323,54 @@ async function loadCategoriesIntoSelector() {
   try {
     const categoriesSnap = await getDocs(collection(db, "categorias"));
     const categorySelector = document.getElementById('categorySelector');
-    
-    if (!categorySelector) return;
-    
+    const categoryFiltersContainer = document.getElementById('categoryFilters');
+
     const categories = categoriesSnap.docs.map(d => d.data());
-    
-    categorySelector.innerHTML = '<option value="todas">Todas las categorías</option>';
-    
-    categories.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat.slug;
-      option.textContent = cat.nombre;
-      categorySelector.appendChild(option);
-    });
-    
+    console.log('Categorías desde Firestore:', categories.map(c => ({ nombre: c.nombre, slug: c.slug })));
+
+    if (categorySelector) {
+      categorySelector.innerHTML = '<option value="todas">Todas las categorías</option>';
+
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.slug;
+        option.textContent = cat.nombre;
+        categorySelector.appendChild(option);
+      });
+    }
+
+    // Also update the visual category filter buttons to match the database categories
+    if (categoryFiltersContainer) {
+      const categoryEmojis = {
+        'carnes': '🥩', 'carnesf': '🥩',
+        'bebidas': '🍷',
+        'alimentos': '🍚',
+        'aseo': '🧴',
+        'higiene-personal': '🧼', 'higiene': '🧼',
+        'abarrotes': '🛒'
+      };
+
+      // Update existing buttons to match database slugs
+      const existingBtns = categoryFiltersContainer.querySelectorAll('.category-filter-btn[data-category]');
+      existingBtns.forEach(btn => {
+        const btnCategory = btn.getAttribute('data-category');
+        if (btnCategory === 'todas') return; // Skip "Todas" button
+
+        // Find matching category in database
+        const matchingCat = categories.find(cat => {
+          const slug = (cat.slug || '').toLowerCase();
+          const btnCat = btnCategory.toLowerCase();
+          return slug === btnCat || slug.startsWith(btnCat) || btnCat.startsWith(slug);
+        });
+
+        if (matchingCat) {
+          // Update button's data-category to match the database slug
+          btn.setAttribute('data-category', matchingCat.slug);
+          console.log(`Actualizado botón ${btnCategory} a ${matchingCat.slug}`);
+        }
+      });
+    }
+
     console.log('Categorías cargadas:', categories.length);
   } catch (err) {
     console.error('Error loading categories:', err);
@@ -565,11 +602,18 @@ function startCountdownTimers() {
 function getFilteredProducts(){
   const tipo = (window.currentTipoRegistro || 'distribuidor').toLowerCase();
   const selectedCategory = window.selectedCategory || 'todas';
-  
+
   return productos.filter(prod => {
     if (!prod.availableFor) return true;
     const matchesType = prod.availableFor.includes(tipo);
-    const matchesCategory = selectedCategory === 'todas' || prod.categoria === selectedCategory;
+
+    // Normalize category matching to handle database variations (e.g., "carnesf" vs "carnes")
+    const prodCategoria = (prod.categoria || '').toLowerCase().trim();
+    const selectedCat = selectedCategory.toLowerCase().trim();
+    const matchesCategory = selectedCat === 'todas' ||
+                            prodCategoria === selectedCat ||
+                            prodCategoria.startsWith(selectedCat) ||
+                            selectedCat.startsWith(prodCategoria);
 
     // Hide "Paquete Master" for Master distributors (those with 50+ points)
     if (prod.id === 'paquete-master' && tipo === 'distribuidor') {
@@ -2094,5 +2138,8 @@ window.proceedToCheckout = async function() {
     }
   });
 };
+
+// Expose renderProductos globally for category filter buttons
+window.renderProductos = renderProductos;
 
 export { renderProductos };

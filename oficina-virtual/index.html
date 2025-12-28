@@ -313,12 +313,149 @@
           <small style="color:#666">Comparte este enlace para que el campo "Patrocinador" se autocomplete al registrar.</small>
         </div>
 
-        <!-- Productos -->
-        <div class="history-section">
-          <h2>Productos disponibles</h2>
-          <div style="margin-bottom:16px;">
-            <label for="categorySelector" style="font-weight:600;margin-right:10px;color:#333;">Filtrar por categoría:</label>
-            <select id="categorySelector" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;min-width:200px;">
+        <!-- Navegación de secciones: Educación, Consumo, Duplicación -->
+        <div class="section-tabs-container">
+          <div class="section-tabs">
+            <button class="section-tab" data-tab="educacion">
+              <span class="tab-icon">📚</span>
+              <span class="tab-label">Educación</span>
+            </button>
+            <button class="section-tab active" data-tab="consumo">
+              <span class="tab-icon">🛒</span>
+              <span class="tab-label">Consumo</span>
+            </button>
+            <button class="section-tab" data-tab="duplicacion">
+              <span class="tab-icon">🌐</span>
+              <span class="tab-label">Duplicación</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ========== TAB: EDUCACIÓN ========== -->
+        <div id="tab-educacion" class="tab-content" style="display:none;">
+          <div class="education-section-expanded">
+            <div class="education-header">
+              <h2>📚 Centro de Recursos Educativos</h2>
+              <p>Accede a todo el material educativo para tu desarrollo profesional y crecimiento en el negocio.</p>
+            </div>
+
+            <!-- Recursos organizados por categoría - Solo enlaces -->
+            <div class="education-resources-grid">
+
+              <!-- Videos YouTube -->
+              <div class="resource-category" id="category-videos">
+                <div class="category-header">
+                  <span class="category-icon-large">🎬</span>
+                  <div class="category-title-wrap">
+                    <h3>Videos Educativos</h3>
+                    <span class="category-subtitle">YouTube, TikTok y más</span>
+                  </div>
+                </div>
+                <div class="resource-links-list" id="videosEducativos">
+                  <div class="education-placeholder-compact">
+                    <span class="placeholder-icon">▶️</span>
+                    <p>Los videos se cargarán desde administración.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Libros y Documentos -->
+              <div class="resource-category" id="category-libros">
+                <div class="category-header">
+                  <span class="category-icon-large">📖</span>
+                  <div class="category-title-wrap">
+                    <h3>Libros y Documentos</h3>
+                    <span class="category-subtitle">Material de lectura</span>
+                  </div>
+                </div>
+                <div class="resource-links-list" id="librosDocumentos">
+                  <div class="education-placeholder-compact">
+                    <span class="placeholder-icon">📄</span>
+                    <p>Los libros y documentos se cargarán desde administración.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PEC del Mes -->
+              <div class="resource-category" id="category-pec">
+                <div class="category-header">
+                  <span class="category-icon-large">📝</span>
+                  <div class="category-title-wrap">
+                    <h3>PEC del Mes</h3>
+                    <span class="category-subtitle">Paquete de Educación Continua</span>
+                  </div>
+                </div>
+                <div class="resource-links-list" id="pecDelMes">
+                  <div class="education-placeholder-compact">
+                    <span class="placeholder-icon">📋</span>
+                    <p>El PEC del mes se cargará desde administración.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Enlaces Útiles -->
+              <div class="resource-category" id="category-enlaces">
+                <div class="category-header">
+                  <span class="category-icon-large">🔗</span>
+                  <div class="category-title-wrap">
+                    <h3>Enlaces Útiles</h3>
+                    <span class="category-subtitle">Recursos adicionales</span>
+                  </div>
+                </div>
+                <div class="resource-links-list" id="enlacesUtiles">
+                  <div class="education-placeholder-compact">
+                    <span class="placeholder-icon">🌐</span>
+                    <p>Los enlaces se cargarán desde administración.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== TAB: CONSUMO ========== -->
+        <div id="tab-consumo" class="tab-content" style="display:block;">
+          <!-- Productos -->
+          <div class="history-section consumo-section">
+            <h2>Productos disponibles</h2>
+
+            <!-- Horizontal Category Filters -->
+            <div class="category-filters-container">
+              <div class="category-filters" id="categoryFilters">
+                <button class="category-filter-btn active" data-category="todas">
+                  <span class="category-emoji">🏪</span>
+                  <span class="category-name">Todas</span>
+                </button>
+                <button class="category-filter-btn" data-category="carnes">
+                  <span class="category-emoji">🥩</span>
+                  <span class="category-name">Carnes</span>
+                </button>
+                <button class="category-filter-btn" data-category="bebidas">
+                  <span class="category-emoji">🍷</span>
+                  <span class="category-name">Bebidas</span>
+                </button>
+                <button class="category-filter-btn" data-category="alimentos">
+                  <span class="category-emoji">🍚</span>
+                  <span class="category-name">Alimentos</span>
+                </button>
+                <button class="category-filter-btn" data-category="aseo">
+                  <span class="category-emoji">🧴</span>
+                  <span class="category-name">Aseo</span>
+                </button>
+                <button class="category-filter-btn" data-category="higiene-personal">
+                  <span class="category-emoji">🧼</span>
+                  <span class="category-name">Higiene</span>
+                </button>
+                <button class="category-filter-btn" data-category="abarrotes">
+                  <span class="category-emoji">🛒</span>
+                  <span class="category-name">Abarrotes</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Hidden select for JavaScript compatibility -->
+            <select id="categorySelector" style="display:none;">
               <option value="todas">Todas las categorías</option>
               <option value="carnes">Carnes</option>
               <option value="bebidas">Bebidas</option>
@@ -327,52 +464,157 @@
               <option value="higiene-personal">Higiene Personal</option>
               <option value="abarrotes">Abarrotes</option>
             </select>
+
+            <div id="productGrid" class="product-grid"></div>
           </div>
-          <div id="productGrid" class="product-grid"></div>
+
+          <!-- Historial -->
+          <div class="history-section">
+            <h2>Historial</h2>
+            <div id="history" class="history-list"></div>
+          </div>
         </div>
 
-        <!-- Historial -->
-        <div class="history-section">
-          <h2>Historial</h2>
-          <div id="history" class="history-list"></div>
-        </div>
+        <!-- ========== TAB: DUPLICACIÓN ========== -->
+        <div id="tab-duplicacion" class="tab-content" style="display:none;">
+          <!-- Red - Vista expandida -->
+          <div class="history-section duplicacion-expanded">
+            <h2>Mi Red</h2>
 
-        <!-- Red -->
-        <div class="history-section">
-          <h2>Mi Red</h2>
-          <div id="network-controls" style="display:flex;gap:16px;align-items:start;flex-wrap:wrap;margin-bottom:10px;">
-            <div style="display:flex;flex-direction:column;gap:4px;padding:10px;background:#f8f9fa;border-radius:6px;min-width:180px;">
-              <div style="font-size:13px;color:#666;">Total frontales</div>
-              <div style="font-size:20px;font-weight:700;color:#2b9df3;"><span id="statFrontalesTotal">0</span></div>
-              <div style="font-size:12px;color:#666;margin-top:2px;">Del grupo actual: <strong id="statFrontalesGrupo" style="color:#333;">0</strong></div>
+            <!-- Estadísticas ampliadas de la red -->
+            <div class="network-stats-grid" id="networkStatsGrid">
+              <div class="network-stat-card primary">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                  <div class="stat-label">Afiliados Directos</div>
+                  <div class="stat-value" id="statDirectAffiliates">0</div>
+                </div>
+              </div>
+              <div class="network-stat-card secondary">
+                <div class="stat-icon">🌐</div>
+                <div class="stat-content">
+                  <div class="stat-label">Afiliados Indirectos</div>
+                  <div class="stat-value" id="statIndirectAffiliates">0</div>
+                </div>
+              </div>
+              <div class="network-stat-card success">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                  <div class="stat-label">Activos Este Mes</div>
+                  <div class="stat-value" id="statActiveThisMonth">0</div>
+                </div>
+              </div>
+              <div class="network-stat-card warning">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                  <div class="stat-label">Total en Red</div>
+                  <div class="stat-value" id="statTotalNetwork">0</div>
+                </div>
+              </div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:4px;padding:10px;background:#f8f9fa;border-radius:6px;min-width:180px;">
-              <div style="font-size:13px;color:#666;">Total en Red</div>
-              <div style="font-size:20px;font-weight:700;color:#28a745;"><span id="statTotal">0</span></div>
-              <div style="font-size:12px;color:#666;margin-top:2px;">Del grupo actual: <strong id="statTotalGrupo" style="color:#333;">0</strong></div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;padding:10px;background:#f8f9fa;border-radius:6px;min-width:180px;">
-              <div style="font-size:13px;color:#666;">Activos este mes</div>
-              <div style="font-size:20px;font-weight:700;color:#ff6b35;"><span id="statRecompra">0</span></div>
-              <div style="font-size:12px;color:#666;margin-top:2px;">Del grupo actual: <strong id="statRecompraGrupo" style="color:#333;">0</strong></div>
-            </div>
-            <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
-              <label for="pageSize" style="font-size:13px;color:#444;margin-right:6px;">Frontales por grupo:</label>
-              <select id="pageSize" style="padding:6px;border-radius:6px;border:1px solid #ddd;">
-                <option value="5" selected>5</option>
-              </select>
-              <button id="btnRefreshMap" class="btn small">Actualizar mapa</button>
-            </div>
-          </div>
-          <div id="network-group-info" style="margin-bottom:10px;padding:10px;background:#e3f2fd;border-radius:6px;font-size:14px;color:#0d47a1;border-left:4px solid #2196f3;">
-            <strong>Visualizando:</strong> <span id="currentGroupInfo">Todos los frontales</span>
-          </div>
-          <div id="mapContainer">
-            <div id="treeWrap" style="width:100%;height:460px;border:1px solid #eee;border-radius:6px;overflow:auto;background:#fff"></div>
-            <div id="treePager" style="margin-top:10px"></div>
 
-            <!-- Resumen / estadísticas del árbol -->
-            <div id="statsInfo" style="margin-top:10px; font-size:14px; color:#333;"></div>
+            <!-- Puntos por nivel -->
+            <div class="network-levels-section">
+              <h3>📈 Puntos por Nivel <span style="font-size: 0.75em; font-weight: normal; color: #666;">(Acumulado total)</span></h3>
+              <div class="levels-grid" id="levelsPointsGrid">
+                <div class="level-card level-1">
+                  <span class="level-badge">Nivel 1</span>
+                  <span class="level-points" id="pointsLevel1">0 pts</span>
+                </div>
+                <div class="level-card level-2">
+                  <span class="level-badge">Nivel 2</span>
+                  <span class="level-points" id="pointsLevel2">0 pts</span>
+                </div>
+                <div class="level-card level-3">
+                  <span class="level-badge">Nivel 3</span>
+                  <span class="level-points" id="pointsLevel3">0 pts</span>
+                </div>
+                <div class="level-card level-4">
+                  <span class="level-badge">Nivel 4</span>
+                  <span class="level-points" id="pointsLevel4">0 pts</span>
+                </div>
+                <div class="level-card level-5">
+                  <span class="level-badge">Nivel 5</span>
+                  <span class="level-points" id="pointsLevel5">0 pts</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bonos obtenidos -->
+            <div class="network-bonuses-section">
+              <h3>🎁 Resumen de Bonos <span style="font-size: 0.75em; font-weight: normal; color: #666;">(Mes en curso)</span></h3>
+              <div class="bonuses-grid" id="bonusesGrid">
+                <div class="bonus-card">
+                  <div class="bonus-icon">🚀</div>
+                  <div class="bonus-info">
+                    <div class="bonus-label">Bono de Inicio Rápido</div>
+                    <div class="bonus-sublabel" style="font-size: 0.7em; color: #888;">Máster ingresados este mes</div>
+                    <div class="bonus-value" id="bonusReferidos">$0</div>
+                  </div>
+                </div>
+                <div class="bonus-card">
+                  <div class="bonus-icon">🔄</div>
+                  <div class="bonus-info">
+                    <div class="bonus-label">Bono de Recompra</div>
+                    <div class="bonus-sublabel" style="font-size: 0.7em; color: #888;">Comisiones por cobrar del mes</div>
+                    <div class="bonus-value" id="bonusRecompra">$0</div>
+                  </div>
+                </div>
+                <div class="bonus-card">
+                  <div class="bonus-icon">⭐</div>
+                  <div class="bonus-info">
+                    <div class="bonus-label">Bono de Equipo</div>
+                    <div class="bonus-value" id="bonusEquipo" style="color: #888; font-style: italic;">Próximamente</div>
+                  </div>
+                </div>
+                <div class="bonus-card">
+                  <div class="bonus-icon">🏆</div>
+                  <div class="bonus-info">
+                    <div class="bonus-label">Bono de Liderazgo</div>
+                    <div class="bonus-value" id="bonusLiderazgo" style="color: #888; font-style: italic;">Próximamente</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controles del árbol -->
+            <div id="network-controls" class="network-controls-expanded">
+              <div class="controls-row">
+                <div class="stat-mini">
+                  <span class="stat-mini-label">Total frontales</span>
+                  <span class="stat-mini-value" id="statFrontalesTotal">0</span>
+                  <span class="stat-mini-sub">Del grupo: <strong id="statFrontalesGrupo">0</strong></span>
+                </div>
+                <div class="stat-mini">
+                  <span class="stat-mini-label">Total en Red</span>
+                  <span class="stat-mini-value" id="statTotal">0</span>
+                  <span class="stat-mini-sub">Del grupo: <strong id="statTotalGrupo">0</strong></span>
+                </div>
+                <div class="stat-mini">
+                  <span class="stat-mini-label">Activos este mes</span>
+                  <span class="stat-mini-value" id="statRecompra">0</span>
+                  <span class="stat-mini-sub">Del grupo: <strong id="statRecompraGrupo">0</strong></span>
+                </div>
+                <div class="controls-actions">
+                  <label for="pageSize">Frontales por grupo:</label>
+                  <select id="pageSize">
+                    <option value="5" selected>5</option>
+                  </select>
+                  <button id="btnRefreshMap" class="btn small">🔄 Actualizar</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="network-group-info" class="network-group-info-expanded">
+              <strong>📍 Visualizando:</strong> <span id="currentGroupInfo">Todos los frontales</span>
+            </div>
+
+            <!-- Contenedor del árbol expandido -->
+            <div id="mapContainer" class="map-container-expanded">
+              <div id="treeWrap" class="tree-wrap-expanded"></div>
+              <div id="treePager"></div>
+              <div id="statsInfo"></div>
+            </div>
           </div>
         </div>
 
@@ -387,6 +629,7 @@
   <script type="module" src="js/distribuidor-lite.js"></script>
   <script type="module" src="js/red-unilevel.js"></script>
   <script type="module" src="js/productos.js"></script>
+  <script type="module" src="js/educacion.js"></script>
   <script type="module" src="/js/comisiones.js"></script>
   <script>
 (function(){
@@ -430,6 +673,138 @@
     document.addEventListener('DOMContentLoaded', setup);
   } else {
     setup();
+  }
+})();
+</script>
+
+<!-- Category Filter Buttons Navigation -->
+<script>
+(function() {
+  function initCategoryFilters() {
+    const filterBtns = document.querySelectorAll('.category-filter-btn');
+    const categorySelector = document.getElementById('categorySelector');
+
+    if (!filterBtns.length || !categorySelector) return;
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        // Remove active class from all buttons
+        filterBtns.forEach(b => b.classList.remove('active'));
+        // Add active to clicked button
+        this.classList.add('active');
+
+        // Get the category value
+        const category = this.getAttribute('data-category');
+
+        // Update the hidden select to trigger existing JS logic
+        categorySelector.value = category;
+
+        // Set window variable for filtering
+        window.selectedCategory = category;
+
+        // Reset to page 1 when changing category
+        window.currentProductPage = 1;
+
+        // Dispatch change event to trigger product filtering
+        const event = new Event('change', { bubbles: true });
+        categorySelector.dispatchEvent(event);
+
+        // Also call renderProductos directly if available (for module timing)
+        if (typeof window.renderProductos === 'function') {
+          window.renderProductos();
+        }
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCategoryFilters);
+  } else {
+    initCategoryFilters();
+  }
+})();
+</script>
+
+<!-- Section Tabs Navigation (Educación, Consumo, Duplicación) -->
+<script>
+(function() {
+  function initSectionTabs() {
+    const tabs = document.querySelectorAll('.section-tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    if (!tabs.length || !tabContents.length) return;
+
+    function switchTab(tabName) {
+      // Remove active class from all tabs
+      tabs.forEach(tab => tab.classList.remove('active'));
+
+      // Hide all tab contents
+      tabContents.forEach(content => {
+        content.style.display = 'none';
+      });
+
+      // Add active class to clicked tab
+      const activeTab = document.querySelector(`.section-tab[data-tab="${tabName}"]`);
+      if (activeTab) {
+        activeTab.classList.add('active');
+      }
+
+      // Show corresponding content
+      const activeContent = document.getElementById(`tab-${tabName}`);
+      if (activeContent) {
+        activeContent.style.display = 'block';
+        // Re-trigger animation
+        activeContent.style.animation = 'none';
+        activeContent.offsetHeight; // Force reflow
+        activeContent.style.animation = '';
+      }
+
+      // If switching to duplicacion tab, trigger tree refresh if needed
+      if (tabName === 'duplicacion') {
+        // Dispatch a custom event that the tree can listen to
+        window.dispatchEvent(new CustomEvent('tab-duplicacion-shown'));
+
+        // Also trigger resize to ensure D3 tree renders correctly
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 100);
+      }
+
+      // Store active tab in sessionStorage for persistence during session
+      try {
+        sessionStorage.setItem('activeOfficeTab', tabName);
+      } catch(e) {}
+    }
+
+    // Add click handlers to tabs
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        const tabName = this.getAttribute('data-tab');
+        if (tabName) {
+          switchTab(tabName);
+        }
+      });
+    });
+
+    // Check for stored tab preference (but default to consumo on page load)
+    // We intentionally default to 'consumo' as per requirements
+    const storedTab = sessionStorage.getItem('activeOfficeTab');
+
+    // On initial load, always show Consumo (as per requirements)
+    // But if user has navigated within the session, respect their choice
+    if (storedTab && document.referrer && document.referrer.includes(window.location.hostname)) {
+      switchTab(storedTab);
+    } else {
+      // Default to Consumo on fresh page load
+      switchTab('consumo');
+    }
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSectionTabs);
+  } else {
+    initSectionTabs();
   }
 })();
 </script>
