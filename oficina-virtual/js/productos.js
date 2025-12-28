@@ -74,6 +74,90 @@ const DEFAULT_SHIPPING_RATES = {
 // Global shipping rates (loaded from Firestore)
 let shippingRates = { ...DEFAULT_SHIPPING_RATES };
 
+// Promotional codes cache
+let promoCodes = [];
+
+/**
+ * Load promotional codes from Firestore config
+ */
+async function loadPromoCodes() {
+  try {
+    const configRef = doc(db, "config", "promoCodes");
+    const configSnap = await getDoc(configRef);
+
+    if (configSnap.exists()) {
+      const data = configSnap.data();
+      promoCodes = data.codes || [];
+      console.log('✅ Promotional codes loaded:', promoCodes.length);
+    } else {
+      promoCodes = [];
+      console.log('ℹ️ No promotional codes configured');
+    }
+  } catch (err) {
+    console.warn('Error loading promo codes:', err);
+    promoCodes = [];
+  }
+}
+
+/**
+ * Validate a promotional code
+ * @param {string} code - The promotional code to validate
+ * @param {string} city - The delivery city (optional, for city-specific codes)
+ * @param {Array} cartItems - Cart items for product-specific validation (optional)
+ * @returns {Object} - { valid: boolean, message: string, code: object|null }
+ */
+function validatePromoCode(code, city = '', cartItems = []) {
+  if (!code || code.trim() === '') {
+    return { valid: false, message: 'Ingresa un código promocional', code: null };
+  }
+
+  const normalizedCode = code.trim().toUpperCase();
+  const promoCode = promoCodes.find(p => p.code.toUpperCase() === normalizedCode && p.active);
+
+  if (!promoCode) {
+    return { valid: false, message: 'Código inválido o expirado', code: null };
+  }
+
+  // Check expiration date
+  if (promoCode.expirationDate) {
+    const expDate = new Date(promoCode.expirationDate);
+    if (expDate < new Date()) {
+      return { valid: false, message: 'Este código ha expirado', code: null };
+    }
+  }
+
+  // Check usage limit (global)
+  if (promoCode.usageLimit && promoCode.usageCount >= promoCode.usageLimit) {
+    return { valid: false, message: 'Este código ha alcanzado su límite de uso', code: null };
+  }
+
+  // Check city restrictions
+  if (promoCode.cities && promoCode.cities.length > 0) {
+    const normalizedCity = (city || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    const allowedCities = promoCode.cities.map(c => c.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim());
+
+    if (!allowedCities.some(c => normalizedCity.includes(c) || c.includes(normalizedCity))) {
+      return { valid: false, message: 'Este código no aplica para tu ciudad', code: null };
+    }
+  }
+
+  // Check product restrictions
+  if (promoCode.products && promoCode.products.length > 0 && cartItems.length > 0) {
+    const cartProductIds = cartItems.map(item => item.product?.id || item.productId || item.id);
+    const hasValidProduct = promoCode.products.some(pid => cartProductIds.includes(pid));
+
+    if (!hasValidProduct) {
+      return { valid: false, message: 'Este código no aplica para los productos seleccionados', code: null };
+    }
+  }
+
+  return {
+    valid: true,
+    message: 'Envío gratuito aplicado',
+    code: promoCode
+  };
+}
+
 /**
  * Load shipping rates from Firestore config
  */
@@ -977,6 +1061,68 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
     pickupInfo.style.display = 'none';
     box.appendChild(pickupInfo);
 
+    // --- Promotional code section (only for home delivery) ---
+    const promoCodeSection = document.createElement('div');
+    promoCodeSection.id = 'promoCodeSection';
+    promoCodeSection.style.marginTop = '16px';
+    promoCodeSection.style.padding = '16px';
+    promoCodeSection.style.borderRadius = '10px';
+    promoCodeSection.style.background = '#f8f9fa';
+    promoCodeSection.style.border = '1px solid #dee2e6';
+
+    const promoLabel = document.createElement('label');
+    promoLabel.textContent = '🎁 ¿Tienes un código promocional?';
+    promoLabel.style.display = 'block';
+    promoLabel.style.fontWeight = '600';
+    promoLabel.style.marginBottom = '10px';
+    promoLabel.style.color = '#333';
+    promoCodeSection.appendChild(promoLabel);
+
+    const promoInputWrapper = document.createElement('div');
+    promoInputWrapper.style.display = 'flex';
+    promoInputWrapper.style.gap = '10px';
+    promoInputWrapper.style.alignItems = 'center';
+
+    const promoInput = document.createElement('input');
+    promoInput.type = 'text';
+    promoInput.id = 'promoCodeInput';
+    promoInput.placeholder = 'Ingresa tu código';
+    promoInput.style.flex = '1';
+    promoInput.style.padding = '10px 12px';
+    promoInput.style.border = '1px solid #ddd';
+    promoInput.style.borderRadius = '8px';
+    promoInput.style.fontSize = '14px';
+    promoInput.style.textTransform = 'uppercase';
+    promoInputWrapper.appendChild(promoInput);
+
+    const promoApplyBtn = document.createElement('button');
+    promoApplyBtn.type = 'button';
+    promoApplyBtn.textContent = 'Aplicar';
+    promoApplyBtn.style.padding = '10px 16px';
+    promoApplyBtn.style.border = 'none';
+    promoApplyBtn.style.borderRadius = '8px';
+    promoApplyBtn.style.background = '#667eea';
+    promoApplyBtn.style.color = 'white';
+    promoApplyBtn.style.fontWeight = '600';
+    promoApplyBtn.style.cursor = 'pointer';
+    promoInputWrapper.appendChild(promoApplyBtn);
+
+    promoCodeSection.appendChild(promoInputWrapper);
+
+    const promoMessage = document.createElement('div');
+    promoMessage.id = 'promoCodeMessage';
+    promoMessage.style.marginTop = '10px';
+    promoMessage.style.padding = '8px 12px';
+    promoMessage.style.borderRadius = '6px';
+    promoMessage.style.fontSize = '13px';
+    promoMessage.style.display = 'none';
+    promoCodeSection.appendChild(promoMessage);
+
+    box.appendChild(promoCodeSection);
+
+    // Track applied promo code state
+    let appliedPromoCode = null;
+
     // --- Shipping cost display section ---
     const shippingCostSection = document.createElement('div');
     shippingCostSection.style.marginTop = '16px';
@@ -988,9 +1134,14 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
     const updateShippingDisplay = () => {
       const deliveryMethod = dmPickup.radio.checked ? 'pickup' : 'home';
       const city = fCiudad.input.value.trim();
-      // Use UE-based calculation if totalUE is provided, otherwise fall back to legacy
-      const shippingCost = totalUE > 0 ? calculateShippingCostByUE(totalUE, city, deliveryMethod) : calculateShippingCost(city, deliveryMethod);
+      // Calculate base shipping cost
+      let baseShippingCost = totalUE > 0 ? calculateShippingCostByUE(totalUE, city, deliveryMethod) : calculateShippingCost(city, deliveryMethod);
+      // Apply promo code if valid
+      let shippingCost = appliedPromoCode ? 0 : baseShippingCost;
       const total = subtotal + shippingCost;
+
+      // Show/hide promo code section based on delivery method
+      promoCodeSection.style.display = deliveryMethod === 'pickup' ? 'none' : 'block';
 
       if (deliveryMethod === 'pickup') {
         shippingCostSection.innerHTML = `
@@ -1013,16 +1164,27 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
         const shippingMessage = getShippingMessage(city);
         const shippingLabel = `🚚 ${shippingMessage}:`;
 
+        // Build promo code applied message if applicable
+        const promoAppliedLine = appliedPromoCode ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;background:#d4edda;padding:8px 10px;border-radius:6px;margin-top:4px;">
+            <span style="color:#155724;font-weight:600;">✅ Envío gratuito aplicado</span>
+            <span style="font-weight:600;color:#155724;text-decoration:line-through;margin-right:8px;">${formatCOP(baseShippingCost)}</span>
+            <span style="font-weight:700;color:#28a745;">GRATIS</span>
+          </div>
+        ` : '';
+
         shippingCostSection.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <span style="font-weight:600;color:#166534;">📦 Subtotal productos:</span>
             <span style="font-weight:700;color:#166534;">${formatCOP(subtotal)}</span>
           </div>
+          ${!appliedPromoCode ? `
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <span style="color:#166534;">${shippingLabel}</span>
             <span style="font-weight:600;color:#ea580c;">${formatCOP(shippingCost)}</span>
           </div>
-          ${!city ? '<p style="font-size:12px;color:#9ca3af;margin:4px 0 8px 0;">ℹ️ El costo de envío se calcula automáticamente según la ciudad de destino</p>' : ''}
+          ` : promoAppliedLine}
+          ${!city && !appliedPromoCode ? '<p style="font-size:12px;color:#9ca3af;margin:4px 0 8px 0;">ℹ️ El costo de envío se calcula automáticamente según la ciudad de destino</p>' : ''}
           <div style="border-top:1px solid #86efac;padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
             <span style="font-weight:700;font-size:16px;color:#166534;">💰 TOTAL A PAGAR:</span>
             <span style="font-weight:700;font-size:18px;color:#166534;">${formatCOP(total)}</span>
@@ -1039,6 +1201,52 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
     // Update shipping display when city changes
     fCiudad.input.addEventListener('input', updateShippingDisplay);
     fCiudad.input.addEventListener('change', updateShippingDisplay);
+
+    // Promo code apply button handler
+    promoApplyBtn.addEventListener('click', () => {
+      const code = promoInput.value.trim();
+      const city = fCiudad.input.value.trim();
+      const result = validatePromoCode(code, city, []);
+
+      if (result.valid) {
+        appliedPromoCode = result.code;
+        promoMessage.style.display = 'block';
+        promoMessage.style.background = '#d4edda';
+        promoMessage.style.color = '#155724';
+        promoMessage.innerHTML = `✅ ${result.message} <button type="button" id="removePromoBtn" style="margin-left:10px;background:none;border:none;color:#dc3545;cursor:pointer;font-weight:600;">Quitar</button>`;
+        promoInput.disabled = true;
+        promoApplyBtn.disabled = true;
+        promoApplyBtn.style.background = '#6c757d';
+
+        // Add remove button handler
+        document.getElementById('removePromoBtn').addEventListener('click', () => {
+          appliedPromoCode = null;
+          promoMessage.style.display = 'none';
+          promoInput.disabled = false;
+          promoInput.value = '';
+          promoApplyBtn.disabled = false;
+          promoApplyBtn.style.background = '#667eea';
+          updateShippingDisplay();
+        });
+
+        updateShippingDisplay();
+      } else {
+        appliedPromoCode = null;
+        promoMessage.style.display = 'block';
+        promoMessage.style.background = '#f8d7da';
+        promoMessage.style.color = '#721c24';
+        promoMessage.textContent = `❌ ${result.message}`;
+        updateShippingDisplay();
+      }
+    });
+
+    // Also validate promo code on Enter key
+    promoInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        promoApplyBtn.click();
+      }
+    });
 
     // Determine initial delivery method
     const initialDM = initial.deliveryMethod || initial.delivery || 'home';
@@ -1106,7 +1314,9 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
       const city = fCiudad.input.value.trim();
 
       // Calculate shipping cost using UE if available
-      const shippingCost = totalUE > 0 ? calculateShippingCostByUE(totalUE, city, deliveryMethod) : calculateShippingCost(city, deliveryMethod);
+      let baseShippingCost = totalUE > 0 ? calculateShippingCostByUE(totalUE, city, deliveryMethod) : calculateShippingCost(city, deliveryMethod);
+      // Apply promo code discount if valid
+      const shippingCost = appliedPromoCode ? 0 : baseShippingCost;
 
       const payload = {
         firstName: fNombre.input.value.trim(),
@@ -1118,7 +1328,14 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
         notes: ta.value.trim(),
         deliveryMethod,
         shippingCost,
-        totalUE: totalUE // Include total UE in payload
+        baseShippingCost, // Original shipping cost before discount
+        totalUE: totalUE, // Include total UE in payload
+        promoCode: appliedPromoCode ? appliedPromoCode.code : null,
+        promoCodeApplied: appliedPromoCode !== null,
+        promoCodeData: appliedPromoCode ? {
+          code: appliedPromoCode.code,
+          discount: baseShippingCost // Amount discounted
+        } : null
       };
 
       // Validaciones
@@ -1309,7 +1526,12 @@ async function onBuyClick(e) {
       paymentMethod: "efectivo_transferencia",
       // Variant information
       selectedVariant: selectedVariant || null,
-      variantPriceDiff: variantPriceDiff || 0
+      variantPriceDiff: variantPriceDiff || 0,
+      // Promotional code data
+      promoCode: customerData.promoCode || null,
+      promoCodeApplied: customerData.promoCodeApplied || false,
+      baseShippingCost: customerData.baseShippingCost || shippingCost,
+      shippingDiscount: customerData.promoCodeApplied ? (customerData.baseShippingCost || 0) : 0
     };
 
     // Si pickup, añadir pickupInfo
@@ -1381,6 +1603,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadProductsFromFirestore();
   await loadCategoriesIntoSelector();
   await loadShippingRates(); // Load UE shipping rates
+  await loadPromoCodes(); // Load promotional codes
   renderProductos();
 
   // Initialize shopping cart UI
@@ -1545,6 +1768,14 @@ window.proceedToCheckout = async function() {
         <span style="color:#166534;">Dirección: Carrera 14 #21 04, Ciudad Yopal.</span><br>
         <span style="color:#166534;">Horario: Lun-Sab 7:00 - 17:00.</span>
       </div>
+      <div id="promoCodeSection" style="margin-bottom:16px;padding:16px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:10px;">
+        <label style="display:block;font-weight:600;margin-bottom:10px;color:#333;">🎁 ¿Tienes un código promocional?</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="text" name="promoCode" placeholder="Ingresa tu código" style="flex:1;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;text-transform:uppercase;">
+          <button type="button" id="applyPromoCodeBtn" style="padding:10px 16px;border:none;border-radius:8px;background:#667eea;color:white;font-weight:600;cursor:pointer;">Aplicar</button>
+        </div>
+        <div id="promoCodeMessage" style="margin-top:10px;padding:8px 12px;border-radius:6px;font-size:13px;display:none;"></div>
+      </div>
       <div id="shippingCostSection" style="margin-bottom:20px;padding:16px;background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border-radius:10px;border:1px solid #86efac;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <span style="font-weight:600;color:#166534;">📦 Subtotal productos:</span>
@@ -1570,6 +1801,9 @@ window.proceedToCheckout = async function() {
       </div>
     `;
 
+    // Track applied promo code state for cart checkout
+    let cartAppliedPromoCode = null;
+
     // Toggle address/city fields based on delivery method and update shipping cost
     const toggleAddressFields = () => {
       const deliveryMethod = form.querySelector('input[name="deliveryMethod"]:checked').value;
@@ -1578,6 +1812,7 @@ window.proceedToCheckout = async function() {
       const addressInput = form.querySelector('input[name="address"]');
       const cityInput = form.querySelector('input[name="city"]');
       const pickupInfoSection = form.querySelector('#pickupInfoSection');
+      const promoCodeSection = form.querySelector('#promoCodeSection');
       const shippingCostLine = form.querySelector('#shippingCostLine');
       const shippingCostValue = form.querySelector('#shippingCostValue');
       const shippingHint = form.querySelector('#shippingHint');
@@ -1589,6 +1824,7 @@ window.proceedToCheckout = async function() {
         addressInput.required = false;
         cityInput.required = false;
         pickupInfoSection.style.display = 'block';
+        promoCodeSection.style.display = 'none';
         shippingCostLine.innerHTML = '<span style="color:#166534;">🏢 Recoger en oficina:</span><span style="font-weight:600;color:#16a34a;">GRATIS</span>';
         shippingHint.style.display = 'none';
         grandTotalValue.textContent = '$' + totalPrice.toLocaleString();
@@ -1598,6 +1834,7 @@ window.proceedToCheckout = async function() {
         addressInput.required = true;
         cityInput.required = true;
         pickupInfoSection.style.display = 'none';
+        promoCodeSection.style.display = 'block';
         shippingHint.style.display = 'block';
         updateShippingCost();
       }
@@ -1611,7 +1848,8 @@ window.proceedToCheckout = async function() {
       const cityInput = form.querySelector('input[name="city"]');
       const city = cityInput.value.trim();
       // Use UE-based shipping calculation
-      const shippingCost = calculateShippingCostByUE(cartTotalUE, city, deliveryMethod);
+      const baseShippingCost = calculateShippingCostByUE(cartTotalUE, city, deliveryMethod);
+      const shippingCost = cartAppliedPromoCode ? 0 : baseShippingCost;
       const grandTotal = totalPrice + shippingCost;
 
       const shippingCostValue = form.querySelector('#shippingCostValue');
@@ -1621,20 +1859,80 @@ window.proceedToCheckout = async function() {
 
       // Update shipping label with appropriate message
       const shippingMessage = getShippingMessage(city);
-      shippingCostLine.innerHTML = `<span style="color:#166534;">🚚 ${shippingMessage}:</span><span id="shippingCostValue" style="font-weight:600;color:#ea580c;">$${shippingCost.toLocaleString()}</span>`;
-      grandTotalValue.textContent = '$' + grandTotal.toLocaleString();
 
-      // Update hint visibility
-      if (city) {
+      if (cartAppliedPromoCode) {
+        shippingCostLine.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;background:#d4edda;padding:8px 10px;border-radius:6px;">
+            <span style="color:#155724;font-weight:600;">✅ Envío gratuito aplicado</span>
+            <span style="font-weight:600;color:#155724;text-decoration:line-through;margin-right:8px;">$${baseShippingCost.toLocaleString()}</span>
+            <span style="font-weight:700;color:#28a745;">GRATIS</span>
+          </div>
+        `;
         shippingHint.style.display = 'none';
       } else {
-        shippingHint.style.display = 'block';
+        shippingCostLine.innerHTML = `<span style="color:#166534;">🚚 ${shippingMessage}:</span><span id="shippingCostValue" style="font-weight:600;color:#ea580c;">$${shippingCost.toLocaleString()}</span>`;
+        if (city) {
+          shippingHint.style.display = 'none';
+        } else {
+          shippingHint.style.display = 'block';
+        }
       }
+
+      grandTotalValue.textContent = '$' + grandTotal.toLocaleString();
     };
 
     // Add event listener for city input
     form.querySelector('input[name="city"]').addEventListener('input', updateShippingCost);
     form.querySelector('input[name="city"]').addEventListener('change', updateShippingCost);
+
+    // Promo code apply button handler for cart checkout
+    form.querySelector('#applyPromoCodeBtn').addEventListener('click', () => {
+      const promoInput = form.querySelector('input[name="promoCode"]');
+      const code = promoInput.value.trim();
+      const city = form.querySelector('input[name="city"]').value.trim();
+      const promoMessage = form.querySelector('#promoCodeMessage');
+
+      const result = validatePromoCode(code, city, cartItems);
+
+      if (result.valid) {
+        cartAppliedPromoCode = result.code;
+        promoMessage.style.display = 'block';
+        promoMessage.style.background = '#d4edda';
+        promoMessage.style.color = '#155724';
+        promoMessage.innerHTML = `✅ ${result.message} <button type="button" class="remove-promo-btn" style="margin-left:10px;background:none;border:none;color:#dc3545;cursor:pointer;font-weight:600;">Quitar</button>`;
+        promoInput.disabled = true;
+        form.querySelector('#applyPromoCodeBtn').disabled = true;
+        form.querySelector('#applyPromoCodeBtn').style.background = '#6c757d';
+
+        // Add remove button handler
+        promoMessage.querySelector('.remove-promo-btn').addEventListener('click', () => {
+          cartAppliedPromoCode = null;
+          promoMessage.style.display = 'none';
+          promoInput.disabled = false;
+          promoInput.value = '';
+          form.querySelector('#applyPromoCodeBtn').disabled = false;
+          form.querySelector('#applyPromoCodeBtn').style.background = '#667eea';
+          updateShippingCost();
+        });
+
+        updateShippingCost();
+      } else {
+        cartAppliedPromoCode = null;
+        promoMessage.style.display = 'block';
+        promoMessage.style.background = '#f8d7da';
+        promoMessage.style.color = '#721c24';
+        promoMessage.textContent = `❌ ${result.message}`;
+        updateShippingCost();
+      }
+    });
+
+    // Allow Enter key to apply promo code
+    form.querySelector('input[name="promoCode"]').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        form.querySelector('#applyPromoCodeBtn').click();
+      }
+    });
 
     form.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
       radio.addEventListener('change', toggleAddressFields);
@@ -1653,7 +1951,8 @@ window.proceedToCheckout = async function() {
       const deliveryMethod = formData.get('deliveryMethod');
       const city = formData.get('city');
       // Use UE-based shipping calculation
-      const shippingCost = calculateShippingCostByUE(cartTotalUE, city, deliveryMethod);
+      const baseShippingCost = calculateShippingCostByUE(cartTotalUE, city, deliveryMethod);
+      const shippingCost = cartAppliedPromoCode ? 0 : baseShippingCost;
 
       const customerData = {
         firstName: formData.get('firstName'),
@@ -1665,7 +1964,14 @@ window.proceedToCheckout = async function() {
         city: city,
         notes: formData.get('notes'),
         shippingCost: shippingCost,
-        totalUE: cartTotalUE // Include total UE in customer data
+        baseShippingCost: baseShippingCost,
+        totalUE: cartTotalUE, // Include total UE in customer data
+        promoCode: cartAppliedPromoCode ? cartAppliedPromoCode.code : null,
+        promoCodeApplied: cartAppliedPromoCode !== null,
+        promoCodeData: cartAppliedPromoCode ? {
+          code: cartAppliedPromoCode.code,
+          discount: baseShippingCost
+        } : null
       };
       document.body.removeChild(overlay);
       resolve(customerData);
@@ -1726,7 +2032,12 @@ window.proceedToCheckout = async function() {
           isInitial: prod.id === "paquete-inicio",
           initialBonusPaid: false,
           paymentMethod: "efectivo_transferencia",
-          fromCart: true
+          fromCart: true,
+          // Promotional code data (only on first order)
+          promoCode: isFirstOrder ? (customerData.promoCode || null) : null,
+          promoCodeApplied: isFirstOrder ? (customerData.promoCodeApplied || false) : false,
+          baseShippingCost: isFirstOrder ? (customerData.baseShippingCost || orderShippingCost) : 0,
+          shippingDiscount: isFirstOrder && customerData.promoCodeApplied ? (customerData.baseShippingCost || 0) : 0
         };
 
         if (customerData.deliveryMethod === 'pickup') {
