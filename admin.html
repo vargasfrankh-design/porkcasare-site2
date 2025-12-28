@@ -829,6 +829,120 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Promotional Codes Management Section -->
+      <div style="margin-top:32px;border-top:2px solid #dee2e6;padding-top:32px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <h2 style="margin:0;">🎁 Gestión de Códigos Promocionales</h2>
+          <button id="addPromoCodeBtn" class="btn-primary" style="padding:10px 20px;">➕ Crear Nuevo Código</button>
+        </div>
+
+        <div style="background:#e3f2fd;padding:16px;border-radius:8px;margin-bottom:24px;border-left:4px solid #2196f3;">
+          <h4 style="margin:0 0 8px 0;color:#1565c0;">📝 Sistema de Códigos Promocionales</h4>
+          <p style="margin:0;color:#1565c0;font-size:13px;">
+            Los códigos promocionales permiten ofrecer <strong>envío gratuito</strong> a los clientes.<br>
+            Configura fechas de expiración, límites de uso, y restricciones por ciudad o producto.
+          </p>
+        </div>
+
+        <!-- Promo Codes List -->
+        <div id="promoCodesContainer" style="background:#fff;border-radius:12px;border:1px solid #dee2e6;overflow:hidden;">
+          <table style="width:100%;border-collapse:collapse;" id="promoCodesTable">
+            <thead>
+              <tr style="background:#f8f9fa;">
+                <th style="padding:12px;text-align:left;border-bottom:2px solid #dee2e6;font-size:13px;">Código</th>
+                <th style="padding:12px;text-align:left;border-bottom:2px solid #dee2e6;font-size:13px;">Estado</th>
+                <th style="padding:12px;text-align:left;border-bottom:2px solid #dee2e6;font-size:13px;">Expiración</th>
+                <th style="padding:12px;text-align:center;border-bottom:2px solid #dee2e6;font-size:13px;">Usos</th>
+                <th style="padding:12px;text-align:left;border-bottom:2px solid #dee2e6;font-size:13px;">Restricciones</th>
+                <th style="padding:12px;text-align:center;border-bottom:2px solid #dee2e6;font-size:13px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="promoCodesTableBody">
+              <tr>
+                <td colspan="6" style="padding:40px;text-align:center;color:#6c757d;">
+                  <div style="font-size:48px;margin-bottom:16px;">🎁</div>
+                  Cargando códigos promocionales...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Promo Code Modal -->
+      <div id="promoCodeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:16px;max-width:600px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+          <div style="padding:24px;border-bottom:1px solid #eee;position:sticky;top:0;background:white;z-index:1;">
+            <h3 id="promoModalTitle" style="margin:0;font-size:20px;">Crear Código Promocional</h3>
+          </div>
+          <div style="padding:24px;">
+            <form id="promoCodeForm">
+              <div style="margin-bottom:16px;">
+                <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Código *</label>
+                <input type="text" id="promoCodeInput" required placeholder="Ej: ENVIOFREE2024"
+                  style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;text-transform:uppercase;box-sizing:border-box;">
+                <p style="font-size:12px;color:#666;margin:4px 0 0 0;">El código que los clientes usarán (sin espacios)</p>
+              </div>
+
+              <div style="margin-bottom:16px;">
+                <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Descripción</label>
+                <input type="text" id="promoCodeDescription" placeholder="Ej: Promoción de verano"
+                  style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Fecha de Expiración</label>
+                  <input type="date" id="promoCodeExpiration"
+                    style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                  <p style="font-size:12px;color:#666;margin:4px 0 0 0;">Dejar vacío para sin expiración</p>
+                </div>
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Límite de Usos</label>
+                  <input type="number" id="promoCodeUsageLimit" min="0" placeholder="Sin límite"
+                    style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                  <p style="font-size:12px;color:#666;margin:4px 0 0 0;">0 o vacío = ilimitado</p>
+                </div>
+              </div>
+
+              <div style="margin-bottom:16px;">
+                <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Ciudades Permitidas</label>
+                <input type="text" id="promoCodeCities" placeholder="Ej: Yopal, Bogotá, Medellín"
+                  style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                <p style="font-size:12px;color:#666;margin:4px 0 0 0;">Separadas por comas. Dejar vacío para todas las ciudades.</p>
+              </div>
+
+              <div style="margin-bottom:16px;">
+                <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Productos Aplicables (IDs)</label>
+                <input type="text" id="promoCodeProducts" placeholder="Ej: prod-001, prod-002"
+                  style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                <p style="font-size:12px;color:#666;margin:4px 0 0 0;">IDs de productos separados por comas. Dejar vacío para todos los productos.</p>
+              </div>
+
+              <div style="margin-bottom:24px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="checkbox" id="promoCodeActive" checked style="width:18px;height:18px;">
+                  <span style="font-weight:500;color:#333;">Código Activo</span>
+                </label>
+              </div>
+
+              <input type="hidden" id="promoCodeEditId" value="">
+
+              <div style="display:flex;gap:12px;">
+                <button type="button" id="cancelPromoCodeBtn"
+                  style="flex:1;padding:12px;background:#6c757d;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+                  Cancelar
+                </button>
+                <button type="submit"
+                  style="flex:2;padding:12px;background:#28a745;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+                  Guardar Código
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Tab: Calculadora de Puntos -->
@@ -4226,6 +4340,224 @@
       resultEl.textContent = `Costo: $${cost.toLocaleString('es-CO')}`;
       resultEl.style.display = 'block';
     });
+
+    // ==========================================
+    // PROMOTIONAL CODES MANAGEMENT
+    // ==========================================
+
+    let promoCodes = [];
+
+    async function loadPromoCodes() {
+      try {
+        const configRef = doc(db, "config", "promoCodes");
+        const configSnap = await getDoc(configRef);
+
+        if (configSnap.exists()) {
+          const data = configSnap.data();
+          promoCodes = data.codes || [];
+        } else {
+          promoCodes = [];
+        }
+
+        renderPromoCodesTable();
+      } catch (err) {
+        console.error('Error loading promo codes:', err);
+        promoCodes = [];
+        renderPromoCodesTable();
+      }
+    }
+
+    function renderPromoCodesTable() {
+      const tbody = document.getElementById('promoCodesTableBody');
+      if (!tbody) return;
+
+      if (promoCodes.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="padding:40px;text-align:center;color:#6c757d;">
+              <div style="font-size:48px;margin-bottom:16px;">🎁</div>
+              No hay códigos promocionales configurados.<br>
+              <button onclick="openPromoCodeModal()" style="margin-top:12px;padding:8px 16px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;">
+                Crear primer código
+              </button>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = promoCodes.map((code, index) => {
+        const isExpired = code.expirationDate && new Date(code.expirationDate) < new Date();
+        const statusBadge = !code.active
+          ? '<span style="background:#6c757d;color:white;padding:4px 8px;border-radius:4px;font-size:11px;">Inactivo</span>'
+          : isExpired
+            ? '<span style="background:#dc3545;color:white;padding:4px 8px;border-radius:4px;font-size:11px;">Expirado</span>'
+            : '<span style="background:#28a745;color:white;padding:4px 8px;border-radius:4px;font-size:11px;">Activo</span>';
+
+        const expirationDisplay = code.expirationDate
+          ? new Date(code.expirationDate).toLocaleDateString('es-CO')
+          : 'Sin expiración';
+
+        const usageDisplay = code.usageLimit
+          ? `${code.usageCount || 0} / ${code.usageLimit}`
+          : `${code.usageCount || 0} / ∞`;
+
+        const restrictions = [];
+        if (code.cities && code.cities.length > 0) {
+          restrictions.push(`📍 ${code.cities.join(', ')}`);
+        }
+        if (code.products && code.products.length > 0) {
+          restrictions.push(`📦 ${code.products.length} producto(s)`);
+        }
+        const restrictionsDisplay = restrictions.length > 0
+          ? restrictions.join('<br>')
+          : '<span style="color:#999;">Sin restricciones</span>';
+
+        return `
+          <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:12px;font-weight:600;font-family:monospace;font-size:14px;">${code.code}</td>
+            <td style="padding:12px;">${statusBadge}</td>
+            <td style="padding:12px;font-size:13px;">${expirationDisplay}</td>
+            <td style="padding:12px;text-align:center;font-size:13px;">${usageDisplay}</td>
+            <td style="padding:12px;font-size:12px;">${restrictionsDisplay}</td>
+            <td style="padding:12px;text-align:center;">
+              <button onclick="editPromoCode(${index})" style="background:#667eea;color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;margin-right:4px;font-size:12px;">✏️ Editar</button>
+              <button onclick="deletePromoCode(${index})" style="background:#dc3545;color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px;">🗑️ Eliminar</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openPromoCodeModal(editIndex = null) {
+      const modal = document.getElementById('promoCodeModal');
+      const title = document.getElementById('promoModalTitle');
+      const form = document.getElementById('promoCodeForm');
+
+      // Reset form
+      form.reset();
+      document.getElementById('promoCodeEditId').value = '';
+      document.getElementById('promoCodeActive').checked = true;
+
+      if (editIndex !== null && promoCodes[editIndex]) {
+        const code = promoCodes[editIndex];
+        title.textContent = 'Editar Código Promocional';
+        document.getElementById('promoCodeInput').value = code.code || '';
+        document.getElementById('promoCodeDescription').value = code.description || '';
+        document.getElementById('promoCodeExpiration').value = code.expirationDate || '';
+        document.getElementById('promoCodeUsageLimit').value = code.usageLimit || '';
+        document.getElementById('promoCodeCities').value = (code.cities || []).join(', ');
+        document.getElementById('promoCodeProducts').value = (code.products || []).join(', ');
+        document.getElementById('promoCodeActive').checked = code.active !== false;
+        document.getElementById('promoCodeEditId').value = editIndex;
+      } else {
+        title.textContent = 'Crear Código Promocional';
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function closePromoCodeModal() {
+      document.getElementById('promoCodeModal').style.display = 'none';
+    }
+
+    window.editPromoCode = function(index) {
+      openPromoCodeModal(index);
+    };
+
+    window.deletePromoCode = async function(index) {
+      if (!confirm('¿Estás seguro de eliminar este código promocional?')) return;
+
+      promoCodes.splice(index, 1);
+
+      try {
+        await setDoc(doc(db, "config", "promoCodes"), {
+          codes: promoCodes,
+          updatedAt: new Date().toISOString()
+        });
+        alert('✅ Código eliminado correctamente');
+        renderPromoCodesTable();
+      } catch (err) {
+        console.error('Error deleting promo code:', err);
+        alert('❌ Error al eliminar el código: ' + err.message);
+        await loadPromoCodes(); // Reload to restore state
+      }
+    };
+
+    async function savePromoCode(e) {
+      e.preventDefault();
+
+      const codeValue = document.getElementById('promoCodeInput').value.trim().toUpperCase().replace(/\s+/g, '');
+      const description = document.getElementById('promoCodeDescription').value.trim();
+      const expirationDate = document.getElementById('promoCodeExpiration').value || null;
+      const usageLimit = parseInt(document.getElementById('promoCodeUsageLimit').value) || 0;
+      const citiesRaw = document.getElementById('promoCodeCities').value;
+      const productsRaw = document.getElementById('promoCodeProducts').value;
+      const active = document.getElementById('promoCodeActive').checked;
+      const editId = document.getElementById('promoCodeEditId').value;
+
+      if (!codeValue) {
+        alert('Por favor ingresa un código');
+        return;
+      }
+
+      const cities = citiesRaw ? citiesRaw.split(',').map(c => c.trim()).filter(c => c) : [];
+      const products = productsRaw ? productsRaw.split(',').map(p => p.trim()).filter(p => p) : [];
+
+      const promoCodeData = {
+        code: codeValue,
+        description,
+        expirationDate,
+        usageLimit: usageLimit > 0 ? usageLimit : null,
+        usageCount: 0,
+        cities,
+        products,
+        active,
+        createdAt: new Date().toISOString()
+      };
+
+      if (editId !== '') {
+        // Editing existing code
+        const existingCode = promoCodes[parseInt(editId)];
+        promoCodeData.usageCount = existingCode.usageCount || 0;
+        promoCodeData.createdAt = existingCode.createdAt || promoCodeData.createdAt;
+        promoCodes[parseInt(editId)] = promoCodeData;
+      } else {
+        // Check for duplicate code
+        if (promoCodes.some(p => p.code.toUpperCase() === codeValue)) {
+          alert('Ya existe un código con este nombre');
+          return;
+        }
+        promoCodes.push(promoCodeData);
+      }
+
+      try {
+        await setDoc(doc(db, "config", "promoCodes"), {
+          codes: promoCodes,
+          updatedAt: new Date().toISOString()
+        });
+        alert('✅ Código guardado correctamente');
+        closePromoCodeModal();
+        renderPromoCodesTable();
+      } catch (err) {
+        console.error('Error saving promo code:', err);
+        alert('❌ Error al guardar el código: ' + err.message);
+        await loadPromoCodes(); // Reload to restore state
+      }
+    }
+
+    // Promo codes event listeners
+    document.getElementById('addPromoCodeBtn')?.addEventListener('click', () => openPromoCodeModal());
+    document.getElementById('cancelPromoCodeBtn')?.addEventListener('click', closePromoCodeModal);
+    document.getElementById('promoCodeForm')?.addEventListener('submit', savePromoCode);
+
+    // Close modal on background click
+    document.getElementById('promoCodeModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'promoCodeModal') closePromoCodeModal();
+    });
+
+    // Load promo codes on page load
+    loadPromoCodes();
 
     // Helper function to check if user is active this month
     function checkIfUserActiveThisMonth(userData) {
