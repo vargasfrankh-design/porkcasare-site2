@@ -336,6 +336,7 @@
       <button class="tab-button" data-tab="shipping">Tarifas de Envío</button>
       <button class="tab-button" data-tab="calculator">Calculadora de Puntos</button>
       <button class="tab-button" data-tab="profits">Ganancias</button>
+      <button class="tab-button" data-tab="education">📚 Educación</button>
     </div>
 
     <!-- Tab: Resumen -->
@@ -1265,6 +1266,90 @@
         </div>
       </div>
     </div>
+
+    <!-- Tab: Educación -->
+    <div id="tab-education" class="tab-content">
+      <div style="max-width:1200px;margin:0 auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+          <h2 style="margin:0;">Gestión de Contenido Educativo</h2>
+          <button id="btnAddEducation" class="btn-success" style="display:flex;align-items:center;gap:6px;padding:10px 20px;">
+            <span>➕</span> Agregar Enlace
+          </button>
+        </div>
+
+        <p style="color:#666;margin-bottom:20px;">
+          Administra los enlaces educativos que aparecen en la oficina virtual. Los usuarios podrán acceder a videos, documentos y recursos útiles.
+        </p>
+
+        <!-- Filtros de categoría -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+          <button class="edu-filter-btn active" data-filter="all" style="padding:8px 16px;border:1px solid #ddd;border-radius:20px;background:#667eea;color:white;cursor:pointer;">Todos</button>
+          <button class="edu-filter-btn" data-filter="video" style="padding:8px 16px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;">🎬 Videos</button>
+          <button class="edu-filter-btn" data-filter="libro" style="padding:8px 16px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;">📚 Libros</button>
+          <button class="edu-filter-btn" data-filter="documento" style="padding:8px 16px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;">📄 Documentos</button>
+          <button class="edu-filter-btn" data-filter="pec" style="padding:8px 16px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;">📋 PEC</button>
+          <button class="edu-filter-btn" data-filter="link" style="padding:8px 16px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;cursor:pointer;">🔗 Enlaces</button>
+        </div>
+
+        <!-- Lista de contenido educativo -->
+        <div id="educationList" style="display:grid;gap:16px;">
+          <div style="text-align:center;color:#666;padding:40px;">Cargando contenido educativo...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para agregar/editar contenido educativo -->
+  <div id="educationModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:white;padding:30px;border-radius:12px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;">
+      <h3 style="margin-top:0;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:24px;">📚</span>
+        <span id="educationModalTitle">Agregar Enlace Educativo</span>
+      </h3>
+      <form id="educationForm">
+        <input type="hidden" id="educationId">
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:600;">Tipo de contenido *</label>
+          <select id="educationType" required style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
+            <option value="">Seleccionar tipo...</option>
+            <option value="video">🎬 Video (YouTube, TikTok, etc.)</option>
+            <option value="libro">📚 Libro</option>
+            <option value="documento">📄 Documento</option>
+            <option value="pec">📋 PEC del Mes</option>
+            <option value="link">🔗 Enlace Útil</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:600;">Título *</label>
+          <input type="text" id="educationTitle" required style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;" placeholder="Ej: Cómo hacer tu primera venta">
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:600;">URL del recurso *</label>
+          <input type="url" id="educationUrl" required style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;" placeholder="https://...">
+          <small style="color:#666;display:block;margin-top:4px;">Para videos de YouTube, usa el link normal (no el embed)</small>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:600;">Descripción (opcional)</label>
+          <textarea id="educationDescription" rows="3" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical;" placeholder="Breve descripción del contenido..."></textarea>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="educationActive" checked style="width:18px;height:18px;">
+            <span style="font-weight:500;">Activo (visible para usuarios)</span>
+          </label>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding-top:10px;border-top:1px solid #eee;">
+          <button type="button" id="educationModalCancel" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-success">Guardar</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Modal para agregar inventario -->
@@ -1685,7 +1770,8 @@
         loadInventory(),
         loadProducts(),
         loadCategories(),
-        loadShippingRates()
+        loadShippingRates(),
+        loadEducationContent()
       ]);
     }
 
@@ -6390,6 +6476,232 @@
 
     // Make the function globally accessible
     window.executeManualPurge = executeManualPurge;
+
+    // ========== EDUCACIÓN MANAGEMENT ==========
+    let educationData = [];
+    let currentEducationFilter = 'all';
+
+    // Load education content
+    async function loadEducationContent() {
+      const container = document.getElementById('educationList');
+      if (!container) return;
+
+      try {
+        const q = query(
+          collection(db, 'educacion'),
+          orderBy('fecha', 'desc')
+        );
+        const snapshot = await getDocs(q);
+
+        educationData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        renderEducationList();
+      } catch (error) {
+        console.error('Error loading education content:', error);
+        container.innerHTML = '<div style="text-align:center;color:#dc3545;padding:40px;">Error al cargar contenido educativo</div>';
+      }
+    }
+
+    // Render education list based on filter
+    function renderEducationList() {
+      const container = document.getElementById('educationList');
+      if (!container) return;
+
+      const filteredData = currentEducationFilter === 'all'
+        ? educationData
+        : educationData.filter(item => item.tipo === currentEducationFilter);
+
+      if (filteredData.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center;color:#666;padding:60px;background:white;border-radius:12px;">
+            <div style="font-size:48px;margin-bottom:12px;">📭</div>
+            <p style="margin:0;font-size:16px;">No hay contenido educativo${currentEducationFilter !== 'all' ? ' en esta categoría' : ''}.</p>
+            <p style="margin:8px 0 0 0;font-size:14px;color:#999;">Usa el botón "Agregar Enlace" para crear el primer recurso.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const typeIcons = {
+        video: '🎬',
+        libro: '📚',
+        documento: '📄',
+        pec: '📋',
+        link: '🔗'
+      };
+
+      const typeLabels = {
+        video: 'Video',
+        libro: 'Libro',
+        documento: 'Documento',
+        pec: 'PEC',
+        link: 'Enlace'
+      };
+
+      container.innerHTML = filteredData.map(item => {
+        const icon = typeIcons[item.tipo] || '📝';
+        const label = typeLabels[item.tipo] || item.tipo;
+        const isActive = item.activo !== false;
+        const fecha = item.fecha?.toDate ? item.fecha.toDate().toLocaleDateString('es-ES') : 'Sin fecha';
+
+        return `
+          <div class="education-item" data-id="${item.id}" style="background:white;border-radius:12px;padding:20px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);${!isActive ? 'opacity:0.6;' : ''}">
+            <div style="font-size:32px;width:56px;height:56px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:12px;">${icon}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <h4 style="margin:0;font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(item.titulo || 'Sin título')}</h4>
+                <span style="background:${isActive ? '#dcfce7' : '#fef2f2'};color:${isActive ? '#166534' : '#dc2626'};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${isActive ? 'Activo' : 'Inactivo'}</span>
+              </div>
+              <p style="margin:0 0 4px 0;font-size:13px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(item.descripcion || 'Sin descripción')}</p>
+              <div style="display:flex;gap:12px;font-size:12px;color:#999;">
+                <span style="background:#f1f5f9;padding:2px 8px;border-radius:4px;">${label}</span>
+                <span>${fecha}</span>
+                <a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener" style="color:#667eea;text-decoration:none;overflow:hidden;text-overflow:ellipsis;max-width:200px;display:inline-block;white-space:nowrap;">Ver enlace →</a>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button onclick="editEducation('${item.id}')" class="btn-primary" style="padding:8px 16px;font-size:13px;border-radius:6px;">Editar</button>
+              <button onclick="deleteEducation('${item.id}')" class="btn-danger" style="padding:8px 16px;font-size:13px;border-radius:6px;">Eliminar</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Education filter buttons
+    document.querySelectorAll('.edu-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.edu-filter-btn').forEach(b => {
+          b.classList.remove('active');
+          b.style.background = '#f8f9fa';
+          b.style.color = '#333';
+        });
+        btn.classList.add('active');
+        btn.style.background = '#667eea';
+        btn.style.color = 'white';
+        currentEducationFilter = btn.dataset.filter;
+        renderEducationList();
+      });
+    });
+
+    // Education modal handling
+    const educationModal = document.getElementById('educationModal');
+    const educationForm = document.getElementById('educationForm');
+    const btnAddEducation = document.getElementById('btnAddEducation');
+    const educationModalCancel = document.getElementById('educationModalCancel');
+
+    if (btnAddEducation) {
+      btnAddEducation.addEventListener('click', () => {
+        document.getElementById('educationModalTitle').textContent = 'Agregar Enlace Educativo';
+        document.getElementById('educationId').value = '';
+        document.getElementById('educationType').value = '';
+        document.getElementById('educationTitle').value = '';
+        document.getElementById('educationUrl').value = '';
+        document.getElementById('educationDescription').value = '';
+        document.getElementById('educationActive').checked = true;
+        educationModal.style.display = 'flex';
+      });
+    }
+
+    if (educationModalCancel) {
+      educationModalCancel.addEventListener('click', () => {
+        educationModal.style.display = 'none';
+      });
+    }
+
+    // Close modal on outside click
+    if (educationModal) {
+      educationModal.addEventListener('click', (e) => {
+        if (e.target === educationModal) {
+          educationModal.style.display = 'none';
+        }
+      });
+    }
+
+    // Save education content
+    if (educationForm) {
+      educationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const id = document.getElementById('educationId').value;
+        const tipo = document.getElementById('educationType').value;
+        const titulo = document.getElementById('educationTitle').value.trim();
+        const url = document.getElementById('educationUrl').value.trim();
+        const descripcion = document.getElementById('educationDescription').value.trim();
+        const activo = document.getElementById('educationActive').checked;
+
+        if (!tipo || !titulo || !url) {
+          alert('Por favor complete todos los campos obligatorios');
+          return;
+        }
+
+        try {
+          const data = {
+            tipo,
+            titulo,
+            url,
+            descripcion,
+            activo,
+            fecha: new Date()
+          };
+
+          if (id) {
+            // Update existing
+            await updateDoc(doc(db, 'educacion', id), data);
+          } else {
+            // Create new
+            await addDoc(collection(db, 'educacion'), data);
+          }
+
+          educationModal.style.display = 'none';
+          await loadEducationContent();
+          alert(id ? 'Contenido actualizado correctamente' : 'Contenido agregado correctamente');
+        } catch (error) {
+          console.error('Error saving education content:', error);
+          alert('Error al guardar: ' + error.message);
+        }
+      });
+    }
+
+    // Edit education
+    window.editEducation = async function(id) {
+      const item = educationData.find(e => e.id === id);
+      if (!item) return;
+
+      document.getElementById('educationModalTitle').textContent = 'Editar Enlace Educativo';
+      document.getElementById('educationId').value = id;
+      document.getElementById('educationType').value = item.tipo || '';
+      document.getElementById('educationTitle').value = item.titulo || '';
+      document.getElementById('educationUrl').value = item.url || '';
+      document.getElementById('educationDescription').value = item.descripcion || '';
+      document.getElementById('educationActive').checked = item.activo !== false;
+      educationModal.style.display = 'flex';
+    };
+
+    // Delete education
+    window.deleteEducation = async function(id) {
+      if (!confirm('¿Estás seguro de que deseas eliminar este contenido educativo?')) return;
+
+      try {
+        await deleteDoc(doc(db, 'educacion', id));
+        await loadEducationContent();
+        alert('Contenido eliminado correctamente');
+      } catch (error) {
+        console.error('Error deleting education content:', error);
+        alert('Error al eliminar: ' + error.message);
+      }
+    };
   </script>
 </body>
 </html>

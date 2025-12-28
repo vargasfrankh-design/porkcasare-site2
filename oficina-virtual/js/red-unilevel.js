@@ -157,6 +157,7 @@ async function buildUnilevelTree(username) {
         groupPoints: Number(data.groupPoints || 0),
         celular: data.celular || "No registrado",
         tipoRegistro: data.tipoRegistro || data.role || data.rol || 'distribuidor',
+        createdAt: data.createdAt || null,
         children: [],
         allChildren: []
       };
@@ -183,6 +184,7 @@ async function buildUnilevelTree(username) {
       groupPoints: node.groupPoints,
       celular: node.celular,
       tipoRegistro: node.tipoRegistro,
+      createdAt: node.createdAt,
       children: (node.children || []).map(c => deepCloneNode(c)),
       allChildren: node.allChildren
     };
@@ -456,6 +458,16 @@ function renderTreeCore(rootNode, treeWrap, loadingIndicator) {
   // --- Habilitar zoom/pan (soporta mouse y touch) ---
   const zoom = d3g.zoom()
     .scaleExtent([0.4, 2])
+    .filter((event) => {
+      // Prevent zoom/pan when clicking on nodes
+      // Check if the event target is inside a node group
+      const target = event.target;
+      if (target && target.closest) {
+        if (target.closest('.node')) return false;
+      }
+      // Allow default zoom behavior for other elements
+      return !event.button;
+    })
     .on('zoom', (event) => {
       // event.transform contiene la matriz de transformación
       g.attr('transform', event.transform);
@@ -589,32 +601,44 @@ function renderTreeCore(rootNode, treeWrap, loadingIndicator) {
     .attr('transform', d => `translate(${d.x},${d.y})`);
 
   // handlers: pointerup + click fallback
+  // IMPORTANT: We must stop event propagation to prevent zoom/pan behavior from interfering
   node.each(function(d) {
     const thisNode = d3g.select(this);
     const dom = thisNode.node();
-    
+
     let lastTap = 0;
-    
+
     const handle = (e) => {
-      try { e.preventDefault(); } catch (err) {}
-      try { e.stopPropagation(); } catch (err) {}
-      
+      // Stop event propagation to prevent zoom/pan interference
+      if (e) {
+        try { e.preventDefault(); } catch (err) {}
+        try { e.stopPropagation(); } catch (err) {}
+        try { e.stopImmediatePropagation(); } catch (err) {}
+      }
+
       const now = Date.now();
       const timeSinceLastTap = now - lastTap;
-      
+
       if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
         if (d.children || d._children) {
           toggleNode(d);
         }
         lastTap = 0;
       } else {
+        // Show info card without affecting tree structure
         showInfoCard(d.data, e);
         lastTap = now;
       }
     };
-    
-    dom.addEventListener('pointerup', handle);
-    dom.addEventListener('click', handle);
+
+    // Use capture phase to ensure we handle events before zoom
+    dom.addEventListener('pointerup', handle, { capture: true });
+    dom.addEventListener('click', handle, { capture: true });
+
+    // Also prevent pointerdown from triggering pan/drag
+    dom.addEventListener('pointerdown', (e) => {
+      try { e.stopPropagation(); } catch (err) {}
+    }, { capture: true });
   });
   
   function toggleNode(d) {
@@ -851,13 +875,20 @@ function renderTreeFallback(rootNode) {
     g.appendChild(txt);
 
     const handleSelect = (e) => {
-      try { e.preventDefault(); } catch (err) {}
-      try { e.stopPropagation(); } catch (err) {}
+      // Stop event propagation to prevent any interference
+      if (e) {
+        try { e.preventDefault(); } catch (err) {}
+        try { e.stopPropagation(); } catch (err) {}
+        try { e.stopImmediatePropagation(); } catch (err) {}
+      }
       showInfoCard(node, e);
     };
 
-    g.addEventListener("pointerup", handleSelect);
-    g.addEventListener("click", handleSelect);
+    g.addEventListener("pointerup", handleSelect, { capture: true });
+    g.addEventListener("click", handleSelect, { capture: true });
+    g.addEventListener("pointerdown", (e) => {
+      try { e.stopPropagation(); } catch (err) {}
+    }, { capture: true });
     svg.appendChild(g);
   });
 
@@ -1019,22 +1050,81 @@ function showInfoCard(node, event) {
 
 function updateStatsFromTree(tree) {
   if (!tree) return;
-  
+
   let totalCompleto = 0, activosCompleto = 0;
+  let directAffiliates = 0, indirectAffiliates = 0;
+  let pointsByLevel = [0, 0, 0, 0, 0]; // 5 levels
+  let mastersThisMonth = 0; // Count of Masters joined this month (direct only)
+
+  // Helper function to check if a date is in the current month
+  function isThisMonth(dateVal) {
+    if (!dateVal) return false;
+    const now = new Date();
+    let d;
+    if (typeof dateVal === 'string') {
+      d = new Date(dateVal);
+    } else if (typeof dateVal.toDate === 'function') {
+      d = dateVal.toDate();
+    } else if (dateVal instanceof Date) {
+      d = dateVal;
+    } else if (dateVal.seconds) {
+      d = new Date(dateVal.seconds * 1000);
+    } else {
+      return false;
+    }
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+
   if (tree.fullTree) {
-    (function walkFull(n) {
+    (function walkFull(n, level = 0) {
       totalCompleto++;
       if (n.active) activosCompleto++;
-      (n.children || []).forEach(walkFull);
+
+      // Count points by level
+      if (level > 0 && level <= 5) {
+        pointsByLevel[level - 1] += Number(n.puntos || 0);
+      }
+
+      // Count direct (level 1) vs indirect (level 2+)
+      if (level === 1) {
+        directAffiliates++;
+        // Count Masters that joined this month (direct referrals only)
+        const tipo = (n.tipoRegistro || '').toLowerCase();
+        if ((tipo === 'master' || tipo === 'máster') && isThisMonth(n.createdAt)) {
+          mastersThisMonth++;
+        }
+      } else if (level > 1) {
+        indirectAffiliates++;
+      }
+
+      (n.children || []).forEach(c => walkFull(c, level + 1));
     })(tree.fullTree);
   } else {
-    (function walkFull(n) {
+    (function walkFull(n, level = 0) {
       totalCompleto++;
       if (n.active) activosCompleto++;
-      (n.children || []).forEach(walkFull);
+
+      // Count points by level
+      if (level > 0 && level <= 5) {
+        pointsByLevel[level - 1] += Number(n.puntos || 0);
+      }
+
+      // Count direct (level 1) vs indirect (level 2+)
+      if (level === 1) {
+        directAffiliates++;
+        // Count Masters that joined this month (direct referrals only)
+        const tipo = (n.tipoRegistro || '').toLowerCase();
+        if ((tipo === 'master' || tipo === 'máster') && isThisMonth(n.createdAt)) {
+          mastersThisMonth++;
+        }
+      } else if (level > 1) {
+        indirectAffiliates++;
+      }
+
+      (n.children || []).forEach(c => walkFull(c, level + 1));
     })(tree);
   }
-  
+
   let totalGrupo = 0, activosGrupo = 0;
   (function walkGroup(n) {
     totalGrupo++;
@@ -1045,6 +1135,7 @@ function updateStatsFromTree(tree) {
   const totalFrontales = (tree.allChildren || tree.children || []).length;
   const frontalesEnGrupo = (tree.children || []).length;
 
+  // Update original stats
   const elFrontTotal = document.getElementById("statFrontalesTotal");
   const elFrontGrupo = document.getElementById("statFrontalesGrupo");
   const elTotal = document.getElementById("statTotal");
@@ -1058,6 +1149,32 @@ function updateStatsFromTree(tree) {
   if (elTotalGrupo) elTotalGrupo.textContent = String(totalGrupo);
   if (elRecompra) elRecompra.textContent = String(activosCompleto);
   if (elRecompraGrupo) elRecompraGrupo.textContent = String(activosGrupo);
+
+  // Update new expanded stats
+  const elDirectAffiliates = document.getElementById("statDirectAffiliates");
+  const elIndirectAffiliates = document.getElementById("statIndirectAffiliates");
+  const elActiveThisMonth = document.getElementById("statActiveThisMonth");
+  const elTotalNetwork = document.getElementById("statTotalNetwork");
+
+  if (elDirectAffiliates) elDirectAffiliates.textContent = String(directAffiliates);
+  if (elIndirectAffiliates) elIndirectAffiliates.textContent = String(indirectAffiliates);
+  if (elActiveThisMonth) elActiveThisMonth.textContent = String(activosCompleto);
+  if (elTotalNetwork) elTotalNetwork.textContent = String(totalCompleto - 1); // Exclude self
+
+  // Update points by level - Show "Próximamente" instead of actual values
+  for (let i = 1; i <= 5; i++) {
+    const elLevel = document.getElementById(`pointsLevel${i}`);
+    if (elLevel) elLevel.textContent = `Próximamente`;
+  }
+
+  // Update Bonus por Referidos (Masters joined this month)
+  // Assuming a fixed bonus amount per Master referral - adjust REFERRAL_BONUS_PER_MASTER as needed
+  const REFERRAL_BONUS_PER_MASTER = 50000; // $50,000 COP per Master referral
+  const bonusReferidosEl = document.getElementById("bonusReferidos");
+  if (bonusReferidosEl) {
+    const totalReferralBonus = mastersThisMonth * REFERRAL_BONUS_PER_MASTER;
+    bonusReferidosEl.textContent = `$${totalReferralBonus.toLocaleString('es-CO')}`;
+  }
 
   const currentGroupInfo = document.getElementById("currentGroupInfo");
   if (currentGroupInfo && totalFrontales > FRONTLINES_PER_PAGE) {
@@ -1113,6 +1230,16 @@ async function readAndRenderPoints(userId) {
 
     const alertEl = document.getElementById("activationAlert");
     if (alertEl) alertEl.style.display = (personal < 50) ? "block" : "none";
+
+    // Bono de Recompra: Show the exact balance (pending commissions to collect)
+    // The balance field stores the accumulated commissions minus withdrawals
+    const recompraBonus = Number(d.balance || 0);
+
+    // Update Bono de Recompra element
+    const bonusRecompraEl = document.getElementById("bonusRecompra");
+    if (bonusRecompraEl) {
+      bonusRecompraEl.textContent = `$${Math.max(0, recompraBonus).toLocaleString('es-CO')}`;
+    }
   } catch (err) {
     console.error("readAndRenderPoints error:", err);
   }
@@ -1189,6 +1316,9 @@ onAuthStateChanged(auth, async (user) => {
     const tree = await buildUnilevelTree(rootCode);
     renderTree(tree);
     updateStatsFromTree(tree);
+
+    // Read and render user's balance for Bono de Recompra
+    await readAndRenderPoints(user.uid);
 
     const btnRefresh = document.getElementById("btnRefreshMap");
     if (btnRefresh) {

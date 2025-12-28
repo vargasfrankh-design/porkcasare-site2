@@ -572,9 +572,13 @@
 
       let filteredProducts = allProducts;
 
-      // Apply category filter
+      // Apply category filter (with flexible matching to handle variations like "carnes" vs "carnesf")
       if (categoryFilter) {
-        filteredProducts = filteredProducts.filter(p => p.categoria === categoryFilter);
+        filteredProducts = filteredProducts.filter(p => {
+          const prodCat = (p.categoria || '').toLowerCase();
+          const filterCat = categoryFilter.toLowerCase();
+          return prodCat === filterCat || prodCat.startsWith(filterCat) || filterCat.startsWith(prodCat);
+        });
       }
 
       // Apply search filter
