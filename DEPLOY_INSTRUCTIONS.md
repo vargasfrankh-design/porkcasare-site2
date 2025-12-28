@@ -52,13 +52,23 @@ Project Console: https://console.firebase.google.com/project/porkcasare-915ff/ov
 ### 1. Verificar en Firebase Console
 - Ve a Firestore Database → Rules
 - Verifica que la fecha de publicación sea reciente
-- Asegúrate de que las reglas incluyan:
+- Asegúrate de que las reglas incluyan la función isAdmin:
   ```javascript
   function isAdmin() {
-    return isAuthenticated() && 
-           exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) &&
+    return isAuthenticated() &&
            (get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin' ||
             get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == 'admin');
+  }
+  ```
+- Y la regla de orders permita a admins crear órdenes:
+  ```javascript
+  match /orders/{orderId} {
+    allow create: if isAuthenticated()
+                  && (
+                    request.auth.uid == request.resource.data.buyerUid ||
+                    (isAdmin() && request.resource.data.createdByAdmin == true)
+                  );
+    // ...
   }
   ```
 

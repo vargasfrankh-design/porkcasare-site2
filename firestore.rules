@@ -71,8 +71,14 @@ service cloud.firestore {
 
     // ========== Orders Collection ==========
     match /orders/{orderId} {
+      // Allow create if:
+      // 1. User is authenticated AND is the buyer (normal purchase flow), OR
+      // 2. User is an admin creating an order on behalf of a distributor (admin-generated orders)
       allow create: if isAuthenticated()
-                    && request.auth.uid == request.resource.data.buyerUid;
+                    && (
+                      request.auth.uid == request.resource.data.buyerUid ||
+                      (isAdmin() && request.resource.data.createdByAdmin == true)
+                    );
 
       allow read: if isAuthenticated() &&
                   (request.auth.uid == resource.data.buyerUid || isAdmin() || isSupplier());
