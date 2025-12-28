@@ -122,6 +122,15 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ========== Educacion Collection (Education Content) ==========
+    match /educacion/{educacionId} {
+      // Public read - education content is displayed in virtual office
+      allow read: if true;
+
+      // Only admins can create, update, or delete education content
+      allow create, update, delete: if isAdmin();
+    }
+
     // ========== Denegar todo lo demás ==========
     match /{document=**} {
       allow read, write: if false;
