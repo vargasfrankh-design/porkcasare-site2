@@ -40,6 +40,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 const POINT_VALUE = 2800;
 const MONTHLY_ACTIVATION_POINTS_THRESHOLD = 10; // Umbral de puntos para activación mensual
+const BATCH_SIZE = 100; // Tamaño del lote para paginación
 
 // Helper function to get date ranges for a specific month (passed from admin)
 // If month/year not provided, defaults to previous month for backward compatibility
@@ -217,19 +218,46 @@ exports.handler = async (req) => {
     console.log(`📅 Verificando actividad del mes: ${monthName} ${year}`);
     console.log(`   Rango: ${new Date(startMs).toISOString()} - ${new Date(endMs).toISOString()}`);
 
-    // Get all distributors
-    const usersSnap = await db.collection('usuarios')
-      .where('tipoRegistro', '==', 'distribuidor')
-      .get();
+    // Get all distributors using pagination to reduce memory usage and avoid timeouts
+    // Paginación: procesar en lotes de BATCH_SIZE documentos
+    let lastDoc = null;
+    let totalDistributors = 0;
+    const allUserDocs = [];
 
-    console.log(`👥 Total distribuidores encontrados: ${usersSnap.size}`);
+    console.log(`📥 Cargando distribuidores en lotes de ${BATCH_SIZE}...`);
+
+    do {
+      let distributorsQuery = db.collection('usuarios')
+        .where('tipoRegistro', '==', 'distribuidor')
+        .orderBy('__name__')
+        .limit(BATCH_SIZE);
+
+      if (lastDoc) {
+        distributorsQuery = distributorsQuery.startAfter(lastDoc);
+      }
+
+      const batchSnap = await distributorsQuery.get();
+
+      if (batchSnap.empty) {
+        break;
+      }
+
+      batchSnap.docs.forEach(doc => allUserDocs.push(doc));
+      lastDoc = batchSnap.docs[batchSnap.docs.length - 1];
+      totalDistributors += batchSnap.size;
+
+      console.log(`   📦 Lote cargado: ${batchSnap.size} distribuidores (Total: ${totalDistributors})`);
+
+    } while (lastDoc);
+
+    console.log(`👥 Total distribuidores encontrados: ${totalDistributors}`);
 
     const purgeReport = {
       executedAt: admin.firestore.FieldValue.serverTimestamp(),
       month: monthNumber,
       monthName: monthName,
       year: year,
-      totalDistributors: usersSnap.size,
+      totalDistributors: totalDistributors,
       activeDistributors: 0,
       inactiveDistributors: 0,
       totalPurgedAmount: 0,
@@ -244,7 +272,7 @@ exports.handler = async (req) => {
     // For preview mode, we also track active users for the report
     const activeUsers = [];
 
-    for (const userDoc of usersSnap.docs) {
+    for (const userDoc of allUserDocs) {
       const userData = userDoc.data();
       const userId = userDoc.id;
       const username = userData.usuario || userData.username || 'Sin nombre';

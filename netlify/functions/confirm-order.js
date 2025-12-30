@@ -72,12 +72,26 @@ const QUICK_START_UPPER_LEVELS_POINTS = 1;
 const QUICK_START_THRESHOLD = 50;
 
 // HELPERS
+// Cache de sponsors para evitar lecturas repetidas durante la misma ejecución
+const sponsorCache = new Map();
+
 async function findUserByUsername(username) {
   if (!username) return null;
+
+  // Verificar cache primero
+  if (sponsorCache.has(username)) {
+    return sponsorCache.get(username);
+  }
+
   const snap = await db.collection('usuarios').where('usuario', '==', username).limit(1).get();
-  if (snap.empty) return null;
+  if (snap.empty) {
+    sponsorCache.set(username, null);
+    return null;
+  }
   const doc = snap.docs[0];
-  return { id: doc.id, data: doc.data() };
+  const result = { id: doc.id, data: doc.data() };
+  sponsorCache.set(username, result);
+  return result;
 }
 
 const getAuthHeader = (event) => {
@@ -89,6 +103,9 @@ const getAuthHeader = (event) => {
 
 // FUNCTION
 exports.handler = async (event) => {
+  // Limpiar cache de sponsors al inicio de cada request
+  sponsorCache.clear();
+
   try {
     console.log('confirm-order function called:', { method: event.httpMethod });
     
@@ -470,7 +487,7 @@ exports.handler = async (event) => {
       // In all cases, we should distribute normal commissions
       
       console.log(`ℹ️ Procediendo con distribución normal de comisiones${shouldPayQuickStartBonus ? ' (Quick Start Bonus no pudo ser pagado - distribuyendo comisión normal)' : ''}`);
-      
+
       // Check if group points have already been distributed for this order
       const orderDoc = await orderRef.get();
       const orderData = orderDoc.data();
@@ -478,11 +495,10 @@ exports.handler = async (event) => {
         console.log(`ℹ️ Puntos grupales ya fueron distribuidos para esta orden. Omitiendo distribución.`);
         return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada (ya procesada previamente)' }) };
       }
-      
+
       // Check buyer type to determine commission rate
-      const buyerDoc = await db.collection('usuarios').doc(buyerUid).get();
-      const buyerDataForType = buyerDoc.exists ? buyerDoc.data() : {};
-      const buyerType = (buyerDataForType.tipoRegistro || buyerDataForType.role || 'distribuidor').toLowerCase();
+      // Reutilizar datos del comprador obtenidos previamente para evitar lectura adicional
+      const buyerType = (buyerDataPreTx.tipoRegistro || buyerDataPreTx.role || 'distribuidor').toLowerCase();
 
       console.log(`🔍 Tipo de comprador: ${buyerType}`);
 

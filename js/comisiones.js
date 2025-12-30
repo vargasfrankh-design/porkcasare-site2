@@ -460,12 +460,40 @@ function renderCombinedHistory() {
   }).join("");
 }
 
+// Función para limpiar todos los listeners activos
+function cleanupListeners() {
+  if (unsubscribeUserDoc) {
+    try { unsubscribeUserDoc(); } catch (e) { console.warn('Error al desuscribir userDoc:', e); }
+    unsubscribeUserDoc = null;
+  }
+  if (unsubscribeTxs) {
+    try { unsubscribeTxs(); } catch (e) { console.warn('Error al desuscribir txs:', e); }
+    unsubscribeTxs = null;
+  }
+  console.log('🔄 Listeners de Firebase desuscriptos correctamente');
+}
+
+// Limpieza de listeners al cerrar la página o cuando cambia la visibilidad
+window.addEventListener('beforeunload', cleanupListeners);
+window.addEventListener('pagehide', cleanupListeners);
+
+// Optimización: pausar listeners cuando la pestaña no está visible
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    console.log('📋 Pestaña oculta - pausando listeners');
+    cleanupListeners();
+  } else if (document.visibilityState === 'visible' && auth.currentUser) {
+    console.log('📋 Pestaña visible - reconectando listeners');
+    attachRealtimeForUserBoth(auth.currentUser.uid);
+  }
+});
+
 // Attach listeners para ambas fuentes
 function attachRealtimeForUserBoth(uid) {
   if (!uid) return;
 
-  if (unsubscribeUserDoc) { try { unsubscribeUserDoc(); } catch {} unsubscribeUserDoc = null; }
-  if (unsubscribeTxs) { try { unsubscribeTxs(); } catch {} unsubscribeTxs = null; }
+  // Limpiar listeners existentes antes de crear nuevos
+  cleanupListeners();
 
 const uRef = doc(db, "usuarios", uid);
   unsubscribeUserDoc = onSnapshot(uRef, async (snap) => {
@@ -778,8 +806,7 @@ async function cobrarPending(uid, amount = null, options = {}) {
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     if (btnCobrar) btnCobrar.disabled = true;
-    if (unsubscribeUserDoc) { try { unsubscribeUserDoc(); } catch {} unsubscribeUserDoc = null; }
-    if (unsubscribeTxs) { try { unsubscribeTxs(); } catch {} unsubscribeTxs = null; }
+    cleanupListeners();
     return;
   }
   const uid = user.uid;
@@ -836,7 +863,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // Exportar funciones útiles
-export { addEarnings, cobrarPending, attachRealtimeForUserBoth, normalizeEntry };
+export { addEarnings, cobrarPending, attachRealtimeForUserBoth, normalizeEntry, cleanupListeners };
 
 // NOTE: couldn't locate original cobrar listener; added confirmation handler separately.
 
