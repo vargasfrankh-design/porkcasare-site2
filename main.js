@@ -3,8 +3,22 @@ import { auth, db } from "./src/firebase-config.js";
 import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { setDoc, doc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
+// ---------- Función utilitaria: Debounce ----------
+function debounce(fn, delay = 500) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    return new Promise((resolve) => {
+      timeoutId = setTimeout(async () => {
+        const result = await fn.apply(this, args);
+        resolve(result);
+      }, delay);
+    });
+  };
+}
+
 // ---------- Función: Verificar existencia del patrocinador ----------
-async function verifySponsorExists(sponsorCode) {
+async function verifySponsorExistsBase(sponsorCode) {
   if (!sponsorCode) return false;
   const usuariosCol = collection(db, 'usuarios');
   const q = query(usuariosCol, where('usuario', '==', sponsorCode));
@@ -13,12 +27,20 @@ async function verifySponsorExists(sponsorCode) {
 }
 
 // ---------- Función: Verificar si el nombre de usuario ya existe ----------
-async function isUsernameTaken(username) {
+async function isUsernameTakenBase(username) {
   const usuariosCol = collection(db, 'usuarios');
   const q = query(usuariosCol, where('usuario', '==', username));
   const snap = await getDocs(q);
   return !snap.empty;
 }
+
+// Versiones con debounce para uso en validaciones de entrada
+const verifySponsorExists = verifySponsorExistsBase;
+const isUsernameTaken = isUsernameTakenBase;
+
+// Versiones con debounce para validación en tiempo real (opcional)
+const verifySponsorExistsDebounced = debounce(verifySponsorExistsBase, 500);
+const isUsernameTakenDebounced = debounce(isUsernameTakenBase, 500);
 
 // ---------- Ubicación ahora manejada por location.js con autocomplete ----------
 // Los datos de ubicación se cargan desde data/colombia.json

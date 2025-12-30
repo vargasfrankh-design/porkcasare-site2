@@ -32,19 +32,32 @@ exports.handler = async (event) => {
       .where('status', 'in', ['pending_mp', 'pending_cash', 'pending_delivery'])
       .get();
 
-    const orders = await Promise.all(
-      snap.docs.map(async d => {
-        const data = d.data();
-        const buyerDoc = await db.collection('usuarios').doc(data.buyerUid).get();
-        const buyerData = buyerDoc.exists ? buyerDoc.data() : {};
-        return {
-          id: d.id,
-          ...data,
-          buyerUsername: buyerData.usuario || data.buyerUid,
-          buyerNombre: buyerData.nombre || ''
-        };
-      })
-    );
+    // Optimización: obtener todos los buyerUids únicos primero
+    const uniqueBuyerUids = [...new Set(snap.docs.map(d => d.data().buyerUid).filter(Boolean))];
+
+    // Batch de lecturas: obtener todos los usuarios en una sola operación
+    const buyersMap = new Map();
+    if (uniqueBuyerUids.length > 0) {
+      const buyerRefs = uniqueBuyerUids.map(uid => db.collection('usuarios').doc(uid));
+      const buyerDocs = await db.getAll(...buyerRefs);
+      buyerDocs.forEach((buyerDoc, index) => {
+        if (buyerDoc.exists) {
+          buyersMap.set(uniqueBuyerUids[index], buyerDoc.data());
+        }
+      });
+    }
+
+    // Mapear las órdenes usando el cache de usuarios
+    const orders = snap.docs.map(d => {
+      const data = d.data();
+      const buyerData = buyersMap.get(data.buyerUid) || {};
+      return {
+        id: d.id,
+        ...data,
+        buyerUsername: buyerData.usuario || data.buyerUid,
+        buyerNombre: buyerData.nombre || ''
+      };
+    });
 
     // Filter out test users (names starting with "prueba")
     const filteredOrders = orders.filter(order => {

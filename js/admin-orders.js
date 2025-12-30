@@ -29,15 +29,29 @@ import {
 const MAX_LEVELS = 5;
 const ORDERS_COLLECTION = "orders";
 
-// util: buscar usuario por 'usuario' (username)
+// Cache para sponsors durante la misma sesión
+const sponsorCache = new Map();
+
+// util: buscar usuario por 'usuario' (username) con cache
 async function findUserByUsername(username) {
   if (!username) return null;
+
+  // Verificar cache primero
+  if (sponsorCache.has(username)) {
+    return sponsorCache.get(username);
+  }
+
   const usuariosCol = collection(db, "usuarios");
   const q = query(usuariosCol, where("usuario", "==", username));
   const snap = await getDocs(q);
-  if (snap.empty) return null;
+  if (snap.empty) {
+    sponsorCache.set(username, null);
+    return null;
+  }
   const docSnap = snap.docs[0];
-  return { id: docSnap.id, data: docSnap.data() };
+  const result = { id: docSnap.id, data: docSnap.data() };
+  sponsorCache.set(username, result);
+  return result;
 }
 
 // util: buscar usuario por uid
