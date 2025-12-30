@@ -146,6 +146,18 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // ========== Monthly Earnings Closures Collection ==========
+    match /monthlyEarningsClosures/{closureId} {
+      // Only admins can read monthly earnings closures
+      allow read: if isAdmin();
+
+      // Only admins can create, update monthly closures
+      allow create, update: if isAdmin();
+
+      // Only admins can delete (rare operation)
+      allow delete: if isAdmin();
+    }
+
     // ========== Denegar todo lo demás ==========
     match /{document=**} {
       allow read, write: if false;
