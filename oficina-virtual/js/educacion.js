@@ -2,6 +2,10 @@
  * Educación Content Loader
  * Loads educational content from Firestore for the virtual office
  * Content is managed by administrators and displayed as links to distributors
+ *
+ * OPTIMIZATION: Implements localStorage cache with 1-hour TTL to reduce
+ * Firestore reads. Content is cached per type (pec, video, documento, libro, link)
+ * and only fetched from server when cache expires or is manually invalidated.
  */
 
 import { db } from '/src/firebase-config.js';
@@ -9,6 +13,87 @@ import { collection, getDocs, query, where, orderBy } from 'https://www.gstatic.
 
 // Track if content has been loaded to avoid duplicate loads
 let contentLoaded = false;
+
+// Cache configuration
+const CACHE_KEY_PREFIX = 'educacion_cache_';
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour in milliseconds
+
+/**
+ * Cache utility functions for localStorage with TTL
+ */
+const cacheUtils = {
+  /**
+   * Get cached data if valid (not expired)
+   * @param {string} key - Cache key
+   * @returns {Array|null} Cached data or null if expired/missing
+   */
+  get(key) {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY_PREFIX + key);
+      if (!cached) return null;
+
+      const { data, timestamp } = JSON.parse(cached);
+      const age = Date.now() - timestamp;
+
+      // Check if cache is still valid
+      if (age < CACHE_TTL_MS) {
+        console.log(`[educacion.js] Cache hit for ${key} (age: ${Math.round(age / 1000)}s)`);
+        return data;
+      }
+
+      console.log(`[educacion.js] Cache expired for ${key} (age: ${Math.round(age / 1000)}s)`);
+      return null;
+    } catch (error) {
+      console.warn(`[educacion.js] Cache read error for ${key}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * Store data in cache with current timestamp
+   * @param {string} key - Cache key
+   * @param {Array} data - Data to cache
+   */
+  set(key, data) {
+    try {
+      const cacheEntry = {
+        data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(CACHE_KEY_PREFIX + key, JSON.stringify(cacheEntry));
+      console.log(`[educacion.js] Cached ${data.length} items for ${key}`);
+    } catch (error) {
+      // Handle quota exceeded or other storage errors gracefully
+      console.warn(`[educacion.js] Cache write error for ${key}:`, error);
+    }
+  },
+
+  /**
+   * Clear specific cache key
+   * @param {string} key - Cache key to clear
+   */
+  clear(key) {
+    try {
+      localStorage.removeItem(CACHE_KEY_PREFIX + key);
+    } catch (error) {
+      console.warn(`[educacion.js] Cache clear error for ${key}:`, error);
+    }
+  },
+
+  /**
+   * Clear all education cache
+   */
+  clearAll() {
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith(CACHE_KEY_PREFIX))
+        .forEach(k => localStorage.removeItem(k));
+      console.log('[educacion.js] All cache cleared');
+    } catch (error) {
+      console.warn('[educacion.js] Cache clear all error:', error);
+    }
+  }
+};
 
 /**
  * Escape HTML to prevent XSS
@@ -137,6 +222,7 @@ async function loadEducationContent(forceReload = false) {
 
 /**
  * Load PEC del Mes content
+ * Uses localStorage cache with 1-hour TTL to reduce Firestore reads
  */
 async function loadPECContent() {
   const container = document.getElementById('pecDelMes');
@@ -147,24 +233,39 @@ async function loadPECContent() {
   if (!db) return;
 
   try {
-    const q = query(
-      collection(db, 'educacion'),
-      where('tipo', '==', 'pec'),
-      where('activo', '==', true),
-      orderBy('fecha', 'desc')
-    );
+    // Check cache first
+    const cachedData = cacheUtils.get('pec');
+    let items;
 
-    const snapshot = await getDocs(q);
-    console.log(`[educacion.js] PEC query returned ${snapshot.size} documents`);
+    if (cachedData !== null) {
+      // Use cached data
+      items = cachedData;
+      console.log(`[educacion.js] PEC loaded from cache: ${items.length} documents`);
+    } else {
+      // Fetch from Firestore
+      const q = query(
+        collection(db, 'educacion'),
+        where('tipo', '==', 'pec'),
+        where('activo', '==', true),
+        orderBy('fecha', 'desc')
+      );
 
-    if (snapshot.empty) {
+      const snapshot = await getDocs(q);
+      console.log(`[educacion.js] PEC query returned ${snapshot.size} documents`);
+
+      items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Cache the results
+      cacheUtils.set('pec', items);
+    }
+
+    if (items.length === 0) {
       showPlaceholder(container, '📋', 'El PEC del mes se cargará desde administración.');
       return;
     }
 
     container.innerHTML = '';
-    snapshot.forEach(doc => {
-      const data = doc.data();
+    items.forEach(data => {
       container.appendChild(renderResourceLink(data, 'pec'));
     });
   } catch (e) {
@@ -175,6 +276,7 @@ async function loadPECContent() {
 
 /**
  * Load video content
+ * Uses localStorage cache with 1-hour TTL to reduce Firestore reads
  */
 async function loadVideosContent() {
   const container = document.getElementById('videosEducativos');
@@ -185,24 +287,39 @@ async function loadVideosContent() {
   if (!db) return;
 
   try {
-    const q = query(
-      collection(db, 'educacion'),
-      where('tipo', '==', 'video'),
-      where('activo', '==', true),
-      orderBy('fecha', 'desc')
-    );
+    // Check cache first
+    const cachedData = cacheUtils.get('video');
+    let items;
 
-    const snapshot = await getDocs(q);
-    console.log(`[educacion.js] Videos query returned ${snapshot.size} documents`);
+    if (cachedData !== null) {
+      // Use cached data
+      items = cachedData;
+      console.log(`[educacion.js] Videos loaded from cache: ${items.length} documents`);
+    } else {
+      // Fetch from Firestore
+      const q = query(
+        collection(db, 'educacion'),
+        where('tipo', '==', 'video'),
+        where('activo', '==', true),
+        orderBy('fecha', 'desc')
+      );
 
-    if (snapshot.empty) {
+      const snapshot = await getDocs(q);
+      console.log(`[educacion.js] Videos query returned ${snapshot.size} documents`);
+
+      items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Cache the results
+      cacheUtils.set('video', items);
+    }
+
+    if (items.length === 0) {
       showPlaceholder(container, '▶️', 'Los videos se cargarán desde administración.');
       return;
     }
 
     container.innerHTML = '';
-    snapshot.forEach(doc => {
-      const data = doc.data();
+    items.forEach(data => {
       container.appendChild(renderResourceLink(data, 'video'));
     });
   } catch (e) {
@@ -214,6 +331,7 @@ async function loadVideosContent() {
 /**
  * Load documents and books content
  * Uses separate queries to avoid requiring additional composite indexes for 'in' operator
+ * Uses localStorage cache with 1-hour TTL to reduce Firestore reads
  */
 async function loadDocumentsContent() {
   const container = document.getElementById('librosDocumentos');
@@ -224,35 +342,48 @@ async function loadDocumentsContent() {
   if (!db) return;
 
   try {
-    // Run separate queries for 'documento' and 'libro' types to avoid composite index issues with 'in' operator
-    const [docsSnapshot, librosSnapshot] = await Promise.all([
-      getDocs(query(
-        collection(db, 'educacion'),
-        where('tipo', '==', 'documento'),
-        where('activo', '==', true),
-        orderBy('fecha', 'desc')
-      )),
-      getDocs(query(
-        collection(db, 'educacion'),
-        where('tipo', '==', 'libro'),
-        where('activo', '==', true),
-        orderBy('fecha', 'desc')
-      ))
-    ]);
+    // Check cache first (combined cache for documents + books)
+    const cachedData = cacheUtils.get('documents_books');
+    let allDocs;
 
-    // Combine results and sort by date
-    const allDocs = [];
-    docsSnapshot.forEach(doc => allDocs.push({ id: doc.id, ...doc.data() }));
-    librosSnapshot.forEach(doc => allDocs.push({ id: doc.id, ...doc.data() }));
+    if (cachedData !== null) {
+      // Use cached data
+      allDocs = cachedData;
+      console.log(`[educacion.js] Documents loaded from cache: ${allDocs.length} documents`);
+    } else {
+      // Run separate queries for 'documento' and 'libro' types to avoid composite index issues with 'in' operator
+      const [docsSnapshot, librosSnapshot] = await Promise.all([
+        getDocs(query(
+          collection(db, 'educacion'),
+          where('tipo', '==', 'documento'),
+          where('activo', '==', true),
+          orderBy('fecha', 'desc')
+        )),
+        getDocs(query(
+          collection(db, 'educacion'),
+          where('tipo', '==', 'libro'),
+          where('activo', '==', true),
+          orderBy('fecha', 'desc')
+        ))
+      ]);
 
-    // Sort by fecha descending
-    allDocs.sort((a, b) => {
-      const dateA = a.fecha?.toDate ? a.fecha.toDate() : new Date(0);
-      const dateB = b.fecha?.toDate ? b.fecha.toDate() : new Date(0);
-      return dateB - dateA;
-    });
+      // Combine results
+      allDocs = [];
+      docsSnapshot.forEach(doc => allDocs.push({ id: doc.id, ...doc.data() }));
+      librosSnapshot.forEach(doc => allDocs.push({ id: doc.id, ...doc.data() }));
 
-    console.log(`[educacion.js] Documents query returned ${allDocs.length} documents (${docsSnapshot.size} documentos + ${librosSnapshot.size} libros)`);
+      // Sort by fecha descending (for combined results)
+      allDocs.sort((a, b) => {
+        const dateA = a.fecha?.toDate ? a.fecha.toDate() : new Date(0);
+        const dateB = b.fecha?.toDate ? b.fecha.toDate() : new Date(0);
+        return dateB - dateA;
+      });
+
+      console.log(`[educacion.js] Documents query returned ${allDocs.length} documents (${docsSnapshot.size} documentos + ${librosSnapshot.size} libros)`);
+
+      // Cache the combined results
+      cacheUtils.set('documents_books', allDocs);
+    }
 
     if (allDocs.length === 0) {
       showPlaceholder(container, '📄', 'Los libros y documentos se cargarán desde administración.');
@@ -271,6 +402,7 @@ async function loadDocumentsContent() {
 
 /**
  * Load useful links content
+ * Uses localStorage cache with 1-hour TTL to reduce Firestore reads
  */
 async function loadLinksContent() {
   const container = document.getElementById('enlacesUtiles');
@@ -281,24 +413,39 @@ async function loadLinksContent() {
   if (!db) return;
 
   try {
-    const q = query(
-      collection(db, 'educacion'),
-      where('tipo', '==', 'link'),
-      where('activo', '==', true),
-      orderBy('fecha', 'desc')
-    );
+    // Check cache first
+    const cachedData = cacheUtils.get('link');
+    let items;
 
-    const snapshot = await getDocs(q);
-    console.log(`[educacion.js] Links query returned ${snapshot.size} documents`);
+    if (cachedData !== null) {
+      // Use cached data
+      items = cachedData;
+      console.log(`[educacion.js] Links loaded from cache: ${items.length} documents`);
+    } else {
+      // Fetch from Firestore
+      const q = query(
+        collection(db, 'educacion'),
+        where('tipo', '==', 'link'),
+        where('activo', '==', true),
+        orderBy('fecha', 'desc')
+      );
 
-    if (snapshot.empty) {
+      const snapshot = await getDocs(q);
+      console.log(`[educacion.js] Links query returned ${snapshot.size} documents`);
+
+      items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Cache the results
+      cacheUtils.set('link', items);
+    }
+
+    if (items.length === 0) {
       showPlaceholder(container, '🌐', 'Los enlaces se cargarán desde administración.');
       return;
     }
 
     container.innerHTML = '';
-    snapshot.forEach(doc => {
-      const data = doc.data();
+    items.forEach(data => {
       container.appendChild(renderResourceLink(data, 'link'));
     });
   } catch (e) {
@@ -314,11 +461,31 @@ if (document.readyState === 'loading') {
   loadEducationContent();
 }
 
-// Also load when education tab is shown (force reload to ensure fresh content)
+// Also load when education tab is shown
+// Note: forceReload=true only reloads from cache or server if cache is valid
+// To force a server fetch, call invalidateCache() first
 window.addEventListener('tab-educacion-shown', () => {
   console.log('[educacion.js] Education tab shown, loading content...');
-  loadEducationContent(true); // Force reload when tab is shown
+  loadEducationContent(false); // Use cache if available for tab switches
 });
 
+/**
+ * Invalidate all education cache (call this after admin updates content)
+ */
+function invalidateCache() {
+  cacheUtils.clearAll();
+  contentLoaded = false;
+  console.log('[educacion.js] Cache invalidated, next load will fetch from server');
+}
+
+/**
+ * Force reload from server (bypasses cache)
+ */
+async function forceReloadFromServer() {
+  cacheUtils.clearAll();
+  contentLoaded = false;
+  await loadEducationContent(true);
+}
+
 // Export for external use
-export { loadEducationContent };
+export { loadEducationContent, invalidateCache, forceReloadFromServer };

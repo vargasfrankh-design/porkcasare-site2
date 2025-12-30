@@ -120,26 +120,79 @@ async function getChildrenForParent(node) {
 
 /* -------------------- CONSTRUCCIÓN DEL ÁRBOL -------------------- */
 
-// Cache for children queries to avoid duplicate Firestore requests
+/**
+ * Session-based cache for children queries to avoid N+1 pattern
+ * and reduce Firestore reads when navigating the tree.
+ *
+ * Uses a Map for in-memory cache with configurable TTL.
+ * The cache persists for the duration of the user session.
+ */
 const childrenCache = new Map();
-const CACHE_TTL = 30000; // 30 seconds cache
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache (increased from 30s for better optimization)
 
+/**
+ * Session storage key for persisting tree data across page navigations
+ */
+const TREE_SESSION_KEY = 'red_unilevel_tree_cache';
+
+/**
+ * Get cached children for a parent node
+ * Uses in-memory cache first, then falls back to Firestore
+ * @param {Object} node - Parent node with id and usuario properties
+ * @returns {Promise<Array>} Array of child documents
+ */
 async function getCachedChildrenForParent(node) {
   const cacheKey = node.id;
   const cached = childrenCache.get(cacheKey);
 
   if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+    console.log(`[red-unilevel] Cache hit for ${node.usuario || node.id}`);
     return cached.docs;
   }
 
   const docs = await getChildrenForParent(node);
   childrenCache.set(cacheKey, { docs, timestamp: Date.now() });
+  console.log(`[red-unilevel] Cache miss for ${node.usuario || node.id}, fetched ${docs.length} children`);
   return docs;
 }
 
-// Clear cache when needed (e.g., after modifications)
+/**
+ * Clear the children cache (call after data modifications)
+ */
 function clearChildrenCache() {
   childrenCache.clear();
+  // Also clear session storage cache
+  try {
+    sessionStorage.removeItem(TREE_SESSION_KEY);
+  } catch (e) {
+    console.warn('[red-unilevel] Could not clear session storage:', e);
+  }
+  console.log('[red-unilevel] Cache cleared');
+}
+
+/**
+ * Prefetch children for multiple nodes in parallel
+ * This reduces the N+1 query pattern by batching requests
+ * @param {Array} nodes - Array of nodes to prefetch children for
+ */
+async function prefetchChildrenBatch(nodes) {
+  if (!nodes || nodes.length === 0) return;
+
+  // Filter nodes that aren't already cached
+  const nodesToFetch = nodes.filter(node => {
+    const cached = childrenCache.get(node.id);
+    return !cached || (Date.now() - cached.timestamp) >= CACHE_TTL;
+  });
+
+  if (nodesToFetch.length === 0) {
+    console.log('[red-unilevel] All nodes already cached, skipping prefetch');
+    return;
+  }
+
+  console.log(`[red-unilevel] Prefetching children for ${nodesToFetch.length} nodes in parallel`);
+
+  // Fetch children for all nodes in parallel
+  await Promise.all(nodesToFetch.map(node => getCachedChildrenForParent(node)));
 }
 
 async function buildUnilevelTree(username) {
@@ -1453,6 +1506,7 @@ export {
   calculateTeamPoints,
   persistTeamPointsSafely,
   createInfoCard,
-  clearChildrenCache
+  clearChildrenCache,
+  prefetchChildrenBatch
 };
 
