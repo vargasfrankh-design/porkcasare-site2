@@ -1,7 +1,28 @@
 /**
  * location.js - Sistema de ubicaciones Colombia
  * Permite seleccionar departamento y ciudad/municipio con búsqueda autocomplete
+ *
+ * OPTIMIZATION: Added debounce (150ms) to search input to reduce
+ * unnecessary filtering operations during rapid typing.
  */
+
+/**
+ * Debounce utility - limits function execution rate
+ * @param {Function} func - Function to debounce
+ * @param {number} wait - Milliseconds to wait before executing
+ * @returns {Function} Debounced function
+ */
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const countrySelect = document.getElementById("pais");
@@ -92,8 +113,8 @@ document.addEventListener("DOMContentLoaded", () => {
         .toLowerCase();
     }
 
-    // Eventos
-    input.addEventListener("input", () => {
+    // Eventos - use debounced handler to avoid excessive filtering during rapid typing
+    const debouncedFilter = debounce(() => {
       const filtered = filterOptions(input.value);
       selectedIndex = -1;
       showDropdown(filtered);
@@ -101,7 +122,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!currentOptions.includes(input.value)) {
         hiddenInput.value = "";
       }
-    });
+    }, 150); // 150ms debounce delay
+
+    input.addEventListener("input", debouncedFilter);
 
     input.addEventListener("focus", () => {
       const filtered = filterOptions(input.value);
