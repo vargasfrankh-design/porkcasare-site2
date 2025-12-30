@@ -128,6 +128,15 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ========== Purge Audit Log Collection (Internal Audit Trail) ==========
+    match /purgeAuditLog/{logId} {
+      // Only admins can read audit logs
+      allow read: if isAdmin();
+
+      // Only server-side functions should write (no client writes)
+      allow create, update, delete: if false;
+    }
+
     // ========== Educacion Collection (Education Content) ==========
     match /educacion/{educacionId} {
       // Public read - education content is displayed in virtual office

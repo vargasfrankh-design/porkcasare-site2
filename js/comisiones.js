@@ -174,41 +174,22 @@ function calculateCurrentMonthCommissions(historyArray) {
 }
 
 // Función para verificar si el usuario está activo en el mes actual
-// Un usuario está activo si tiene puntos personales generados en el mes actual (compras propias)
-function checkUserActiveThisMonth(historyArray, userData) {
+// Un usuario está ACTIVO solo si acumuló 10 o más puntos personales dentro del mismo mes calendario.
+// Esta validación se reinicia automáticamente al inicio de cada nuevo mes.
+const MONTHLY_ACTIVATION_POINTS_THRESHOLD = 10;
+
+function getMonthlyPersonalPointsFromHistory(historyArray) {
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  // Verificar si tiene puntos personales actualizados este mes (de la data del usuario)
-  const personalPoints = Number(userData?.personalPoints ?? userData?.puntos ?? 0);
-  const lastPurchaseDate = userData?.lastPurchaseDate || userData?.ultimaCompra;
+  if (!Array.isArray(historyArray)) return 0;
 
-  if (lastPurchaseDate) {
-    let purchaseDate = null;
-    if (typeof lastPurchaseDate === 'number') {
-      purchaseDate = new Date(lastPurchaseDate);
-    } else if (lastPurchaseDate && typeof lastPurchaseDate.toDate === 'function') {
-      purchaseDate = lastPurchaseDate.toDate();
-    } else if (lastPurchaseDate && typeof lastPurchaseDate.seconds === 'number') {
-      purchaseDate = new Date(lastPurchaseDate.seconds * 1000);
-    } else if (typeof lastPurchaseDate === 'string') {
-      purchaseDate = new Date(lastPurchaseDate);
-    }
-
-    if (purchaseDate && !isNaN(purchaseDate.getTime())) {
-      if (purchaseDate.getMonth() === currentMonth && purchaseDate.getFullYear() === currentYear) {
-        return true;
-      }
-    }
-  }
-
-  // Verificar también en el historial si hay compras del mes actual
-  if (!Array.isArray(historyArray)) return false;
+  let monthlyPersonalPoints = 0;
 
   for (const entry of historyArray) {
-    // Buscar compras propias (purchase) o entradas que indiquen actividad personal
     const entryType = entry.type || '';
+    const action = (entry.action || '').toLowerCase();
     const isPurchase = entryType === 'purchase' ||
                        (entry.orderId && entry.action && entry.action.includes('Compra')) ||
                        (entry.meta && entry.meta.action && entry.meta.action.includes('compra'));
@@ -237,18 +218,20 @@ function checkUserActiveThisMonth(historyArray, userData) {
 
     // Verificar si es del mes actual
     if (entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear) {
-      return true;
+      const points = Number(entry.points || entry.puntos || 0);
+      monthlyPersonalPoints += points;
     }
   }
 
-  // Si tiene puntos personales > 0, también consideramos que podría estar activo
-  // (esto es un fallback si no hay historial de compras pero sí hay puntos)
-  if (personalPoints > 0 && userData?.activeThisMonth !== false) {
-    // Verificamos si el campo activeThisMonth está explícitamente en false
-    return userData?.activeThisMonth ?? false;
-  }
+  return monthlyPersonalPoints;
+}
 
-  return false;
+function checkUserActiveThisMonth(historyArray, userData) {
+  // Calcular puntos personales acumulados en el mes actual
+  const monthlyPoints = getMonthlyPersonalPointsFromHistory(historyArray);
+
+  // El usuario está activo solo si acumuló 10 o más puntos en el mes
+  return monthlyPoints >= MONTHLY_ACTIVATION_POINTS_THRESHOLD;
 }
 
 // Función para verificar si estamos en la última semana del mes

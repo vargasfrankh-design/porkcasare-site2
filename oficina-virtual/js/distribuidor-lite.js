@@ -68,9 +68,11 @@ document.addEventListener("DOMContentLoaded", () => {
         } 
       }));
 
-      // Check if user is active this month
-      const isActiveThisMonth = checkIfActiveThisMonth(userData);
+      // Check if user is active this month (needs 10+ points)
+      const monthlyPersonalPoints = getMonthlyPersonalPoints(userData);
+      const isActiveThisMonth = monthlyPersonalPoints >= MONTHLY_ACTIVATION_POINTS_THRESHOLD;
       window.currentUserIsActive = isActiveThisMonth;
+      window.currentUserMonthlyPoints = monthlyPersonalPoints;
 
 // Mostrar datos básicos
       const nombreEl = document.getElementById("nombre");
@@ -89,10 +91,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // Display active/inactive status below avatar
-      displayActiveStatus(isActiveThisMonth);
+      displayActiveStatus(isActiveThisMonth, monthlyPersonalPoints);
 
       // Show notification for inactive users
-      showInactiveNotification(isActiveThisMonth);
+      showInactiveNotification(isActiveThisMonth, monthlyPersonalPoints);
 
       if (refInput && copyBtn && userData.usuario) {
         const link = `${window.location.origin}/register.html?patrocinador=${encodeURIComponent(userData.usuario)}`;
@@ -390,40 +392,113 @@ function escapeHtml(str = "") {
     .replace(/'/g, "&#039;");
 }
 
+// Umbral de puntos personales para activación mensual
+const MONTHLY_ACTIVATION_POINTS_THRESHOLD = 10;
+
+// Función para verificar si el usuario está activo en el mes actual.
+// Un usuario está ACTIVO solo si acumuló 10 o más puntos personales dentro del mismo mes calendario.
+// Esta validación se reinicia automáticamente al inicio de cada nuevo mes.
 function checkIfActiveThisMonth(userData) {
   const hist = userData?.history;
   if (!Array.isArray(hist)) return false;
-  
+
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
-  
+
+  // Acumular puntos personales de compras confirmadas en el mes actual
+  let monthlyPersonalPoints = 0;
+
   for (const e of hist) {
     if (!e) continue;
-    const dateRaw = e.date || e.fechaCompra || e.fecha_recompra || e.createdAt || e.fecha;
-    const d = dateRaw ? (typeof dateRaw.toDate === "function" ? dateRaw.toDate() : new Date(dateRaw)) : null;
-    const action = (e.action || "").toLowerCase();
-    const type = (e.type || "").toLowerCase();
-    
-    if (!d || d.getFullYear() !== currentYear || d.getMonth() !== currentMonth) {
+    const dateRaw = e.date || e.fechaCompra || e.fecha_recompra || e.createdAt || e.fecha || e.timestamp;
+    let d = null;
+
+    if (dateRaw) {
+      if (typeof dateRaw.toDate === "function") {
+        d = dateRaw.toDate();
+      } else if (typeof dateRaw === 'number') {
+        d = new Date(dateRaw);
+      } else if (typeof dateRaw.seconds === 'number') {
+        d = new Date(dateRaw.seconds * 1000);
+      } else {
+        d = new Date(dateRaw);
+      }
+    }
+
+    if (!d || isNaN(d.getTime()) || d.getFullYear() !== currentYear || d.getMonth() !== currentMonth) {
       continue;
     }
-    
-    if (type === "purchase" && /compra confirmada/i.test(action)) {
-      return true;
-    }
-    
-    if (!type && /compra confirmada/i.test(action) && !action.includes("comisión") && !action.includes("bono")) {
-      return true;
+
+    const action = (e.action || "").toLowerCase();
+    const type = (e.type || "").toLowerCase();
+
+    // Solo contar puntos de compras personales confirmadas
+    const isPurchase = (type === "purchase" && /compra confirmada/i.test(action)) ||
+                       (!type && /compra confirmada/i.test(action) && !action.includes("comisión") && !action.includes("bono"));
+
+    if (isPurchase) {
+      // Sumar puntos de esta compra
+      const points = Number(e.points || e.puntos || 0);
+      monthlyPersonalPoints += points;
     }
   }
-  return false;
+
+  // El usuario está activo solo si acumuló 10 o más puntos en el mes
+  return monthlyPersonalPoints >= MONTHLY_ACTIVATION_POINTS_THRESHOLD;
 }
 
-function displayActiveStatus(isActive) {
+// Función para obtener los puntos personales acumulados en el mes actual
+function getMonthlyPersonalPoints(userData) {
+  const hist = userData?.history;
+  if (!Array.isArray(hist)) return 0;
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  let monthlyPersonalPoints = 0;
+
+  for (const e of hist) {
+    if (!e) continue;
+    const dateRaw = e.date || e.fechaCompra || e.fecha_recompra || e.createdAt || e.fecha || e.timestamp;
+    let d = null;
+
+    if (dateRaw) {
+      if (typeof dateRaw.toDate === "function") {
+        d = dateRaw.toDate();
+      } else if (typeof dateRaw === 'number') {
+        d = new Date(dateRaw);
+      } else if (typeof dateRaw.seconds === 'number') {
+        d = new Date(dateRaw.seconds * 1000);
+      } else {
+        d = new Date(dateRaw);
+      }
+    }
+
+    if (!d || isNaN(d.getTime()) || d.getFullYear() !== currentYear || d.getMonth() !== currentMonth) {
+      continue;
+    }
+
+    const action = (e.action || "").toLowerCase();
+    const type = (e.type || "").toLowerCase();
+
+    const isPurchase = (type === "purchase" && /compra confirmada/i.test(action)) ||
+                       (!type && /compra confirmada/i.test(action) && !action.includes("comisión") && !action.includes("bono"));
+
+    if (isPurchase) {
+      const points = Number(e.points || e.puntos || 0);
+      monthlyPersonalPoints += points;
+    }
+  }
+
+  return monthlyPersonalPoints;
+}
+
+function displayActiveStatus(isActive, monthlyPoints = 0) {
   const changeAvatarBtn = document.getElementById('changeAvatarBtn');
   if (!changeAvatarBtn) return;
-  
+
   let statusBadge = document.getElementById('user-status-badge');
   if (!statusBadge) {
     statusBadge = document.createElement('div');
@@ -431,9 +506,9 @@ function displayActiveStatus(isActive) {
     statusBadge.className = 'status-badge';
     changeAvatarBtn.parentNode.insertBefore(statusBadge, changeAvatarBtn.nextSibling);
   }
-  
+
   if (isActive) {
-    statusBadge.textContent = '✓ Activo este mes';
+    statusBadge.textContent = `✓ Activo este mes (${monthlyPoints} pts)`;
     statusBadge.style.cssText = `
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: white;
@@ -447,7 +522,9 @@ function displayActiveStatus(isActive) {
       box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
     `;
   } else {
-    statusBadge.textContent = '⚠ Inactivo este mes';
+    const pointsNeeded = MONTHLY_ACTIVATION_POINTS_THRESHOLD - monthlyPoints;
+    statusBadge.textContent = `⚠ Inactivo (${monthlyPoints}/${MONTHLY_ACTIVATION_POINTS_THRESHOLD} pts)`;
+    statusBadge.title = `Necesitas ${pointsNeeded} punto${pointsNeeded !== 1 ? 's' : ''} más para activarte este mes`;
     statusBadge.style.cssText = `
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       color: white;
@@ -459,22 +536,35 @@ function displayActiveStatus(isActive) {
       display: inline-block;
       text-align: center;
       box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+      cursor: help;
     `;
   }
 }
 
-function showInactiveNotification(isActive) {
-  if (isActive) return;
-  
+function showInactiveNotification(isActive, monthlyPoints = 0) {
+  // Si está activo, ocultar la notificación si existe
   const existingNotification = document.getElementById('monthlyActivationNotification');
-  if (existingNotification) {
-    existingNotification.style.display = 'block';
+  if (isActive) {
+    if (existingNotification) {
+      existingNotification.style.display = 'none';
+    }
     return;
   }
-  
+
+  if (existingNotification) {
+    const pointsNeeded = MONTHLY_ACTIVATION_POINTS_THRESHOLD - monthlyPoints;
+    existingNotification.querySelector('span:last-child').innerHTML =
+      `Necesitas acumular <strong>${MONTHLY_ACTIVATION_POINTS_THRESHOLD} puntos personales</strong> para activarte este mes. ` +
+      `Actualmente tienes <strong>${monthlyPoints} punto${monthlyPoints !== 1 ? 's' : ''}</strong>. ` +
+      `Te faltan <strong>${pointsNeeded} punto${pointsNeeded !== 1 ? 's' : ''}</strong> para recibir bonos y comisiones.`;
+    existingNotification.style.display = 'flex';
+    return;
+  }
+
   const alertEl = document.getElementById("activationAlert");
   if (!alertEl) return;
-  
+
+  const pointsNeeded = MONTHLY_ACTIVATION_POINTS_THRESHOLD - monthlyPoints;
   const notification = document.createElement('div');
   notification.id = 'monthlyActivationNotification';
   notification.style.cssText = `
@@ -493,8 +583,10 @@ function showInactiveNotification(isActive) {
   `;
   notification.innerHTML = `
     <span style="font-size: 20px;">⚠️</span>
-    <span>Debes activarte este mes, o no recibirás bonos y comisiones del mes en curso.</span>
+    <span>Necesitas acumular <strong>${MONTHLY_ACTIVATION_POINTS_THRESHOLD} puntos personales</strong> para activarte este mes. ` +
+      `Actualmente tienes <strong>${monthlyPoints} punto${monthlyPoints !== 1 ? 's' : ''}</strong>. ` +
+      `Te faltan <strong>${pointsNeeded} punto${pointsNeeded !== 1 ? 's' : ''}</strong> para recibir bonos y comisiones.</span>
   `;
-  
+
   alertEl.parentNode.insertBefore(notification, alertEl.nextSibling);
 }

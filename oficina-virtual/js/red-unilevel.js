@@ -40,35 +40,60 @@ const FIELD_PATROCINADOR_ID = "patrocinadorId";
 
 /* -------------------- UTILIDADES -------------------- */
 
-function isActiveThisMonth(uData) {
+// Umbral de puntos personales para activación mensual
+const MONTHLY_ACTIVATION_POINTS_THRESHOLD = 10;
+
+// Función para obtener los puntos personales acumulados en el mes actual desde el historial
+function getMonthlyPersonalPoints(uData) {
   const hist = uData?.[FIELD_HISTORY];
-  if (!Array.isArray(hist)) return false;
+  if (!Array.isArray(hist)) return 0;
+
   const now = new Date();
+  let monthlyPersonalPoints = 0;
+
   for (const e of hist) {
     if (!e) continue;
-    const dateRaw = e.date || e.fechaCompra || e.fecha_recompra || e.createdAt || e.fecha;
-    const d = dateRaw ? (typeof dateRaw.toDate === "function" ? dateRaw.toDate() : new Date(dateRaw)) : null;
-    const action = (e.action || "").toLowerCase();
-    const type = (e.type || "").toLowerCase();
-    
+    const dateRaw = e.date || e.fechaCompra || e.fecha_recompra || e.createdAt || e.fecha || e.timestamp;
+    let d = null;
+
+    if (dateRaw) {
+      if (typeof dateRaw.toDate === "function") {
+        d = dateRaw.toDate();
+      } else if (typeof dateRaw === 'number') {
+        d = new Date(dateRaw);
+      } else if (typeof dateRaw.seconds === 'number') {
+        d = new Date(dateRaw.seconds * 1000);
+      } else {
+        d = new Date(dateRaw);
+      }
+    }
+
     // Verificar si es del mes actual
-    if (!d || d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) {
+    if (!d || isNaN(d.getTime()) || d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) {
       continue;
     }
-    
-    // Solo considerar activo si tiene una COMPRA propia confirmada (no comisiones, no bonos)
-    // Condición 1: type debe ser "purchase" Y action debe contener "compra confirmada"
-    if (type === "purchase" && /compra confirmada/i.test(action)) {
-      return true;
-    }
-    
-    // Condición 2: Para compatibilidad - si action contiene "compra confirmada" pero no tiene type
-    // (por si existen entries antiguas sin el campo type)
-    if (!type && /compra confirmada/i.test(action) && !action.includes("comisión") && !action.includes("bono")) {
-      return true;
+
+    const action = (e.action || "").toLowerCase();
+    const type = (e.type || "").toLowerCase();
+
+    // Solo contar puntos de compras personales confirmadas
+    const isPurchase = (type === "purchase" && /compra confirmada/i.test(action)) ||
+                       (!type && /compra confirmada/i.test(action) && !action.includes("comisión") && !action.includes("bono"));
+
+    if (isPurchase) {
+      const points = Number(e.points || e.puntos || 0);
+      monthlyPersonalPoints += points;
     }
   }
-  return false;
+
+  return monthlyPersonalPoints;
+}
+
+// Función para verificar si el usuario está activo en el mes actual.
+// Un usuario está ACTIVO solo si acumuló 10 o más puntos personales dentro del mismo mes calendario.
+function isActiveThisMonth(uData) {
+  const monthlyPoints = getMonthlyPersonalPoints(uData);
+  return monthlyPoints >= MONTHLY_ACTIVATION_POINTS_THRESHOLD;
 }
 
 function clearElement(el) {

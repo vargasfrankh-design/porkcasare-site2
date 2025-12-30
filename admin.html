@@ -1229,9 +1229,30 @@
         <div style="background:white;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-top:24px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
             <h3 style="margin:0;border-bottom:2px solid #dc3545;padding-bottom:8px;">Informe de Comisiones Eliminadas por Inactividad</h3>
-            <div style="display:flex;gap:10px;align-items:center;">
-              <button id="manualPurgeBtn" onclick="executeManualPurge()" style="background:linear-gradient(135deg,#c62828,#b71c1c);color:white;border:none;padding:10px 20px;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;" title="Ejecutar purga del mes anterior manualmente">
-                <span style="font-size:16px;">🧹</span> Ejecutar Purga Manual
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <!-- Month/Year Selector for Purge Report -->
+              <div style="display:flex;gap:8px;align-items:center;background:#f8f9fa;padding:8px 12px;border-radius:6px;border:1px solid #ddd;">
+                <label style="font-size:13px;color:#555;font-weight:500;">Consultar:</label>
+                <select id="purgeMonthSelect" style="padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-size:13px;min-width:110px;">
+                  <option value="0">Enero</option>
+                  <option value="1">Febrero</option>
+                  <option value="2">Marzo</option>
+                  <option value="3">Abril</option>
+                  <option value="4">Mayo</option>
+                  <option value="5">Junio</option>
+                  <option value="6">Julio</option>
+                  <option value="7">Agosto</option>
+                  <option value="8">Septiembre</option>
+                  <option value="9">Octubre</option>
+                  <option value="10">Noviembre</option>
+                  <option value="11">Diciembre</option>
+                </select>
+                <select id="purgeYearSelect" style="padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-size:13px;min-width:80px;">
+                  <!-- Years will be populated dynamically -->
+                </select>
+              </div>
+              <button id="manualPurgeBtn" onclick="executeManualPurge()" style="background:linear-gradient(135deg,#c62828,#b71c1c);color:white;border:none;padding:10px 20px;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;" title="Ver vista previa y generar reporte del mes seleccionado">
+                <span style="font-size:16px;">📋</span> Ver Vista Previa / Purgar
               </button>
               <select id="purgeReportFilter" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
               <option value="all">Todos los meses</option>
@@ -1726,6 +1747,9 @@
       </div>
     </div>
   </div>
+
+  <!-- SweetAlert2 for notifications and dialogs -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script type="module">
     import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
@@ -2462,6 +2486,7 @@
         allDistributors = allDistributors.map(dist => ({
           ...dist,
           referralCount: distributorReferralCounts[dist.usuario] || 0,
+          monthlyPoints: getMonthlyPersonalPointsAdmin(dist),
           isActive: checkIfUserActiveThisMonth(dist)
         }));
 
@@ -2588,11 +2613,12 @@
         const personalPoints = dist.personalPoints || dist.puntos || 0;
         const groupPoints = dist.groupPoints || 0;
         const referralCount = dist.referralCount || 0;
+        const monthlyPoints = dist.monthlyPoints || 0;
 
         const isActive = dist.isActive;
         const statusBadge = isActive
-          ? '<span style="background:#10b981;color:white;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600;">✓ Activo</span>'
-          : '<span style="background:#ef4444;color:white;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600;">⚠ Inactivo</span>';
+          ? `<span style="background:#10b981;color:white;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600;" title="${monthlyPoints} puntos este mes">✓ Activo (${monthlyPoints} pts)</span>`
+          : `<span style="background:#ef4444;color:white;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600;" title="Necesita ${MONTHLY_ACTIVATION_POINTS_THRESHOLD - monthlyPoints} pts más">⚠ Inactivo (${monthlyPoints}/${MONTHLY_ACTIVATION_POINTS_THRESHOLD} pts)</span>`;
 
         row.innerHTML = `
           <td>${dist.usuario || 'N/A'}</td>
@@ -3030,12 +3056,13 @@
         
         // Pending amount from balance field
         const pendingAmount = balance;
-        
+
         // Check if user is active this month
         const isActiveThisMonth = checkIfUserActiveThisMonth(dist);
-        const activeStatusBadge = isActiveThisMonth 
-          ? '<span style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:white;padding:4px 12px;border-radius:16px;font-size:12px;font-weight:600;">✓ Activo este mes</span>'
-          : '<span style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);color:white;padding:4px 12px;border-radius:16px;font-size:12px;font-weight:600;">⚠ Inactivo este mes</span>';
+        const monthlyPts = getMonthlyPersonalPointsAdmin(dist);
+        const activeStatusBadge = isActiveThisMonth
+          ? `<span style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:white;padding:4px 12px;border-radius:16px;font-size:12px;font-weight:600;" title="${monthlyPts} puntos este mes">✓ Activo este mes (${monthlyPts} pts)</span>`
+          : `<span style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);color:white;padding:4px 12px;border-radius:16px;font-size:12px;font-weight:600;" title="Necesita ${MONTHLY_ACTIVATION_POINTS_THRESHOLD - monthlyPts} pts más">⚠ Inactivo (${monthlyPts}/${MONTHLY_ACTIVATION_POINTS_THRESHOLD} pts)</span>`;
         
         const contentDiv = document.getElementById('distributorDetailsContent');
         contentDiv.innerHTML = `
@@ -4969,35 +4996,60 @@
     // Load promo codes on page load
     loadPromoCodes();
 
-    // Helper function to check if user is active this month
-    function checkIfUserActiveThisMonth(userData) {
+    // Umbral de puntos personales para activación mensual
+    const MONTHLY_ACTIVATION_POINTS_THRESHOLD = 10;
+
+    // Helper function to get monthly personal points from user history
+    function getMonthlyPersonalPointsAdmin(userData) {
       const hist = userData?.history;
-      if (!Array.isArray(hist)) return false;
-      
+      if (!Array.isArray(hist)) return 0;
+
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
-      
+
+      let monthlyPoints = 0;
+
       for (const e of hist) {
         if (!e) continue;
-        const dateRaw = e.date || e.fechaCompra || e.fecha_recompra || e.createdAt || e.fecha;
-        const d = dateRaw ? (typeof dateRaw.toDate === "function" ? dateRaw.toDate() : new Date(dateRaw)) : null;
-        const action = (e.action || "").toLowerCase();
-        const type = (e.type || "").toLowerCase();
-        
-        if (!d || d.getFullYear() !== currentYear || d.getMonth() !== currentMonth) {
+        const dateRaw = e.date || e.fechaCompra || e.fecha_recompra || e.createdAt || e.fecha || e.timestamp;
+        let d = null;
+
+        if (dateRaw) {
+          if (typeof dateRaw.toDate === "function") {
+            d = dateRaw.toDate();
+          } else if (typeof dateRaw === 'number') {
+            d = new Date(dateRaw);
+          } else if (typeof dateRaw.seconds === 'number') {
+            d = new Date(dateRaw.seconds * 1000);
+          } else {
+            d = new Date(dateRaw);
+          }
+        }
+
+        if (!d || isNaN(d.getTime()) || d.getFullYear() !== currentYear || d.getMonth() !== currentMonth) {
           continue;
         }
-        
-        if (type === "purchase" && /compra confirmada/i.test(action)) {
-          return true;
-        }
-        
-        if (!type && /compra confirmada/i.test(action) && !action.includes("comisión") && !action.includes("bono")) {
-          return true;
+
+        const action = (e.action || "").toLowerCase();
+        const type = (e.type || "").toLowerCase();
+
+        // Solo contar puntos de compras personales confirmadas
+        const isPurchase = (type === "purchase" && /compra confirmada/i.test(action)) ||
+                           (!type && /compra confirmada/i.test(action) && !action.includes("comisión") && !action.includes("bono"));
+
+        if (isPurchase) {
+          const points = Number(e.points || e.puntos || 0);
+          monthlyPoints += points;
         }
       }
-      return false;
+      return monthlyPoints;
+    }
+
+    // Helper function to check if user is active this month (needs 10+ points)
+    function checkIfUserActiveThisMonth(userData) {
+      const monthlyPoints = getMonthlyPersonalPointsAdmin(userData);
+      return monthlyPoints >= MONTHLY_ACTIVATION_POINTS_THRESHOLD;
     }
 
     // Show product orders modal
@@ -6697,6 +6749,36 @@
     // Listen for purge report filter changes
     document.getElementById('purgeReportFilter')?.addEventListener('change', renderPurgeReports);
 
+    // Initialize purge month/year selectors with current previous month as default
+    function initPurgeMonthYearSelectors() {
+      const monthSelect = document.getElementById('purgeMonthSelect');
+      const yearSelect = document.getElementById('purgeYearSelect');
+
+      if (!monthSelect || !yearSelect) return;
+
+      const now = new Date();
+      const currentYear = now.getFullYear();
+
+      // Populate year dropdown (current year and 2 previous years)
+      yearSelect.innerHTML = '';
+      for (let y = currentYear; y >= currentYear - 2; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        yearSelect.appendChild(opt);
+      }
+
+      // Set default to previous month
+      const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+      const prevYear = now.getMonth() === 0 ? currentYear - 1 : currentYear;
+
+      monthSelect.value = prevMonth;
+      yearSelect.value = prevYear;
+    }
+
+    // Initialize selectors when DOM is ready
+    initPurgeMonthYearSelectors();
+
     // Load purge reports when profits tab is activated (add to existing load)
     const profitsTabBtn = document.querySelector('[data-tab="profits"]');
     if (profitsTabBtn) {
@@ -6705,72 +6787,263 @@
       });
     }
 
-    // Execute manual purge of inactive commissions
+    // Execute manual purge of inactive commissions - now with preview/confirmation flow
+    let purgePreviewData = null; // Store preview data for confirmation
+    let selectedPurgeMonth = null; // Store selected month for confirmation step
+    let selectedPurgeYear = null; // Store selected year for confirmation step
+
     async function executeManualPurge() {
-      // Get current date info for the confirmation message
-      const now = new Date();
-      const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-      const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      // Get selected month and year from the dropdowns
+      const monthSelect = document.getElementById('purgeMonthSelect');
+      const yearSelect = document.getElementById('purgeYearSelect');
+
+      const selectedMonth = parseInt(monthSelect.value, 10); // 0-11
+      const selectedYear = parseInt(yearSelect.value, 10);
+
       const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const monthName = monthNames[prevMonth];
+      const monthName = monthNames[selectedMonth];
 
-      const result = await Swal.fire({
-        title: 'Ejecutar Purga Manual',
-        html: `
-          <div style="text-align:left;font-size:14px;">
-            <p><strong>Esta accion eliminara las comisiones de ${monthName} ${prevYear}</strong> de todos los distribuidores que NO realizaron compras personales durante ese mes.</p>
-            <p style="color:#c62828;font-weight:500;">Esta accion NO se puede deshacer.</p>
-            <p>Se recomienda ejecutar esta purga el <strong>primer dia de cada mes</strong>.</p>
-          </div>
-        `,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#c62828',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Si, ejecutar purga',
-        cancelButtonText: 'Cancelar'
-      });
+      // Store selected values for confirmation step
+      selectedPurgeMonth = selectedMonth;
+      selectedPurgeYear = selectedYear;
 
-      if (!result.isConfirmed) return;
-
+      // First, show loading and fetch preview
       const btn = document.getElementById('manualPurgeBtn');
       const originalContent = btn.innerHTML;
-      btn.innerHTML = '<span style="font-size:16px;">⏳</span> Ejecutando...';
+      btn.innerHTML = '<span style="font-size:16px;">⏳</span> Generando vista previa...';
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+
+      try {
+        // Get current admin user info for audit
+        const currentUser = auth.currentUser;
+        const adminUserId = currentUser ? currentUser.uid : null;
+        const adminEmail = currentUser ? currentUser.email : null;
+
+        // Fetch preview first (no changes are made) - pass selected month/year
+        const previewResponse = await fetch('/.netlify/functions/purge-inactive-commissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'preview',
+            month: selectedMonth,
+            year: selectedYear,
+            adminUserId: adminUserId,
+            adminEmail: adminEmail
+          })
+        });
+
+        const previewData = await previewResponse.json();
+
+        if (!previewData.success) {
+          throw new Error(previewData.error || 'Error al generar vista previa');
+        }
+
+        // Store preview data for confirmation step
+        purgePreviewData = previewData;
+
+        // Build the preview report HTML
+        const usersToAffect = previewData.preview?.usersToAffect || [];
+        const summary = previewData.summary;
+        const period = previewData.period;
+
+        let usersTableHtml = '';
+        if (usersToAffect.length > 0) {
+          usersTableHtml = `
+            <div style="max-height:250px;overflow-y:auto;margin-top:15px;border:1px solid #ddd;border-radius:6px;">
+              <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead style="position:sticky;top:0;background:#f5f5f5;">
+                  <tr>
+                    <th style="padding:8px;text-align:left;border-bottom:2px solid #ddd;">Usuario</th>
+                    <th style="padding:8px;text-align:center;border-bottom:2px solid #ddd;">Estado</th>
+                    <th style="padding:8px;text-align:center;border-bottom:2px solid #ddd;">Pts. Mes</th>
+                    <th style="padding:8px;text-align:right;border-bottom:2px solid #ddd;">Balance Actual</th>
+                    <th style="padding:8px;text-align:right;border-bottom:2px solid #ddd;">A Eliminar</th>
+                    <th style="padding:8px;text-align:center;border-bottom:2px solid #ddd;">Comisiones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${usersToAffect.map(u => `
+                    <tr style="border-bottom:1px solid #eee;">
+                      <td style="padding:8px;">
+                        <div style="font-weight:600;">${u.username}</div>
+                        <div style="font-size:10px;color:#666;">${u.email}</div>
+                      </td>
+                      <td style="padding:8px;text-align:center;">
+                        <span style="background:#ffebee;color:#c62828;padding:2px 8px;border-radius:10px;font-size:11px;">
+                          Inactivo
+                        </span>
+                      </td>
+                      <td style="padding:8px;text-align:center;font-weight:600;color:#ef6c00;">
+                        ${u.monthlyPoints || 0}/10
+                      </td>
+                      <td style="padding:8px;text-align:right;">$${u.previousBalance?.toLocaleString() || 0}</td>
+                      <td style="padding:8px;text-align:right;color:#c62828;font-weight:600;">
+                        -$${u.purgedAmount?.toLocaleString() || 0}
+                      </td>
+                      <td style="padding:8px;text-align:center;">${u.commissionsCount || 0}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        } else {
+          usersTableHtml = `
+            <div style="background:#e8f5e9;padding:15px;border-radius:6px;text-align:center;margin-top:15px;">
+              <span style="font-size:20px;">✅</span>
+              <p style="margin:10px 0 0;color:#2e7d32;font-weight:500;">
+                No hay usuarios que cumplan las condiciones de purga para ${period.monthName} ${period.year}.
+              </p>
+            </div>
+          `;
+        }
+
+        // Show the preview modal
+        const result = await Swal.fire({
+          title: '📋 Vista Previa de Purga',
+          html: `
+            <div style="text-align:left;font-size:14px;">
+              <div style="background:#fff3e0;padding:12px;border-radius:8px;margin-bottom:15px;border-left:4px solid #ef6c00;">
+                <strong>⚠️ IMPORTANTE:</strong> Este es solo un reporte informativo. No se han realizado cambios todavía.
+              </div>
+
+              <div style="background:#f5f5f5;padding:12px;border-radius:8px;margin-bottom:15px;">
+                <strong>📅 Periodo a purgar:</strong> ${period.monthName} ${period.year}<br>
+                <span style="font-size:12px;color:#666;">
+                  (${new Date(period.startDate).toLocaleDateString()} - ${new Date(period.endDate).toLocaleDateString()})
+                </span>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:15px;">
+                <div style="background:#e3f2fd;padding:10px;border-radius:6px;text-align:center;">
+                  <div style="font-size:11px;color:#1565c0;">Total Distribuidores</div>
+                  <div style="font-size:18px;font-weight:700;color:#1565c0;">${summary.totalDistributors}</div>
+                </div>
+                <div style="background:#e8f5e9;padding:10px;border-radius:6px;text-align:center;">
+                  <div style="font-size:11px;color:#2e7d32;">Activos (10+ pts)</div>
+                  <div style="font-size:18px;font-weight:700;color:#2e7d32;">${summary.activeDistributors}</div>
+                </div>
+                <div style="background:#ffebee;padding:10px;border-radius:6px;text-align:center;">
+                  <div style="font-size:11px;color:#c62828;">A Purgar</div>
+                  <div style="font-size:18px;font-weight:700;color:#c62828;">${summary.purgedUsers}</div>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;">
+                <div style="background:#fff3e0;padding:10px;border-radius:6px;text-align:center;">
+                  <div style="font-size:11px;color:#ef6c00;">COP a Eliminar</div>
+                  <div style="font-size:16px;font-weight:700;color:#ef6c00;">$${summary.totalPurgedAmount?.toLocaleString() || 0}</div>
+                </div>
+                <div style="background:#fce4ec;padding:10px;border-radius:6px;text-align:center;">
+                  <div style="font-size:11px;color:#ad1457;">Puntos a Eliminar</div>
+                  <div style="font-size:16px;font-weight:700;color:#ad1457;">${summary.totalPurgedPoints?.toFixed(2) || 0}</div>
+                </div>
+              </div>
+
+              <h4 style="margin:15px 0 10px;border-bottom:1px solid #ddd;padding-bottom:5px;">
+                👥 Usuarios Afectados (${usersToAffect.length})
+              </h4>
+              ${usersTableHtml}
+
+              ${usersToAffect.length > 0 ? `
+                <div style="background:#ffebee;padding:12px;border-radius:8px;margin-top:15px;border-left:4px solid #c62828;">
+                  <strong style="color:#c62828;">🚨 Esta accion NO se puede deshacer.</strong><br>
+                  <span style="font-size:12px;">Para confirmar la purga, presione el boton "Confirmar Purga".</span>
+                </div>
+              ` : ''}
+            </div>
+          `,
+          icon: 'info',
+          width: '700px',
+          showCancelButton: true,
+          showConfirmButton: usersToAffect.length > 0,
+          confirmButtonColor: '#c62828',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: '🗑️ Confirmar Purga',
+          cancelButtonText: usersToAffect.length > 0 ? 'Cancelar' : 'Cerrar'
+        });
+
+        // If confirmed, execute the actual purge
+        if (result.isConfirmed && usersToAffect.length > 0) {
+          await executeConfirmedPurge(adminUserId, adminEmail);
+        }
+
+      } catch (err) {
+        console.error('Error generating purge preview:', err);
+        Swal.fire({
+          title: 'Error',
+          text: `No se pudo generar la vista previa: ${err.message}`,
+          icon: 'error',
+          confirmButtonText: 'Cerrar'
+        });
+      } finally {
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    }
+
+    // Execute the confirmed purge (called after preview confirmation)
+    async function executeConfirmedPurge(adminUserId, adminEmail) {
+      const btn = document.getElementById('manualPurgeBtn');
+      const originalContent = btn.innerHTML;
+      btn.innerHTML = '<span style="font-size:16px;">🔄</span> Ejecutando purga...';
       btn.disabled = true;
       btn.style.opacity = '0.7';
 
       try {
         const response = await fetch('/.netlify/functions/purge-inactive-commissions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'execute',
+            month: selectedPurgeMonth,
+            year: selectedPurgeYear,
+            adminUserId: adminUserId,
+            adminEmail: adminEmail
+          })
         });
 
         const data = await response.json();
 
         if (data.success) {
+          const period = data.period;
+          const summary = data.summary;
+
           await Swal.fire({
-            title: 'Purga Completada',
+            title: '✅ Purga Completada',
             html: `
               <div style="text-align:left;font-size:14px;">
-                <p><strong>Mes procesado:</strong> ${monthName} ${prevYear}</p>
+                <div style="background:#e8f5e9;padding:12px;border-radius:8px;margin-bottom:15px;border-left:4px solid #4caf50;">
+                  <strong>La purga se ha ejecutado correctamente.</strong>
+                </div>
+
+                <p><strong>📅 Mes procesado:</strong> ${period.monthName} ${period.year}</p>
+
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px;">
                   <div style="background:#e8f5e9;padding:10px;border-radius:6px;text-align:center;">
                     <div style="font-size:12px;color:#2e7d32;">Distribuidores Activos</div>
-                    <div style="font-size:20px;font-weight:700;color:#2e7d32;">${data.summary.activeDistributors}</div>
+                    <div style="font-size:20px;font-weight:700;color:#2e7d32;">${summary.activeDistributors}</div>
                   </div>
                   <div style="background:#ffebee;padding:10px;border-radius:6px;text-align:center;">
                     <div style="font-size:12px;color:#c62828;">Usuarios Purgados</div>
-                    <div style="font-size:20px;font-weight:700;color:#c62828;">${data.summary.purgedUsers}</div>
+                    <div style="font-size:20px;font-weight:700;color:#c62828;">${summary.purgedUsers}</div>
                   </div>
                   <div style="background:#fff3e0;padding:10px;border-radius:6px;text-align:center;">
                     <div style="font-size:12px;color:#ef6c00;">Total COP Eliminado</div>
-                    <div style="font-size:20px;font-weight:700;color:#ef6c00;">$${data.summary.totalPurgedAmount.toLocaleString()}</div>
+                    <div style="font-size:20px;font-weight:700;color:#ef6c00;">$${summary.totalPurgedAmount?.toLocaleString() || 0}</div>
                   </div>
                   <div style="background:#fce4ec;padding:10px;border-radius:6px;text-align:center;">
                     <div style="font-size:12px;color:#ad1457;">Puntos Eliminados</div>
-                    <div style="font-size:20px;font-weight:700;color:#ad1457;">${data.summary.totalPurgedPoints.toFixed(2)}</div>
+                    <div style="font-size:20px;font-weight:700;color:#ad1457;">${summary.totalPurgedPoints?.toFixed(2) || 0}</div>
                   </div>
+                </div>
+
+                <div style="background:#e3f2fd;padding:10px;border-radius:6px;margin-top:15px;font-size:12px;">
+                  <strong>📝 Registro de Auditoria:</strong><br>
+                  <span style="color:#666;">Esta accion ha sido registrada con fecha, hora y administrador para auditoria interna.</span>
                 </div>
               </div>
             `,
@@ -6795,6 +7068,7 @@
         btn.innerHTML = originalContent;
         btn.disabled = false;
         btn.style.opacity = '1';
+        purgePreviewData = null; // Clear preview data
       }
     }
 
