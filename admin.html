@@ -5,42 +5,255 @@
   <title>Panel de Administración - PorkCasare</title>
   <link rel="stylesheet" href="/oficina-virtual/css/style.css">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #fafafa; margin: 0; }
-    h1 { margin-bottom: 20px; color: #333; }
-    .hidden { display: none; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-    th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
-    th { background: #f8f9fa; font-weight: 600; color: #495057; }
+    /* === FINANCIAL PLATFORM THEME === */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --primary-dark: #1a1f36;
+      --primary-blue: #0052cc;
+      --accent-blue: #2684ff;
+      --success-green: #00875a;
+      --danger-red: #de350b;
+      --warning-orange: #ff8b00;
+      --text-primary: #172b4d;
+      --text-secondary: #5e6c84;
+      --border-color: #dfe1e6;
+      --bg-light: #f4f5f7;
+      --bg-white: #ffffff;
+      --shadow-sm: 0 1px 2px rgba(9,30,66,0.08);
+      --shadow-md: 0 4px 8px rgba(9,30,66,0.1);
+      --shadow-lg: 0 8px 16px rgba(9,30,66,0.12);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 0;
+      background: var(--bg-light);
+      margin: 0;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    h1 { margin-bottom: 20px; color: var(--primary-dark); font-weight: 700; letter-spacing: -0.5px; }
+    h2 { color: var(--text-primary); font-weight: 600; letter-spacing: -0.3px; }
+    h3 { color: var(--text-primary); font-weight: 600; }
+
+    .hidden { display: none !important; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: var(--bg-white);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    th, td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); text-align: left; }
+    th {
+      background: linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%);
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
     tbody tr:hover { background: #f8f9fa; }
-    button { padding: 8px 14px; margin: 2px; cursor: pointer; border: none; border-radius: 4px; font-size: 14px; }
-    button:hover { opacity: 0.9; }
-    .btn-primary { background: #007bff; color: white; }
-    .btn-success { background: #28a745; color: white; }
-    .btn-danger { background: #dc3545; color: white; }
-    .btn-secondary { background: #6c757d; color: white; }
-    
-    /* Tabs */
-    .tabs { display: flex; gap: 8px; border-bottom: 2px solid #dee2e6; margin-bottom: 20px; flex-wrap: wrap; }
-    .tab-button { padding: 12px 20px; background: #f8f9fa; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-size: 14px; font-weight: 500; color: #495057; transition: all 0.2s; }
-    .tab-button:hover { background: #e9ecef; }
-    .tab-button.active { background: white; border-bottom-color: #007bff; color: #007bff; }
-    .tab-content { display: none; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    button {
+      padding: 8px 16px;
+      margin: 2px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+    button:active { transform: translateY(0); }
+
+    .btn-primary { background: var(--primary-blue); color: white; }
+    .btn-primary:hover { background: #0047b3; }
+    .btn-success { background: var(--success-green); color: white; }
+    .btn-success:hover { background: #006644; }
+    .btn-danger { background: var(--danger-red); color: white; }
+    .btn-danger:hover { background: #bf2600; }
+    .btn-secondary { background: var(--bg-light); color: var(--text-primary); border: 1px solid var(--border-color); }
+    .btn-secondary:hover { background: #e4e7eb; }
+
+    /* === WALL STREET TICKER BANNER === */
+    .ticker-wrapper {
+      background: linear-gradient(90deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+      border-bottom: 1px solid #30363d;
+      overflow: hidden;
+      position: relative;
+    }
+    .ticker-wrapper::before,
+    .ticker-wrapper::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 60px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .ticker-wrapper::before {
+      left: 0;
+      background: linear-gradient(90deg, #0d1117, transparent);
+    }
+    .ticker-wrapper::after {
+      right: 0;
+      background: linear-gradient(90deg, transparent, #0d1117);
+    }
+    .ticker-content {
+      display: flex;
+      animation: ticker-scroll 40s linear infinite;
+      padding: 12px 0;
+    }
+    .ticker-content:hover {
+      animation-play-state: paused;
+    }
+    @keyframes ticker-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-item {
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      white-space: nowrap;
+      border-right: 1px solid #30363d;
+    }
+    .ticker-item:last-child { border-right: none; }
+    .ticker-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 10px;
+    }
+    .ticker-value {
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+    }
+    .ticker-value.positive { color: #3fb950; }
+    .ticker-value.negative { color: #f85149; }
+    .ticker-value.neutral { color: #58a6ff; }
+    .ticker-change {
+      font-size: 12px;
+      margin-left: 8px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .ticker-change.up { background: rgba(63,185,80,0.15); color: #3fb950; }
+    .ticker-change.down { background: rgba(248,81,73,0.15); color: #f85149; }
+
+    /* === TABS === */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-white);
+      padding: 8px 12px;
+      border-radius: 12px;
+      margin: 0 20px 20px 20px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow-sm);
+    }
+    .tab-button {
+      padding: 10px 18px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+    }
+    .tab-button:hover { background: var(--bg-light); color: var(--text-primary); }
+    .tab-button.active {
+      background: var(--primary-blue);
+      color: white;
+      box-shadow: var(--shadow-sm);
+    }
+    .tab-content { display: none; padding: 0 20px 20px 20px; }
     .tab-content.active { display: block; }
-    
-    /* Stats cards */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .stat-card h3 { margin: 0 0 8px 0; font-size: 14px; color: #6c757d; font-weight: 500; }
-    .stat-card .value { font-size: 32px; font-weight: 700; color: #333; }
-    .stat-card.blue .value { color: #007bff; }
-    .stat-card.green .value { color: #28a745; }
-    .stat-card.orange .value { color: #fd7e14; }
-    .stat-card.purple .value { color: #6f42c1; }
-    .stat-card.red .value { color: #dc3545; }
-    
-    /* Header */
-    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-    .empty-state { text-align: center; padding: 40px; color: #6c757d; }
+
+    /* Accordion for Product Costs */
+    #productCostsAccordionHeader:hover {
+      filter: brightness(1.05);
+    }
+
+    /* === STATS CARDS === */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--bg-white);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      transition: all 0.2s ease;
+    }
+    .stat-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .stat-card h3 {
+      margin: 0 0 12px 0;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: 'SF Mono', 'Monaco', monospace;
+    }
+    .stat-card.blue .value { color: var(--primary-blue); }
+    .stat-card.green .value { color: var(--success-green); }
+    .stat-card.orange .value { color: var(--warning-orange); }
+    .stat-card.purple .value { color: #6554c0; }
+    .stat-card.red .value { color: var(--danger-red); }
+
+    /* === ADMIN HEADER === */
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      background: var(--bg-white);
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 0;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .admin-header h1 {
+      font-size: 24px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .admin-header h1::before {
+      content: '📊';
+      font-size: 28px;
+    }
+
+    .empty-state { text-align: center; padding: 60px 40px; color: var(--text-secondary); }
     
     /* Product Cards */
     .product-card-preview { 
@@ -296,29 +509,110 @@
     .pending-orders-container {
       max-width: 100%;
     }
+
+    /* === LOGIN SECTION === */
+    #loginSection {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1a1f36 100%);
+      padding: 20px;
+    }
+    #loginSection h2 {
+      color: #f0f6fc;
+      font-size: 28px;
+      margin-bottom: 32px;
+      letter-spacing: -0.5px;
+    }
+    #loginSection h2::before {
+      content: '🔐 ';
+    }
+    #loginForm {
+      background: #21262d;
+      padding: 40px;
+      border-radius: 16px;
+      border: 1px solid #30363d;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+      width: 100%;
+      max-width: 400px;
+    }
+    #loginForm label {
+      color: #8b949e;
+      font-size: 14px;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 8px;
+    }
+    #loginForm input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      background: #0d1117;
+      color: #f0f6fc;
+      font-size: 15px;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #loginForm input:focus {
+      outline: none;
+      border-color: #58a6ff;
+      box-shadow: 0 0 0 3px rgba(88,166,255,0.15);
+    }
+    #loginForm button {
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #loginForm button:hover {
+      background: linear-gradient(135deg, #2ea043 0%, #3fb950 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(46,160,67,0.3);
+    }
   </style>
 </head>
 <body>
-  <h1>Panel de Administración</h1>
-
   <!-- Formulario de login -->
   <div id="loginSection">
     <h2>Iniciar sesión</h2>
     <form id="loginForm">
-      <label>Email:</label><br>
-      <input type="email" id="email" required><br><br>
-      <label>Contraseña:</label><br>
-      <input type="password" id="password" required><br><br>
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="correo@ejemplo.com" required>
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" placeholder="••••••••" required>
       <button type="submit">Ingresar</button>
     </form>
   </div>
 
   <!-- Panel solo visible si es admin -->
   <div id="adminPanel" class="hidden">
+    <!-- Wall Street Ticker Banner -->
+    <div class="ticker-wrapper" id="salesTicker">
+      <div class="ticker-content" id="tickerContent">
+        <!-- Ticker items will be populated by JavaScript -->
+        <div class="ticker-item">
+          <span class="ticker-label">Cargando datos...</span>
+          <span class="ticker-value neutral">--</span>
+        </div>
+      </div>
+    </div>
+
     <div class="admin-header">
       <h1>Panel de Administración</h1>
       <button id="logoutBtn" class="btn-secondary">Cerrar sesión</button>
     </div>
+
+    <div style="padding-top: 20px;"></div>
 
     <!-- Tabs -->
     <div class="tabs">
@@ -336,7 +630,7 @@
       <button class="tab-button" data-tab="shipping">Tarifas de Envío</button>
       <button class="tab-button" data-tab="calculator">Calculadora de Puntos</button>
       <button class="tab-button" data-tab="profits">Ganancias</button>
-      <button class="tab-button" data-tab="education">📚 Educación</button>
+      <button class="tab-button" data-tab="education">Educación</button>
     </div>
 
     <!-- Tab: Resumen -->
@@ -1173,22 +1467,37 @@
           </div>
         </div>
 
-        <!-- Add/Edit Costs Section -->
-        <div style="background:white;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:24px;">
-          <h3 style="margin-top:0;border-bottom:2px solid #28a745;padding-bottom:8px;margin-bottom:16px;">Configurar Costos y Beneficios por Producto</h3>
-          <p style="color:#666;font-size:14px;margin-bottom:16px;">Ingresa el costo de compra de cada producto y el porcentaje que corresponde a la plataforma. Por ejemplo: si el beneficio es 600 pesos y la plataforma se queda con 50%, la plataforma gana 300 pesos y la red 300 pesos.</p>
-
-          <div style="background:#e7f5ff;padding:12px 16px;border-radius:8px;margin-bottom:20px;border-left:4px solid #007bff;">
-            <strong style="color:#007bff;">Ejemplo:</strong>
-            <span style="color:#495057;">Arroz - Costo: $2,980 / Precio Venta: $3,580 / Beneficio: $600 / Plataforma 50%: $300 / Red 50%: $300</span>
+        <!-- Add/Edit Costs Section - Accordion -->
+        <div style="background:white;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:24px;overflow:hidden;">
+          <!-- Accordion Header - Always visible -->
+          <div id="productCostsAccordionHeader" onclick="toggleProductCostsAccordion()" style="padding:16px 20px;background:linear-gradient(135deg,#28a745,#20c997);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.3s ease;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-size:20px;">⚙️</span>
+              <h3 style="margin:0;color:white;font-size:16px;font-weight:600;">Configurar Costos y Beneficios por Producto</h3>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="color:rgba(255,255,255,0.85);font-size:13px;font-weight:500;">Ver / Ocultar configuración por producto</span>
+              <span id="productCostsAccordionIcon" style="color:white;font-size:18px;transition:transform 0.3s ease;">▼</span>
+            </div>
           </div>
+          <!-- Accordion Content - Collapsible -->
+          <div id="productCostsAccordionContent" style="max-height:0;overflow:hidden;transition:max-height 0.4s ease-out;">
+            <div style="padding:20px;">
+              <p style="color:#666;font-size:14px;margin-bottom:16px;">Ingresa el costo de compra de cada producto y el porcentaje que corresponde a la plataforma. Por ejemplo: si el beneficio es 600 pesos y la plataforma se queda con 50%, la plataforma gana 300 pesos y la red 300 pesos.</p>
 
-          <div id="profitsCostsList" style="margin-bottom:20px;">
-            <!-- Product cost rows will be rendered here -->
-            <div style="text-align:center;color:#666;padding:20px;">Cargando productos...</div>
+              <div style="background:#e7f5ff;padding:12px 16px;border-radius:8px;margin-bottom:20px;border-left:4px solid #007bff;">
+                <strong style="color:#007bff;">Ejemplo:</strong>
+                <span style="color:#495057;">Arroz - Costo: $2,980 / Precio Venta: $3,580 / Beneficio: $600 / Plataforma 50%: $300 / Red 50%: $300</span>
+              </div>
+
+              <div id="profitsCostsList" style="margin-bottom:20px;">
+                <!-- Product cost rows will be rendered here -->
+                <div style="text-align:center;color:#666;padding:20px;">Cargando productos...</div>
+              </div>
+
+              <button id="saveProfitsCostsBtn" class="btn-success" style="width:100%;padding:12px;">Guardar Configuracion</button>
+            </div>
           </div>
-
-          <button id="saveProfitsCostsBtn" class="btn-success" style="width:100%;padding:12px;">Guardar Configuracion</button>
         </div>
 
         <!-- Profits Table -->
@@ -1504,6 +1813,39 @@
           </div>
         </div>
 
+        <!-- Cost and Profit Configuration Section -->
+        <div style="background:#e8f5e9;padding:14px;border-radius:8px;margin-bottom:14px;border-left:4px solid #28a745;">
+          <h4 style="margin:0 0 10px 0;font-size:13px;color:#1b5e20;">Configuracion de Costo y Margen de Ganancia</h4>
+          <p style="font-size:11px;color:#2e7d32;margin:0 0 10px 0;">Estos valores se usan para calcular las ganancias de la plataforma en el reporte de Ganancias.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <div style="flex:1;min-width:140px;">
+              <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;">Costo de Compra (COP)</label>
+              <input type="number" id="productCosto" min="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;" placeholder="Ej: 50000">
+              <small style="color:#666;font-size:10px;">Costo de adquisicion del producto</small>
+            </div>
+
+            <div style="flex:1;min-width:140px;">
+              <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;">% Plataforma del Beneficio</label>
+              <select id="productPlatformPercent" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;box-sizing:border-box;">
+                <option value="40">40% Plataforma / 60% Red</option>
+                <option value="45">45% Plataforma / 55% Red</option>
+                <option value="50" selected>50% Plataforma / 50% Red</option>
+                <option value="55">55% Plataforma / 45% Red</option>
+                <option value="60">60% Plataforma / 40% Red</option>
+              </select>
+              <small style="color:#666;font-size:10px;">Como se divide el beneficio</small>
+            </div>
+
+            <div style="flex:1;min-width:140px;">
+              <label style="display:block;margin-bottom:6px;font-weight:500;font-size:12px;">Beneficio Estimado</label>
+              <div id="productBenefitPreview" style="padding:8px;background:#fff;border:1px solid #ddd;border-radius:4px;font-size:13px;color:#28a745;font-weight:600;">
+                $0
+              </div>
+              <small style="color:#666;font-size:10px;">Precio Dist. - Costo</small>
+            </div>
+          </div>
+        </div>
+
         <!-- Puntos separados para Distribuidores vs Restaurantes -->
         <div style="background:#e7f5ff;padding:14px;border-radius:8px;margin-bottom:14px;border-left:4px solid #007bff;">
           <h4 style="margin:0 0 10px 0;font-size:13px;color:#0a5eb5;">Configuración de Puntos</h4>
@@ -1753,7 +2095,7 @@
 
   <script type="module">
     import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-    import { doc, getDoc, collection, getDocs, query, where, orderBy, limit, updateDoc, runTransaction, addDoc, setDoc, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { doc, getDoc, collection, getDocs, query, where, orderBy, limit, updateDoc, runTransaction, addDoc, setDoc, increment, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     import { auth, db } from "/src/firebase-config.js";
 
     const loginSection = document.getElementById("loginSection");
@@ -1857,6 +2199,103 @@
 
     let allProducts = [];
 
+    // Wall Street Ticker Banner Update Function
+    function updateSalesTicker(orders, confirmed, pending, rejected, totalSales, distributorsCount) {
+      const tickerContent = document.getElementById('tickerContent');
+      if (!tickerContent) return;
+
+      // Calculate sales metrics
+      const confirmedTotal = confirmed.reduce((sum, o) => sum + (Number(o.totalPrice) || Number(o.priceTotal) || Number(o.price) || 0), 0);
+      const pendingTotal = pending.reduce((sum, o) => sum + (Number(o.totalPrice) || Number(o.priceTotal) || Number(o.price) || 0), 0);
+      const rejectedTotal = rejected.reduce((sum, o) => sum + (Number(o.totalPrice) || Number(o.priceTotal) || Number(o.price) || 0), 0);
+
+      // Get recent orders for individual display (last 8)
+      const recentConfirmed = confirmed.slice(0, 4);
+      const recentRejected = rejected.slice(0, 2);
+      const recentPending = pending.slice(0, 3);
+
+      // Format currency
+      const formatMoney = (num) => '$' + Math.round(num).toLocaleString('es-CO');
+
+      // Build ticker items
+      let tickerItems = [];
+
+      // Summary metrics
+      tickerItems.push(`
+        <div class="ticker-item">
+          <span class="ticker-label">Ventas Confirmadas</span>
+          <span class="ticker-value positive">${formatMoney(confirmedTotal)}</span>
+          <span class="ticker-change up">+${confirmed.length}</span>
+        </div>
+      `);
+
+      tickerItems.push(`
+        <div class="ticker-item">
+          <span class="ticker-label">Pendientes</span>
+          <span class="ticker-value neutral">${formatMoney(pendingTotal)}</span>
+          <span class="ticker-change" style="background:rgba(88,166,255,0.15);color:#58a6ff;">${pending.length}</span>
+        </div>
+      `);
+
+      tickerItems.push(`
+        <div class="ticker-item">
+          <span class="ticker-label">Rechazadas</span>
+          <span class="ticker-value negative">${formatMoney(rejectedTotal)}</span>
+          <span class="ticker-change down">-${rejected.length}</span>
+        </div>
+      `);
+
+      tickerItems.push(`
+        <div class="ticker-item">
+          <span class="ticker-label">Distribuidores</span>
+          <span class="ticker-value neutral">${distributorsCount}</span>
+        </div>
+      `);
+
+      // Add individual recent confirmed orders
+      recentConfirmed.forEach(order => {
+        const price = Number(order.totalPrice) || Number(order.priceTotal) || Number(order.price) || 0;
+        const productName = (order.productName || 'Producto').substring(0, 18);
+        tickerItems.push(`
+          <div class="ticker-item">
+            <span class="ticker-label">${productName}</span>
+            <span class="ticker-value positive">+${formatMoney(price)}</span>
+            <span class="ticker-change up">CONFIRMADA</span>
+          </div>
+        `);
+      });
+
+      // Add recent pending
+      recentPending.forEach(order => {
+        const price = Number(order.totalPrice) || Number(order.priceTotal) || Number(order.price) || 0;
+        const productName = (order.productName || 'Producto').substring(0, 18);
+        tickerItems.push(`
+          <div class="ticker-item">
+            <span class="ticker-label">${productName}</span>
+            <span class="ticker-value neutral">${formatMoney(price)}</span>
+            <span class="ticker-change" style="background:rgba(255,139,0,0.15);color:#ff8b00;">PENDIENTE</span>
+          </div>
+        `);
+      });
+
+      // Add recent rejected
+      recentRejected.forEach(order => {
+        const price = Number(order.totalPrice) || Number(order.priceTotal) || Number(order.price) || 0;
+        const productName = (order.productName || 'Producto').substring(0, 18);
+        tickerItems.push(`
+          <div class="ticker-item">
+            <span class="ticker-label">${productName}</span>
+            <span class="ticker-value negative">-${formatMoney(price)}</span>
+            <span class="ticker-change down">RECHAZADA</span>
+          </div>
+        `);
+      });
+
+      // Duplicate items for seamless infinite scroll
+      const allItems = tickerItems.join('');
+      tickerContent.innerHTML = allItems + allItems;
+    }
+
     // Cargar estadísticas
     async function loadStats() {
       try {
@@ -1921,6 +2360,9 @@
             recentTable.appendChild(row);
           });
         }
+
+        // Update Wall Street Ticker Banner
+        updateSalesTicker(orders, confirmed, pending, rejected, totalSales, distributors.length);
       } catch (err) {
         console.error('Error loading stats:', err);
       }
@@ -4239,6 +4681,29 @@
     });
 
     // ==========================================
+    // PRODUCT COST BENEFIT PREVIEW
+    // ==========================================
+    function updateProductBenefitPreview() {
+      const precioDistribuidor = parseFloat(document.getElementById('productPriceDistributor').value) || 0;
+      const costo = parseFloat(document.getElementById('productCosto').value) || 0;
+      const beneficio = precioDistribuidor - costo;
+      const previewDiv = document.getElementById('productBenefitPreview');
+
+      if (costo > 0 && precioDistribuidor > 0) {
+        const color = beneficio >= 0 ? '#28a745' : '#dc3545';
+        previewDiv.style.color = color;
+        previewDiv.textContent = '$' + beneficio.toLocaleString();
+      } else {
+        previewDiv.style.color = '#666';
+        previewDiv.textContent = '$0';
+      }
+    }
+
+    // Event listeners for updating benefit preview in product modal
+    document.getElementById('productPriceDistributor')?.addEventListener('input', updateProductBenefitPreview);
+    document.getElementById('productCosto')?.addEventListener('input', updateProductBenefitPreview);
+
+    // ==========================================
     // PRODUCT VARIANTS MANAGEMENT
     // ==========================================
 
@@ -4377,6 +4842,9 @@
         precioCliente: parseFloat(document.getElementById('productPriceClient').value) || 0,
         precioRestaurante: parseFloat(document.getElementById('productPriceRestaurant').value) || 0,
         precio: parseFloat(document.getElementById('productPriceDistributor').value) || 0,
+        // Cost and profit margin fields for earnings reports
+        costo: parseFloat(document.getElementById('productCosto').value) || 0,
+        platformPercent: parseInt(document.getElementById('productPlatformPercent').value) || 50,
         puntosDistribuidor: parseFloat(document.getElementById('productPointsDistributor').value) || 0,
         puntosRestaurante: parseFloat(document.getElementById('productPointsRestaurant').value) || 0,
         puntos: parseFloat(document.getElementById('productPointsDistributor').value) || 0, // backward compatibility
@@ -4445,6 +4913,10 @@
       document.getElementById('productPriceDistributor').value = product.precioDistribuidor || '';
       document.getElementById('productPriceClient').value = product.precioCliente || '';
       document.getElementById('productPriceRestaurant').value = product.precioRestaurante || '';
+      // Cost and profit margin fields
+      document.getElementById('productCosto').value = product.costo || '';
+      document.getElementById('productPlatformPercent').value = product.platformPercent || 50;
+      updateProductBenefitPreview();
       document.getElementById('productPointsDistributor').value = product.puntosDistribuidor || product.puntos || '';
       document.getElementById('productPointsRestaurant').value = product.puntosRestaurante || product.puntos || '';
       document.getElementById('productUnit').value = product.unit || 'paquete';
@@ -5747,17 +6219,59 @@
     // GANANCIAS (PROFITS) SECTION
     // ============================================
 
-    let profitsProductCosts = {}; // Stores cost per product {productId: {cost: number, networkPayment: number}}
+    // Product Costs Accordion State - persists while user stays on Ganancias tab
+    let productCostsAccordionExpanded = false;
+
+    // Toggle accordion for product costs configuration
+    // Note: Exposed to window because it's called via inline onclick and this is a module script
+    window.toggleProductCostsAccordion = function() {
+      const content = document.getElementById('productCostsAccordionContent');
+      const icon = document.getElementById('productCostsAccordionIcon');
+      const header = document.getElementById('productCostsAccordionHeader');
+
+      productCostsAccordionExpanded = !productCostsAccordionExpanded;
+
+      if (productCostsAccordionExpanded) {
+        // Expand: set max-height to scrollHeight for smooth animation
+        content.style.maxHeight = content.scrollHeight + 'px';
+        icon.style.transform = 'rotate(180deg)';
+        header.style.background = 'linear-gradient(135deg,#20c997,#17a2b8)';
+      } else {
+        // Collapse: set max-height to 0
+        content.style.maxHeight = '0';
+        icon.style.transform = 'rotate(0deg)';
+        header.style.background = 'linear-gradient(135deg,#28a745,#20c997)';
+      }
+    }
+
+    // Update accordion max-height after content is rendered (for dynamic content)
+    function updateProductCostsAccordionHeight() {
+      if (productCostsAccordionExpanded) {
+        const content = document.getElementById('productCostsAccordionContent');
+        if (content) {
+          // Temporarily remove transition for instant resize
+          content.style.transition = 'none';
+          content.style.maxHeight = content.scrollHeight + 'px';
+          // Re-enable transition after a tick
+          setTimeout(() => {
+            content.style.transition = 'max-height 0.4s ease-out';
+          }, 10);
+        }
+      }
+    }
+
     let profitsOrders = []; // All confirmed orders
     let profitsProducts = []; // All products
+    let monthlyEarningsClosures = []; // Historical monthly closures from Firestore
 
     // Load profits data
     async function loadProfitsData() {
       try {
-        // Load products and orders
-        const [productsSnap, ordersSnap] = await Promise.all([
+        // Load products, orders, and monthly closures
+        const [productsSnap, ordersSnap, closuresSnap] = await Promise.all([
           getDocs(collection(db, 'productos')),
-          getDocs(collection(db, 'orders'))
+          getDocs(collection(db, 'orders')),
+          getDocs(collection(db, 'monthlyEarningsClosures'))
         ]);
 
         // Map products with docId (Firestore document ID) and id (product field)
@@ -5773,36 +6287,58 @@
           .filter(p => !p.deleted);
 
         profitsOrders = ordersSnap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(o => o.status === 'confirmed' || o.status === 'confirmado');
+          .map(d => {
+            const data = d.data();
+            // Normalize createdAt: use confirmedAt as fallback if createdAt is missing
+            const orderData = {
+              id: d.id,
+              ...data,
+              // Ensure createdAt exists - prefer createdAt, fall back to confirmedAt
+              createdAt: data.createdAt || data.confirmedAt || null
+            };
+            return orderData;
+          })
+          .filter(o => {
+            const status = (o.status || '').toLowerCase();
+            return status === 'confirmed' || status === 'confirmado';
+          });
+
+        // Load monthly closures and sort client-side (avoids composite index requirement)
+        monthlyEarningsClosures = closuresSnap.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        })).sort((a, b) => {
+          // Sort by year descending, then by month descending
+          if (b.year !== a.year) return b.year - a.year;
+          return b.month - a.month;
+        });
 
         // Debug logging
         console.log('📊 Profits Data Loaded:');
         console.log(`   - Productos: ${profitsProducts.length}`);
         console.log(`   - Órdenes confirmadas: ${profitsOrders.length}`);
+        console.log(`   - Cierres mensuales guardados: ${monthlyEarningsClosures.length}`);
 
-        // Log all products for debugging
-        console.log('📦 Lista de productos:');
-        profitsProducts.forEach(p => {
-          console.log(`   - "${p.nombre}" (id: ${p.id}, docId: ${p.docId})`);
-        });
-
-        // Log sample orders for debugging
+        // Log date parsing info for orders
         if (profitsOrders.length > 0) {
-          console.log('📦 Muestra de órdenes confirmadas:');
-          profitsOrders.slice(0, 5).forEach(order => {
-            console.log(`   - Orden ${order.id.substring(0, 8)}...: productId="${order.productId}", productName="${order.productName}"`);
+          console.log('📅 Muestra de órdenes y sus fechas:');
+          profitsOrders.slice(0, 5).forEach((o, i) => {
+            const parsedDate = parseOrderDate(o.createdAt);
+            console.log(`   ${i + 1}. Orden ${o.id.substring(0, 8)}... - createdAt type: ${typeof o.createdAt}, parsed: ${parsedDate ? parsedDate.toISOString() : 'NULL'}, status: ${o.status}`);
           });
+        } else {
+          console.warn('⚠️ No hay órdenes confirmadas para mostrar');
         }
 
-        // Load saved costs from localStorage (or could be from Firestore)
-        const savedCosts = localStorage.getItem('profitsProductCosts');
-        if (savedCosts) {
-          profitsProductCosts = JSON.parse(savedCosts);
-        }
+        // Log all products with their cost configuration
+        console.log('📦 Lista de productos con costos:');
+        profitsProducts.forEach(p => {
+          console.log(`   - "${p.nombre}" (id: ${p.id}) - Costo: $${p.costo || 0}, Platform: ${p.platformPercent || 50}%`);
+        });
 
         renderProfitsCostsList();
         updateProfitsReport();
+        loadPurgeReports();
       } catch (err) {
         console.error('Error loading profits data:', err);
         alert('Error cargando datos de ganancias');
@@ -5830,10 +6366,10 @@
       `;
 
       profitsProducts.forEach(product => {
-        const savedCost = profitsProductCosts[product.id] || {};
+        // Use costo and platformPercent directly from product document
         const salePrice = product.precioDistribuidor || product.precio || 0;
-        const cost = savedCost.cost || 0;
-        const platformPercent = savedCost.platformPercent || 50; // Default 50% for platform
+        const cost = product.costo || 0;
+        const platformPercent = product.platformPercent || 50; // Default 50% for platform
         const benefit = salePrice - cost;
         const platformProfit = benefit > 0 ? Math.round(benefit * (platformPercent / 100)) : 0;
         const networkPayment = benefit > 0 ? benefit - platformProfit : 0;
@@ -5852,22 +6388,24 @@
             </div>
             <div style="text-align:center;">
               <input type="number"
-                id="cost-${product.id}"
+                id="cost-${product.docId}"
+                data-product-doc-id="${product.docId}"
                 value="${cost || ''}"
                 min="0"
                 style="width:100%;max-width:110px;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;text-align:center;"
                 placeholder="Ej: 2980"
-                onchange="updateBenefitPreview('${product.id}', ${salePrice})">
+                onchange="updateProfitsBenefitPreview('${product.docId}', ${salePrice})">
             </div>
             <div style="text-align:center;">
-              <span id="benefit-${product.id}" style="font-weight:700;font-size:15px;color:${benefitColor};">
+              <span id="benefit-${product.docId}" style="font-weight:700;font-size:15px;color:${benefitColor};">
                 ${cost > 0 ? '$' + benefit.toLocaleString() : '—'}
               </span>
             </div>
             <div style="text-align:center;">
-              <select id="platform-${product.id}"
+              <select id="platform-${product.docId}"
+                data-product-doc-id="${product.docId}"
                 style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:100%;max-width:100px;"
-                onchange="updateBenefitPreview('${product.id}', ${salePrice})">
+                onchange="updateProfitsBenefitPreview('${product.docId}', ${salePrice})">
                 <option value="40" ${platformPercent === 40 ? 'selected' : ''}>40% / 60%</option>
                 <option value="45" ${platformPercent === 45 ? 'selected' : ''}>45% / 55%</option>
                 <option value="50" ${platformPercent === 50 ? 'selected' : ''}>50% / 50%</option>
@@ -5875,25 +6413,38 @@
                 <option value="60" ${platformPercent === 60 ? 'selected' : ''}>60% / 40%</option>
               </select>
             </div>
-            <div id="summary-${product.id}" style="text-align:center;font-size:11px;line-height:1.5;">
+            <div id="summary-${product.docId}" style="text-align:center;font-size:11px;line-height:1.5;">
               ${cost > 0 ? `
                 <div style="color:#007bff;"><strong>Plataforma:</strong> $${platformProfit.toLocaleString()}</div>
                 <div style="color:#fd7e14;"><strong>Red:</strong> $${networkPayment.toLocaleString()}</div>
-              ` : '<span style="color:#999;">Ingrese el costo</span>'}
+              ` : '<span style="color:#999;">Configurar en Productos</span>'}
             </div>
           </div>
         `;
       });
 
+      // Add note about configuration
+      html += `
+        <div style="margin-top:16px;padding:12px;background:#e7f5ff;border-radius:6px;border-left:4px solid #007bff;">
+          <p style="margin:0;font-size:13px;color:#0056b3;">
+            <strong>Nota:</strong> Los costos y margenes ahora se configuran directamente en cada producto desde la pestana de <strong>Productos</strong>.
+            Los cambios realizados aqui se guardan automaticamente en el documento del producto.
+          </p>
+        </div>
+      `;
+
       container.innerHTML = html;
+
+      // Update accordion height after rendering content
+      updateProductCostsAccordionHeight();
     }
 
-    // Update benefit preview when cost or platform percent changes
-    window.updateBenefitPreview = function(productId, salePrice) {
-      const costInput = document.getElementById(`cost-${productId}`);
-      const platformSelect = document.getElementById(`platform-${productId}`);
-      const benefitSpan = document.getElementById(`benefit-${productId}`);
-      const summaryDiv = document.getElementById(`summary-${productId}`);
+    // Update benefit preview when cost or platform percent changes (in profits tab)
+    window.updateProfitsBenefitPreview = function(productDocId, salePrice) {
+      const costInput = document.getElementById(`cost-${productDocId}`);
+      const platformSelect = document.getElementById(`platform-${productDocId}`);
+      const benefitSpan = document.getElementById(`benefit-${productDocId}`);
+      const summaryDiv = document.getElementById(`summary-${productDocId}`);
 
       const cost = Number(costInput?.value) || 0;
       const platformPercent = Number(platformSelect?.value) || 50;
@@ -5915,29 +6466,80 @@
             <div style="color:#fd7e14;"><strong>Red:</strong> $${networkPayment.toLocaleString()}</div>
           `;
         } else {
-          summaryDiv.innerHTML = '<span style="color:#999;">Ingrese el costo</span>';
+          summaryDiv.innerHTML = '<span style="color:#999;">Configurar en Productos</span>';
         }
       }
     };
 
-    // Save costs
-    document.getElementById('saveProfitsCostsBtn')?.addEventListener('click', () => {
-      profitsProducts.forEach(product => {
-        const costInput = document.getElementById(`cost-${product.id}`);
-        const platformSelect = document.getElementById(`platform-${product.id}`);
+    // Save costs to Firestore product documents
+    document.getElementById('saveProfitsCostsBtn')?.addEventListener('click', async () => {
+      const updates = [];
+      const saveBtn = document.getElementById('saveProfitsCostsBtn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Guardando...';
 
-        if (costInput && platformSelect) {
-          profitsProductCosts[product.id] = {
-            cost: Number(costInput.value) || 0,
-            platformPercent: Number(platformSelect.value) || 50
-          };
+      try {
+        for (const product of profitsProducts) {
+          const costInput = document.getElementById(`cost-${product.docId}`);
+          const platformSelect = document.getElementById(`platform-${product.docId}`);
+
+          if (costInput && platformSelect) {
+            const newCost = Number(costInput.value) || 0;
+            const newPlatformPercent = Number(platformSelect.value) || 50;
+
+            // Only update if values changed
+            if (newCost !== (product.costo || 0) || newPlatformPercent !== (product.platformPercent || 50)) {
+              updates.push(
+                updateDoc(doc(db, 'productos', product.docId), {
+                  costo: newCost,
+                  platformPercent: newPlatformPercent
+                })
+              );
+              // Update local data as well
+              product.costo = newCost;
+              product.platformPercent = newPlatformPercent;
+            }
+          }
         }
-      });
 
-      localStorage.setItem('profitsProductCosts', JSON.stringify(profitsProductCosts));
-      alert('Configuracion guardada correctamente');
-      updateProfitsReport();
+        if (updates.length > 0) {
+          await Promise.all(updates);
+          console.log(`✅ Actualizados ${updates.length} productos con nuevos costos`);
+        }
+
+        alert('Configuracion guardada correctamente en Firestore');
+        updateProfitsReport();
+      } catch (err) {
+        console.error('Error guardando costos:', err);
+        alert('Error al guardar configuracion: ' + err.message);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Guardar Configuracion';
+      }
     });
+
+    // Helper function to parse dates from Firestore timestamps or ISO strings
+    function parseOrderDate(createdAt) {
+      if (!createdAt) return null;
+      // Handle Firestore Timestamp (has .seconds property)
+      if (createdAt.seconds !== undefined) {
+        return new Date(createdAt.seconds * 1000);
+      }
+      // Handle ISO string or other date formats
+      if (typeof createdAt === 'string') {
+        const parsed = new Date(createdAt);
+        return isNaN(parsed.getTime()) ? null : parsed;
+      }
+      // Handle Date object
+      if (createdAt instanceof Date) {
+        return createdAt;
+      }
+      // Handle numeric timestamp (milliseconds)
+      if (typeof createdAt === 'number') {
+        return new Date(createdAt);
+      }
+      return null;
+    }
 
     // Filter orders by period
     function filterOrdersByPeriod(orders, period) {
@@ -5947,7 +6549,8 @@
 
       return orders.filter(order => {
         if (!order.createdAt) return false;
-        const orderDate = new Date(order.createdAt.seconds * 1000);
+        const orderDate = parseOrderDate(order.createdAt);
+        if (!orderDate) return false;
 
         switch (period) {
           case 'current':
@@ -6196,18 +6799,30 @@
       console.log(`   Órdenes en período: ${filteredOrders.length}`);
       console.log(`   Total productos activos: ${profitsProducts.length}`);
 
-      // Calculate stats per product
+      // Debug: if we have orders but none pass the filter, log the dates
+      if (profitsOrders.length > 0 && filteredOrders.length === 0) {
+        console.warn('⚠️ DIAGNÓSTICO: Hay órdenes confirmadas pero ninguna pasa el filtro de período');
+        const now = new Date();
+        console.log(`   Fecha actual: ${now.toISOString()}`);
+        console.log(`   Mes actual: ${now.getMonth() + 1}/${now.getFullYear()}`);
+        console.log('   Primeras 5 órdenes con sus fechas:');
+        profitsOrders.slice(0, 5).forEach((o, i) => {
+          const parsedDate = parseOrderDate(o.createdAt);
+          console.log(`   ${i + 1}. ${parsedDate ? parsedDate.toISOString() : 'FECHA INVÁLIDA'} - createdAt raw:`, o.createdAt);
+        });
+      }
+
+      // Calculate stats per product - use costo and platformPercent from product document
       const productStats = {};
 
       profitsProducts.forEach(product => {
-        const savedCost = profitsProductCosts[product.id] || profitsProductCosts[product.docId] || {};
         productStats[product.id] = {
           product: product,
           unitsSold: 0,
           grossRevenue: 0,
           salePrice: product.precioDistribuidor || product.precio || 0,
-          cost: savedCost.cost || 0,
-          platformPercent: savedCost.platformPercent || 50
+          cost: product.costo || 0,
+          platformPercent: product.platformPercent || 50
         };
       });
 
@@ -6425,7 +7040,7 @@
       renderMonthlyProfitsChart();
     }
 
-    // Render monthly profits chart
+    // Render monthly profits chart - uses historical closures if available, otherwise calculates on-the-fly
     function renderMonthlyProfitsChart() {
       const container = document.getElementById('profitsMonthlyReport');
 
@@ -6438,16 +7053,31 @@
         const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         const monthName = date.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
-        monthlyData[key] = { name: monthName, revenue: 0, platformProfit: 0, networkPayment: 0 };
+        monthlyData[key] = { name: monthName, revenue: 0, platformProfit: 0, networkPayment: 0, fromClosure: false };
       }
 
-      // Aggregate data using the same extraction logic
+      // First, try to fill from monthly closures
+      if (monthlyEarningsClosures && monthlyEarningsClosures.length > 0) {
+        monthlyEarningsClosures.forEach(closure => {
+          const key = `${closure.year}-${String(closure.month).padStart(2, '0')}`;
+          if (monthlyData[key]) {
+            monthlyData[key].revenue = closure.totalRevenue || 0;
+            monthlyData[key].platformProfit = closure.totalPlatformProfit || 0;
+            monthlyData[key].networkPayment = closure.totalNetworkPayment || 0;
+            monthlyData[key].fromClosure = true;
+          }
+        });
+      }
+
+      // For months without closures, calculate from orders
       profitsOrders.forEach(order => {
         if (!order.createdAt) return;
-        const orderDate = new Date(order.createdAt.seconds * 1000);
+        const orderDate = parseOrderDate(order.createdAt);
+        if (!orderDate) return;
         const key = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}`;
 
-        if (monthlyData[key]) {
+        // Only calculate if this month doesn't have a closure already
+        if (monthlyData[key] && !monthlyData[key].fromClosure) {
           // Extract items from order using the helper function
           const orderItems = extractOrderItems(order);
 
@@ -6458,16 +7088,9 @@
               productName: item.productName
             }, profitsProducts);
 
-            // Get cost config - try matched product ID first, then item productId
-            let savedCost = {};
-            if (matchedProduct) {
-              savedCost = profitsProductCosts[matchedProduct.id] || {};
-            } else if (item.productId) {
-              savedCost = profitsProductCosts[item.productId] || {};
-            }
-
-            const productCost = savedCost.cost || 0;
-            const platformPercent = savedCost.platformPercent || 50;
+            // Get cost config from product document
+            const productCost = matchedProduct ? (matchedProduct.costo || 0) : 0;
+            const platformPercent = matchedProduct ? (matchedProduct.platformPercent || 50) : 50;
 
             // Get sale price from matched product or from order item
             const salePrice = matchedProduct
@@ -6494,10 +7117,11 @@
       Object.values(monthlyData).forEach(data => {
         const height = Math.abs(data.platformProfit) / maxProfit * 150;
         const color = data.platformProfit >= 0 ? '#007bff' : '#dc3545';
+        const closureIcon = data.fromClosure ? '📁' : '';
 
         html += `
           <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
-            <div style="font-weight:700;margin-bottom:8px;color:${color};">$${data.platformProfit.toLocaleString()}</div>
+            <div style="font-weight:700;margin-bottom:8px;color:${color};">$${data.platformProfit.toLocaleString()} ${closureIcon}</div>
             <div style="width:100%;max-width:60px;height:${Math.max(height, 10)}px;background:${color};border-radius:4px 4px 0 0;"></div>
             <div style="font-size:12px;color:#666;margin-top:8px;text-align:center;">${data.name}</div>
             <div style="font-size:11px;color:#999;">Ventas: $${data.revenue.toLocaleString()}</div>
@@ -6507,8 +7131,132 @@
       });
 
       html += '</div>';
+
+      // Add legend and generate closure button
+      html += `
+        <div style="margin-top:16px;padding:12px;background:#f8f9fa;border-radius:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <div style="font-size:12px;color:#666;">
+            <span style="margin-right:16px;">📁 = Datos de cierre mensual guardado</span>
+          </div>
+          <button id="generateMonthlyClosureBtn" onclick="generateMonthlyEarningsClosure()" style="background:linear-gradient(135deg,#28a745,#218838);color:white;border:none;padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+            Generar Cierre del Mes Anterior
+          </button>
+        </div>
+      `;
+
       container.innerHTML = html;
     }
+
+    // Generate monthly earnings closure for the previous month
+    window.generateMonthlyEarningsClosure = async function() {
+      const now = new Date();
+      const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+      const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+      // Check if closure already exists
+      const existingClosure = monthlyEarningsClosures.find(c => c.month === prevMonth + 1 && c.year === prevYear);
+      if (existingClosure) {
+        if (!confirm(`Ya existe un cierre para ${monthNames[prevMonth]} ${prevYear}. ¿Desea regenerarlo?`)) {
+          return;
+        }
+      }
+
+      // Filter orders for the previous month
+      const startOfMonth = new Date(prevYear, prevMonth, 1, 0, 0, 0, 0);
+      const endOfMonth = new Date(prevYear, prevMonth + 1, 1, 0, 0, 0, 0);
+
+      const monthOrders = profitsOrders.filter(order => {
+        if (!order.createdAt) return false;
+        const orderDate = parseOrderDate(order.createdAt);
+        if (!orderDate) return false;
+        return orderDate >= startOfMonth && orderDate < endOfMonth;
+      });
+
+      // Calculate totals and per-product breakdown
+      let totalRevenue = 0;
+      let totalPlatformProfit = 0;
+      let totalNetworkPayment = 0;
+      const productBreakdown = {};
+
+      monthOrders.forEach(order => {
+        const orderItems = extractOrderItems(order);
+        orderItems.forEach(item => {
+          const matchedProduct = findProductMatch({
+            productId: item.productId,
+            productName: item.productName
+          }, profitsProducts);
+
+          const productCost = matchedProduct ? (matchedProduct.costo || 0) : 0;
+          const platformPercent = matchedProduct ? (matchedProduct.platformPercent || 50) : 50;
+          const salePrice = matchedProduct
+            ? (matchedProduct.precioDistribuidor || matchedProduct.precio || item.price || 0)
+            : item.price || 0;
+
+          const benefitPerUnit = salePrice - productCost;
+          const platformProfitPerUnit = benefitPerUnit > 0 ? Math.round(benefitPerUnit * (platformPercent / 100)) : 0;
+          const networkPaymentPerUnit = benefitPerUnit > 0 ? benefitPerUnit - platformProfitPerUnit : 0;
+
+          totalRevenue += item.totalPrice;
+          totalPlatformProfit += platformProfitPerUnit * item.quantity;
+          totalNetworkPayment += networkPaymentPerUnit * item.quantity;
+
+          // Track per-product
+          const productKey = matchedProduct ? matchedProduct.id : (item.productName || 'unknown');
+          if (!productBreakdown[productKey]) {
+            productBreakdown[productKey] = {
+              productId: productKey,
+              productName: matchedProduct ? matchedProduct.nombre : item.productName,
+              unitsSold: 0,
+              revenue: 0,
+              platformProfit: 0,
+              networkPayment: 0,
+              cost: productCost,
+              platformPercent: platformPercent
+            };
+          }
+          productBreakdown[productKey].unitsSold += item.quantity;
+          productBreakdown[productKey].revenue += item.totalPrice;
+          productBreakdown[productKey].platformProfit += platformProfitPerUnit * item.quantity;
+          productBreakdown[productKey].networkPayment += networkPaymentPerUnit * item.quantity;
+        });
+      });
+
+      // Create closure document
+      const closureData = {
+        month: prevMonth + 1,
+        monthName: monthNames[prevMonth],
+        year: prevYear,
+        createdAt: serverTimestamp(),
+        createdAtIso: new Date().toISOString(),
+        totalOrders: monthOrders.length,
+        totalRevenue: totalRevenue,
+        totalPlatformProfit: totalPlatformProfit,
+        totalNetworkPayment: totalNetworkPayment,
+        averageMargin: totalRevenue > 0 ? (totalPlatformProfit / totalRevenue * 100) : 0,
+        productBreakdown: Object.values(productBreakdown),
+        createdBy: currentUser?.uid || 'system'
+      };
+
+      try {
+        // Use the compound key for the document ID
+        const closureId = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}`;
+
+        if (existingClosure) {
+          await updateDoc(doc(db, 'monthlyEarningsClosures', existingClosure.id), closureData);
+        } else {
+          await setDoc(doc(db, 'monthlyEarningsClosures', closureId), closureData);
+        }
+
+        alert(`Cierre de ${monthNames[prevMonth]} ${prevYear} generado correctamente.\n\nResumen:\n- Ordenes: ${monthOrders.length}\n- Ventas: $${totalRevenue.toLocaleString()}\n- Ganancia Plataforma: $${totalPlatformProfit.toLocaleString()}\n- Pago Red: $${totalNetworkPayment.toLocaleString()}`);
+
+        // Reload data
+        await loadProfitsData();
+      } catch (err) {
+        console.error('Error generando cierre mensual:', err);
+        alert('Error al generar cierre mensual: ' + err.message);
+      }
+    };
 
     // Listen for period filter changes
     document.getElementById('profitsPeriodFilter')?.addEventListener('change', updateProfitsReport);
