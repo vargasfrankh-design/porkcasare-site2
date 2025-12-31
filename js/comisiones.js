@@ -477,15 +477,16 @@ function cleanupListeners() {
 window.addEventListener('beforeunload', cleanupListeners);
 window.addEventListener('pagehide', cleanupListeners);
 
-// Optimización: pausar listeners cuando la pestaña no está visible
+// Optimización: NO reconectar automáticamente al volver a la pestaña
+// Esto evita lecturas excesivas. El usuario puede recargar manualmente si necesita datos frescos.
+// Se mantiene el cleanup al ocultar para liberar recursos.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
     console.log('📋 Pestaña oculta - pausando listeners');
     cleanupListeners();
-  } else if (document.visibilityState === 'visible' && auth.currentUser) {
-    console.log('📋 Pestaña visible - reconectando listeners');
-    attachRealtimeForUserBoth(auth.currentUser.uid);
   }
+  // Eliminado: reconexión automática al volver visible
+  // Los datos se cargarán en el próximo inicio de sesión o recarga de página
 });
 
 // Attach listeners para ambas fuentes

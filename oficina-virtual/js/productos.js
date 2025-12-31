@@ -290,8 +290,47 @@ const MAX_UPLINE_LEVELS = 5; // Legacy - not used
 
 let productos = [];
 
+// === OPTIMIZACIÓN: Cache de productos y categorías en sessionStorage ===
+// Reduce lecturas de Firestore al navegar entre páginas en la misma sesión
+const PRODUCTS_CACHE_KEY = 'productos_cache';
+const CATEGORIES_CACHE_KEY = 'categorias_cache';
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos de cache
+
+function getFromSessionCache(key) {
+  try {
+    const cached = sessionStorage.getItem(key);
+    if (!cached) return null;
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_TTL_MS) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.warn('[productos.js] Error leyendo cache:', e);
+    return null;
+  }
+}
+
+function setSessionCache(key, data) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch (e) {
+    console.warn('[productos.js] Error escribiendo cache:', e);
+  }
+}
+
 async function loadProductsFromFirestore() {
   try {
+    // Intentar obtener de cache primero
+    const cachedProducts = getFromSessionCache(PRODUCTS_CACHE_KEY);
+    if (cachedProducts && cachedProducts.length > 0) {
+      productos = cachedProducts;
+      console.log('[productos.js] Productos cargados desde cache:', productos.length);
+      return;
+    }
+
+    // Si no hay cache, cargar de Firestore
     const productsSnap = await getDocs(collection(db, "productos"));
     productos = productsSnap.docs
       .map(d => ({ docId: d.id, ...d.data() }))
@@ -310,6 +349,8 @@ async function loadProductsFromFirestore() {
       });
 
     console.log('Productos cargados desde Firestore:', productos.length);
+    // Guardar en cache para la próxima navegación
+    setSessionCache(PRODUCTS_CACHE_KEY, productos);
     // Log unique categories for debugging
     const uniqueCategories = [...new Set(productos.map(p => p.categoria).filter(Boolean))];
     console.log('Categorías encontradas en productos:', uniqueCategories);
@@ -321,12 +362,26 @@ async function loadProductsFromFirestore() {
 
 async function loadCategoriesIntoSelector() {
   try {
-    const categoriesSnap = await getDocs(collection(db, "categorias"));
+    // Intentar obtener categorías de cache primero
+    const cachedCategories = getFromSessionCache(CATEGORIES_CACHE_KEY);
+    let categories;
+
+    if (cachedCategories && cachedCategories.length > 0) {
+      categories = cachedCategories;
+      console.log('[productos.js] Categorías cargadas desde cache:', categories.length);
+    } else {
+      // Si no hay cache, cargar de Firestore
+      const categoriesSnap = await getDocs(collection(db, "categorias"));
+      categories = categoriesSnap.docs.map(d => d.data());
+      // Guardar en cache
+      setSessionCache(CATEGORIES_CACHE_KEY, categories);
+      console.log('Categorías cargadas desde Firestore:', categories.length);
+    }
+
     const categorySelector = document.getElementById('categorySelector');
     const categoryFiltersContainer = document.getElementById('categoryFilters');
 
-    const categories = categoriesSnap.docs.map(d => d.data());
-    console.log('Categorías desde Firestore:', categories.map(c => ({ nombre: c.nombre, slug: c.slug })));
+    console.log('Categorías:', categories.map(c => ({ nombre: c.nombre, slug: c.slug })));
 
     if (categorySelector) {
       categorySelector.innerHTML = '<option value="todas">Todas las categorías</option>';
