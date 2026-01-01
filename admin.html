@@ -2090,6 +2090,149 @@
     </div>
   </div>
 
+  <!-- Modal para Informe Previo de Pago a Distribuidor -->
+  <div id="payoutReportModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;align-items:center;justify-content:center;overflow-y:auto;">
+    <div style="background:white;border-radius:12px;width:95%;max-width:800px;max-height:90vh;overflow-y:auto;margin:20px auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <!-- Header del informe -->
+      <div style="background:linear-gradient(135deg, #1a1f36 0%, #2c3e50 100%);color:white;padding:24px;border-radius:12px 12px 0 0;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <h2 style="margin:0;font-size:22px;font-weight:700;">📋 INFORME DE LIQUIDACIÓN DE COMISIONES</h2>
+            <p style="margin:8px 0 0 0;opacity:0.9;font-size:14px;">PorkCasare - Panel Administrativo</p>
+          </div>
+          <button id="payoutReportModalClose" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:24px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;">&times;</button>
+        </div>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.2);display:flex;gap:24px;flex-wrap:wrap;">
+          <div>
+            <span style="font-size:12px;opacity:0.7;">Fecha del Reporte</span>
+            <p id="payoutReportDate" style="margin:4px 0 0 0;font-size:16px;font-weight:600;">--</p>
+          </div>
+          <div>
+            <span style="font-size:12px;opacity:0.7;">Período de Liquidación</span>
+            <p id="payoutReportPeriod" style="margin:4px 0 0 0;font-size:16px;font-weight:600;">--</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información del Distribuidor -->
+      <div style="padding:24px;border-bottom:1px solid #e9ecef;">
+        <h3 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">👤</span> Información del Distribuidor
+        </h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;">
+          <div style="background:#f8f9fa;padding:12px 16px;border-radius:8px;">
+            <span style="font-size:12px;color:#6c757d;">Nombre Completo</span>
+            <p id="payoutReportName" style="margin:4px 0 0 0;font-size:15px;font-weight:600;color:#333;">--</p>
+          </div>
+          <div style="background:#f8f9fa;padding:12px 16px;border-radius:8px;">
+            <span style="font-size:12px;color:#6c757d;">Usuario</span>
+            <p id="payoutReportUsername" style="margin:4px 0 0 0;font-size:15px;font-weight:600;color:#333;">--</p>
+          </div>
+          <div style="background:#f8f9fa;padding:12px 16px;border-radius:8px;">
+            <span style="font-size:12px;color:#6c757d;">ID de Usuario</span>
+            <p id="payoutReportUserId" style="margin:4px 0 0 0;font-size:13px;font-weight:500;color:#666;font-family:monospace;">--</p>
+          </div>
+          <div style="background:#f8f9fa;padding:12px 16px;border-radius:8px;">
+            <span style="font-size:12px;color:#6c757d;">Patrocinador</span>
+            <p id="payoutReportSponsor" style="margin:4px 0 0 0;font-size:15px;font-weight:600;color:#333;">--</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen de Ventas y Comisiones -->
+      <div style="padding:24px;border-bottom:1px solid #e9ecef;">
+        <h3 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">📊</span> Resumen de Actividad
+        </h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:16px;">
+          <div style="background:linear-gradient(135deg, #e8f4fd 0%, #d0e8fa 100%);padding:16px;border-radius:10px;text-align:center;">
+            <span style="font-size:12px;color:#0052cc;">Puntos Personales</span>
+            <p id="payoutReportPersonalPoints" style="margin:8px 0 0 0;font-size:24px;font-weight:700;color:#0052cc;">0</p>
+          </div>
+          <div style="background:linear-gradient(135deg, #e6f9f0 0%, #c8f5df 100%);padding:16px;border-radius:10px;text-align:center;">
+            <span style="font-size:12px;color:#00875a;">Puntos Grupales</span>
+            <p id="payoutReportGroupPoints" style="margin:8px 0 0 0;font-size:24px;font-weight:700;color:#00875a;">0</p>
+          </div>
+          <div style="background:linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);padding:16px;border-radius:10px;text-align:center;">
+            <span style="font-size:12px;color:#ff8b00;">Balance Acumulado</span>
+            <p id="payoutReportBalance" style="margin:8px 0 0 0;font-size:24px;font-weight:700;color:#ff8b00;">$0</p>
+          </div>
+          <div style="background:linear-gradient(135deg, #f5e6ff 0%, #e8d4ff 100%);padding:16px;border-radius:10px;text-align:center;">
+            <span style="font-size:12px;color:#7c3aed;">Cobros Previos</span>
+            <p id="payoutReportPreviousPaid" style="margin:8px 0 0 0;font-size:24px;font-weight:700;color:#7c3aed;">$0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalle de Comisiones por Concepto -->
+      <div style="padding:24px;border-bottom:1px solid #e9ecef;">
+        <h3 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">💰</span> Detalle de Comisiones por Concepto
+        </h3>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr style="background:#f8f9fa;">
+                <th style="padding:12px;text-align:left;border-bottom:2px solid #dee2e6;color:#495057;">Concepto / Fuente</th>
+                <th style="padding:12px;text-align:center;border-bottom:2px solid #dee2e6;color:#495057;">Cantidad</th>
+                <th style="padding:12px;text-align:right;border-bottom:2px solid #dee2e6;color:#495057;">Puntos</th>
+                <th style="padding:12px;text-align:right;border-bottom:2px solid #dee2e6;color:#495057;">Monto</th>
+              </tr>
+            </thead>
+            <tbody id="payoutReportCommissionsTable">
+              <!-- Rows will be dynamically populated -->
+            </tbody>
+            <tfoot>
+              <tr style="background:#f8f9fa;font-weight:700;">
+                <td style="padding:12px;border-top:2px solid #dee2e6;">TOTAL COMISIONES</td>
+                <td style="padding:12px;text-align:center;border-top:2px solid #dee2e6;" id="payoutReportTotalCount">0</td>
+                <td style="padding:12px;text-align:right;border-top:2px solid #dee2e6;" id="payoutReportTotalPoints">0</td>
+                <td style="padding:12px;text-align:right;border-top:2px solid #dee2e6;color:#00875a;" id="payoutReportTotalAmount">$0</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Historial Reciente de Comisiones -->
+      <div style="padding:24px;border-bottom:1px solid #e9ecef;">
+        <h3 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">📜</span> Historial Reciente de Transacciones
+          <span style="font-size:12px;color:#6c757d;font-weight:normal;">(Últimas 20 transacciones)</span>
+        </h3>
+        <div id="payoutReportHistoryContainer" style="max-height:300px;overflow-y:auto;border:1px solid #e9ecef;border-radius:8px;">
+          <!-- History entries will be dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Monto a Pagar -->
+      <div style="padding:24px;background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border-bottom:1px solid #e9ecef;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+          <div>
+            <h3 style="margin:0;font-size:18px;color:#166534;">VALOR A PAGAR AL DISTRIBUIDOR</h3>
+            <p style="margin:4px 0 0 0;font-size:13px;color:#15803d;">Monto solicitado para liquidación</p>
+          </div>
+          <div style="text-align:right;">
+            <p id="payoutReportFinalAmount" style="margin:0;font-size:36px;font-weight:800;color:#166534;">$0</p>
+            <input type="hidden" id="payoutReportPayoutId" value="">
+            <input type="hidden" id="payoutReportUserIdHidden" value="">
+            <input type="hidden" id="payoutReportAmountHidden" value="">
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div style="padding:24px;display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;background:#f8f9fa;border-radius:0 0 12px 12px;">
+        <button id="payoutReportCancelBtn" class="btn-secondary" style="padding:12px 24px;font-size:14px;">
+          Cancelar
+        </button>
+        <button id="payoutReportConfirmBtn" class="btn-success" style="padding:12px 32px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;">
+          <span>✓</span> Confirmar y Ejecutar Pago
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- SweetAlert2 for notifications and dialogs -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -3263,14 +3406,16 @@
           const status = payout.status || 'scheduled';
           const statusText = 'Pendiente';
           const statusColor = '#fd7e14';
-          
+
           row.innerHTML = `
             <td>${userName} (${userData.usuario || payout.userId})</td>
             <td>$${(payout.amount || 0).toLocaleString()}</td>
             <td>${date}</td>
             <td><span style="color:${statusColor};font-weight:600">${statusText}</span></td>
             <td>
-              <button class="btn-success" onclick="acceptPayout('${payout.id}', '${payout.userId}', ${payout.amount})">Aceptar y Pagar</button>
+              <button class="btn-primary" onclick="showPayoutReport('${payout.id}', '${payout.userId}', ${payout.amount})" style="display:flex;align-items:center;gap:6px;">
+                <span>📋</span> Ver Informe
+              </button>
             </td>
           `;
           table.appendChild(row);
@@ -3281,11 +3426,10 @@
     }
 
     // Aceptar y pagar cobro (marca como pagado para evitar doble pago)
+    // Esta función ahora es llamada desde el modal de informe previo
     window.acceptPayout = async function(payoutId, userId, amount) {
       if (!currentUser) return;
-      const confirmPay = confirm(`¿Confirmar pago de $${amount.toLocaleString()} al distribuidor?`);
-      if (!confirmPay) return;
-      
+
       try {
         // Actualizar el estado del payout a 'paid'
         const payoutRef = doc(db, "payouts", payoutId);
@@ -3294,7 +3438,7 @@
           paidAt: new Date().toISOString(),
           paidBy: currentUser.uid
         });
-        
+
         // El monto ya fue descontado de balance cuando el distribuidor solicitó el cobro
         // Ahora que el admin aprueba el pago, actualizamos:
         // 1. Descontamos de walletBalance (ya que se está pagando físicamente)
@@ -3308,17 +3452,20 @@
           const userData = userSnap.data();
           const currentWallet = Number(userData.walletBalance ?? 0);
           const currentCobradas = Number(userData.totalComisionesCobradas ?? 0);
-          
+
           // Descontar de wallet y sumar a comisiones cobradas
           const newWallet = currentWallet - amount;
           const newCobradas = currentCobradas + amount;
-          
+
           tx.update(userRef, {
             walletBalance: newWallet,
             totalComisionesCobradas: newCobradas
           });
         });
-        
+
+        // Cerrar el modal de informe
+        closePayoutReportModal();
+
         alert("Pago confirmado exitosamente ✅");
         await loadAllData();
       } catch (err) {
@@ -3326,6 +3473,307 @@
         alert("Error procesando el pago: " + err.message);
       }
     };
+
+    // ========================================
+    // INFORME PREVIO DE PAGO - MODAL
+    // ========================================
+
+    // Función para mostrar el informe previo de pago del distribuidor
+    window.showPayoutReport = async function(payoutId, userId, amount) {
+      if (!currentUser) return;
+
+      const modal = document.getElementById('payoutReportModal');
+
+      // Mostrar modal con indicador de carga
+      modal.style.display = 'flex';
+
+      try {
+        // Obtener datos del payout
+        const payoutDoc = await getDoc(doc(db, "payouts", payoutId));
+        if (!payoutDoc.exists()) {
+          throw new Error("Solicitud de pago no encontrada");
+        }
+        const payoutData = payoutDoc.data();
+
+        // Obtener datos completos del usuario
+        const userDoc = await getDoc(doc(db, "usuarios", userId));
+        if (!userDoc.exists()) {
+          throw new Error("Usuario no encontrado");
+        }
+        const userData = userDoc.data();
+
+        // Configurar fecha del reporte
+        const now = new Date();
+        document.getElementById('payoutReportDate').textContent = now.toLocaleDateString('es-CO', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        // Calcular período de liquidación
+        const payoutCreatedAt = payoutData.createdAt?.seconds
+          ? new Date(payoutData.createdAt.seconds * 1000)
+          : new Date(payoutData.createdAt || now);
+        const scheduledFor = payoutData.scheduled_for || 'N/A';
+        document.getElementById('payoutReportPeriod').textContent = `Hasta ${scheduledFor}`;
+
+        // Información del distribuidor
+        document.getElementById('payoutReportName').textContent = userData.nombre || 'No especificado';
+        document.getElementById('payoutReportUsername').textContent = userData.usuario || 'N/A';
+        document.getElementById('payoutReportUserId').textContent = userId;
+        document.getElementById('payoutReportSponsor').textContent = userData.patrocinador || 'Sin patrocinador';
+
+        // Resumen de actividad
+        const personalPoints = Number(userData.personalPoints || userData.puntos || 0);
+        const groupPoints = Number(userData.groupPoints || 0);
+        const balance = Number(userData.balance || 0);
+        const walletBalance = Number(userData.walletBalance || 0);
+        const totalCobradas = Number(userData.totalComisionesCobradas || 0);
+
+        document.getElementById('payoutReportPersonalPoints').textContent = personalPoints.toFixed(2);
+        document.getElementById('payoutReportGroupPoints').textContent = groupPoints.toFixed(2);
+        document.getElementById('payoutReportBalance').textContent = `$${balance.toLocaleString()}`;
+        document.getElementById('payoutReportPreviousPaid').textContent = `$${totalCobradas.toLocaleString()}`;
+
+        // Analizar historial para detallar comisiones por concepto
+        const history = userData.history || [];
+        const commissionSummary = analyzeCommissionHistory(history);
+
+        // Renderizar tabla de comisiones por concepto
+        renderCommissionsTable(commissionSummary);
+
+        // Renderizar historial reciente
+        renderRecentHistory(history);
+
+        // Valor final a pagar
+        document.getElementById('payoutReportFinalAmount').textContent = `$${amount.toLocaleString()}`;
+
+        // Guardar datos para la confirmación
+        document.getElementById('payoutReportPayoutId').value = payoutId;
+        document.getElementById('payoutReportUserIdHidden').value = userId;
+        document.getElementById('payoutReportAmountHidden').value = amount;
+
+      } catch (err) {
+        console.error('Error loading payout report:', err);
+        alert('Error cargando el informe: ' + err.message);
+        modal.style.display = 'none';
+      }
+    };
+
+    // Función para analizar el historial y agrupar comisiones por tipo
+    function analyzeCommissionHistory(history) {
+      const summary = {
+        'Bono Inicio Rápido': { count: 0, points: 0, amount: 0 },
+        'Comisión Inicio Rápido (Niveles Superiores)': { count: 0, points: 0, amount: 0 },
+        'Comisión por Diferencia de Precio': { count: 0, points: 0, amount: 0 },
+        'Comisión Multinivel (10%)': { count: 0, points: 0, amount: 0 },
+        'Comisión por Restaurante (5%)': { count: 0, points: 0, amount: 0 },
+        'Otros': { count: 0, points: 0, amount: 0 }
+      };
+
+      if (!Array.isArray(history)) return summary;
+
+      for (const entry of history) {
+        const type = entry.type || '';
+        const amount = Number(entry.amount || 0);
+        const points = Number(entry.points || 0);
+
+        // Clasificar por tipo
+        if (type === 'quick_start_bonus') {
+          summary['Bono Inicio Rápido'].count++;
+          summary['Bono Inicio Rápido'].points += points;
+          summary['Bono Inicio Rápido'].amount += amount;
+        } else if (type === 'quick_start_upper_level') {
+          summary['Comisión Inicio Rápido (Niveles Superiores)'].count++;
+          summary['Comisión Inicio Rápido (Niveles Superiores)'].points += points;
+          summary['Comisión Inicio Rápido (Niveles Superiores)'].amount += amount;
+        } else if (type === 'group_points') {
+          // Distinguir entre comisión por diferencia y comisión multinivel
+          const action = entry.action || '';
+          if (action.includes('Diferencia de precio') || action.includes('diferencia de precio')) {
+            summary['Comisión por Diferencia de Precio'].count++;
+            summary['Comisión por Diferencia de Precio'].points += points;
+            summary['Comisión por Diferencia de Precio'].amount += amount;
+          } else {
+            summary['Comisión Multinivel (10%)'].count++;
+            summary['Comisión Multinivel (10%)'].points += points;
+            summary['Comisión Multinivel (10%)'].amount += amount;
+          }
+        } else if (type === 'restaurant_commission') {
+          summary['Comisión por Restaurante (5%)'].count++;
+          summary['Comisión por Restaurante (5%)'].points += points;
+          summary['Comisión por Restaurante (5%)'].amount += amount;
+        } else if (type === 'earning' && amount > 0) {
+          summary['Otros'].count++;
+          summary['Otros'].points += points;
+          summary['Otros'].amount += amount;
+        }
+      }
+
+      return summary;
+    }
+
+    // Renderizar tabla de comisiones
+    function renderCommissionsTable(summary) {
+      const table = document.getElementById('payoutReportCommissionsTable');
+      let html = '';
+      let totalCount = 0;
+      let totalPoints = 0;
+      let totalAmount = 0;
+
+      const conceptIcons = {
+        'Bono Inicio Rápido': '🚀',
+        'Comisión Inicio Rápido (Niveles Superiores)': '⬆️',
+        'Comisión por Diferencia de Precio': '💵',
+        'Comisión Multinivel (10%)': '🌐',
+        'Comisión por Restaurante (5%)': '🍽️',
+        'Otros': '📦'
+      };
+
+      for (const [concept, data] of Object.entries(summary)) {
+        if (data.count > 0) {
+          totalCount += data.count;
+          totalPoints += data.points;
+          totalAmount += data.amount;
+
+          html += `
+            <tr>
+              <td style="padding:12px;border-bottom:1px solid #e9ecef;">
+                <span style="margin-right:8px;">${conceptIcons[concept] || '💰'}</span>
+                ${concept}
+              </td>
+              <td style="padding:12px;text-align:center;border-bottom:1px solid #e9ecef;">${data.count}</td>
+              <td style="padding:12px;text-align:right;border-bottom:1px solid #e9ecef;">${data.points.toFixed(2)}</td>
+              <td style="padding:12px;text-align:right;border-bottom:1px solid #e9ecef;">$${data.amount.toLocaleString()}</td>
+            </tr>
+          `;
+        }
+      }
+
+      if (html === '') {
+        html = '<tr><td colspan="4" style="padding:16px;text-align:center;color:#6c757d;">No hay comisiones registradas en el historial</td></tr>';
+      }
+
+      table.innerHTML = html;
+      document.getElementById('payoutReportTotalCount').textContent = totalCount;
+      document.getElementById('payoutReportTotalPoints').textContent = totalPoints.toFixed(2);
+      document.getElementById('payoutReportTotalAmount').textContent = `$${totalAmount.toLocaleString()}`;
+    }
+
+    // Renderizar historial reciente
+    function renderRecentHistory(history) {
+      const container = document.getElementById('payoutReportHistoryContainer');
+
+      if (!Array.isArray(history) || history.length === 0) {
+        container.innerHTML = '<div style="padding:24px;text-align:center;color:#6c757d;">No hay transacciones registradas</div>';
+        return;
+      }
+
+      // Ordenar por fecha más reciente y tomar las últimas 20
+      const sortedHistory = [...history]
+        .filter(entry => entry.amount && entry.amount !== 0)
+        .sort((a, b) => {
+          const dateA = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+          const dateB = b.timestamp || (b.date ? new Date(b.date).getTime() : 0);
+          return dateB - dateA;
+        })
+        .slice(0, 20);
+
+      if (sortedHistory.length === 0) {
+        container.innerHTML = '<div style="padding:24px;text-align:center;color:#6c757d;">No hay transacciones con montos registrados</div>';
+        return;
+      }
+
+      let html = '';
+      for (const entry of sortedHistory) {
+        const amount = Number(entry.amount || 0);
+        const points = Number(entry.points || 0);
+        const action = entry.action || 'Transacción';
+        const date = entry.date ? new Date(entry.date).toLocaleDateString('es-CO', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }) : 'N/A';
+
+        const isPositive = amount >= 0;
+        const amountColor = isPositive ? '#00875a' : '#de350b';
+        const amountPrefix = isPositive ? '+' : '';
+
+        // Determinar icono según tipo
+        let icon = '💰';
+        const type = entry.type || '';
+        if (type === 'quick_start_bonus') icon = '🚀';
+        else if (type === 'quick_start_upper_level') icon = '⬆️';
+        else if (type === 'restaurant_commission') icon = '🍽️';
+        else if (type === 'group_points') icon = '🌐';
+        else if (type === 'withdraw' || type === 'cobro') icon = '💳';
+
+        html += `
+          <div style="padding:12px 16px;border-bottom:1px solid #e9ecef;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <span style="font-size:16px;">${icon}</span>
+                <span style="font-size:13px;color:#333;font-weight:500;word-break:break-word;">${action}</span>
+              </div>
+              <div style="font-size:11px;color:#6c757d;">${date}${entry.fromUser ? ` • De: ${entry.fromUser}` : ''}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:14px;font-weight:600;color:${amountColor};">${amountPrefix}$${Math.abs(amount).toLocaleString()}</div>
+              ${points ? `<div style="font-size:11px;color:#6c757d;">${points.toFixed(2)} pts</div>` : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    // Cerrar modal de informe
+    function closePayoutReportModal() {
+      document.getElementById('payoutReportModal').style.display = 'none';
+    }
+
+    // Event listeners para el modal de informe de pago
+    document.getElementById('payoutReportModalClose').addEventListener('click', closePayoutReportModal);
+    document.getElementById('payoutReportCancelBtn').addEventListener('click', closePayoutReportModal);
+    document.getElementById('payoutReportModal').addEventListener('click', (e) => {
+      if (e.target.id === 'payoutReportModal') {
+        closePayoutReportModal();
+      }
+    });
+
+    // Confirmar pago desde el modal
+    document.getElementById('payoutReportConfirmBtn').addEventListener('click', async () => {
+      const payoutId = document.getElementById('payoutReportPayoutId').value;
+      const userId = document.getElementById('payoutReportUserIdHidden').value;
+      const amount = Number(document.getElementById('payoutReportAmountHidden').value);
+
+      if (!payoutId || !userId || !amount) {
+        alert('Error: Datos de pago incompletos');
+        return;
+      }
+
+      // Confirmar antes de procesar
+      const confirmPay = confirm(`¿Está seguro de confirmar el pago de $${amount.toLocaleString()} al distribuidor?\n\nEsta acción no se puede deshacer.`);
+      if (!confirmPay) return;
+
+      const btn = document.getElementById('payoutReportConfirmBtn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Procesando...';
+
+      try {
+        await acceptPayout(payoutId, userId, amount);
+      } catch (err) {
+        console.error('Error confirming payout:', err);
+        alert('Error al procesar el pago: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    });
 
     // Role management variables
     let roleModalTarget = null;
