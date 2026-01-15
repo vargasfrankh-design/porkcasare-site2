@@ -9,7 +9,7 @@
  */
 
 import { db } from '/src/firebase-config.js';
-import { collection, getDocs, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
+import { collection, getDocs, query, where, orderBy, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
 
 // Track if content has been loaded to avoid duplicate loads
 let contentLoaded = false;
@@ -167,6 +167,184 @@ function renderResourceLink(item, type) {
 }
 
 /**
+ * Product image cache to avoid repeated Firestore queries
+ */
+const productImageCache = new Map();
+
+/**
+ * Fetch product image URL from the productos collection
+ * @param {string} productoId - The product ID to fetch
+ * @returns {Promise<string|null>} The product image URL or null
+ */
+async function fetchProductImage(productoId) {
+  if (!productoId || !db) return null;
+
+  // Check cache first
+  if (productImageCache.has(productoId)) {
+    return productImageCache.get(productoId);
+  }
+
+  try {
+    const productRef = doc(db, 'productos', productoId);
+    const productSnap = await getDoc(productRef);
+
+    if (productSnap.exists()) {
+      const productData = productSnap.data();
+      const imageUrl = productData.imagen || null;
+      productImageCache.set(productoId, imageUrl);
+      return imageUrl;
+    }
+  } catch (error) {
+    console.warn('[educacion.js] Error fetching product image:', error);
+  }
+
+  productImageCache.set(productoId, null);
+  return null;
+}
+
+/**
+ * Render a PEC card with image, title, and description
+ * When clicked, redirects to the consumo section and highlights the associated product
+ * If a productoId is specified, fetches and displays the product's image
+ */
+function renderPECCard(item) {
+  const card = document.createElement('div');
+  const title = escapeHtml(item.titulo || item.title || 'Material PEC');
+  const description = escapeHtml(item.descripcion || '');
+  // Handle imagen path - if it already starts with '/' or 'http', use as-is, otherwise prepend /images/pec/
+  let pecImageSrc = null;
+  if (item.imagen) {
+    if (item.imagen.startsWith('/') || item.imagen.startsWith('http')) {
+      pecImageSrc = item.imagen;
+    } else {
+      pecImageSrc = `/images/pec/${item.imagen}`;
+    }
+  }
+  const productoId = item.productoId || '';
+
+  card.className = 'pec-card';
+  card.setAttribute('role', 'button');
+  card.setAttribute('tabindex', '0');
+  card.setAttribute('data-producto-id', productoId);
+
+  // Only make it clickable if there's a product ID
+  if (productoId) {
+    card.style.cursor = 'pointer';
+  }
+
+  // Initial render with PEC image or placeholder
+  card.innerHTML = `
+    <div class="pec-card-image-container">
+      ${pecImageSrc ?
+        `<img class="pec-card-image" src="${pecImageSrc}" alt="${title}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image');">` :
+        `<div class="pec-card-placeholder-icon">📋</div>`
+      }
+    </div>
+    <div class="pec-card-content">
+      <h4 class="pec-card-title">${title}</h4>
+      ${description ? `<p class="pec-card-description">${description}</p>` : ''}
+    </div>
+    <div class="pec-card-footer">
+      ${productoId ? `<span class="pec-card-action">Ver producto →</span>` : ''}
+    </div>
+  `;
+
+  // If there's a linked product, fetch its image and update the card
+  if (productoId) {
+    fetchProductImage(productoId).then(productImageUrl => {
+      if (productImageUrl) {
+        const imageContainer = card.querySelector('.pec-card-image-container');
+        if (imageContainer) {
+          imageContainer.innerHTML = `<img class="pec-card-image" src="${productImageUrl}" alt="${title}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image');">`;
+        }
+      }
+    });
+
+    // Click handler to redirect to consumo section and show product
+    const handleClick = () => {
+      navigateToProduct(productoId);
+    };
+
+    card.addEventListener('click', handleClick);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleClick();
+      }
+    });
+  }
+
+  return card;
+}
+
+/**
+ * Navigate to the Consumo tab and scroll to/highlight the specified product
+ * @param {string} productoId - The ID of the product to show
+ */
+function navigateToProduct(productoId) {
+  // Silently return if no product ID - this shouldn't happen as the click handler
+  // is only attached when productoId exists
+  if (!productoId) {
+    return;
+  }
+
+  // Switch to Consumo tab
+  const consumoTab = document.querySelector('.section-tab[data-tab="consumo"]');
+  if (consumoTab) {
+    consumoTab.click();
+  }
+
+  // Wait for tab switch animation and product grid to render
+  setTimeout(() => {
+    // Find the product card
+    const productCard = document.querySelector(`.product-card[data-id="${productoId}"]`);
+
+    if (productCard) {
+      // Scroll to the product
+      productCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Add highlight animation
+      productCard.classList.add('pec-highlight');
+      setTimeout(() => {
+        productCard.classList.remove('pec-highlight');
+      }, 3000);
+    } else {
+      // Product not found in current view, try to find it by clearing filters
+      console.log('[educacion.js] Product not visible, resetting category filter...');
+
+      // Reset category filter to 'todas' to show all products
+      const allCategoryBtn = document.querySelector('.category-filter-btn[data-category="todas"]');
+      if (allCategoryBtn) {
+        allCategoryBtn.click();
+      }
+
+      // Try again after filter reset
+      setTimeout(() => {
+        const productCardRetry = document.querySelector(`.product-card[data-id="${productoId}"]`);
+        if (productCardRetry) {
+          productCardRetry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          productCardRetry.classList.add('pec-highlight');
+          setTimeout(() => {
+            productCardRetry.classList.remove('pec-highlight');
+          }, 3000);
+        } else {
+          console.warn('[educacion.js] Product not found:', productoId);
+          // Show a message to the user
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              icon: 'info',
+              title: 'Producto no disponible',
+              text: 'El producto asociado a este recurso PEC no está disponible actualmente.',
+              confirmButtonText: 'Entendido'
+            });
+          }
+        }
+      }, 500);
+    }
+  }, 300);
+}
+
+/**
  * Show placeholder when no content is available
  */
 function showPlaceholder(container, icon, message) {
@@ -223,6 +401,7 @@ async function loadEducationContent(forceReload = false) {
 /**
  * Load PEC del Mes content
  * Uses localStorage cache with 1-hour TTL to reduce Firestore reads
+ * Renders PEC content as visual cards with images, title, and description
  */
 async function loadPECContent() {
   const container = document.getElementById('pecDelMes');
@@ -264,9 +443,11 @@ async function loadPECContent() {
       return;
     }
 
+    // Use grid layout for PEC cards
     container.innerHTML = '';
+    container.classList.add('pec-cards-grid');
     items.forEach(data => {
-      container.appendChild(renderResourceLink(data, 'pec'));
+      container.appendChild(renderPECCard(data));
     });
   } catch (e) {
     console.error('[educacion.js] PEC load error:', e);

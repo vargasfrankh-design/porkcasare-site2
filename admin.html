@@ -1656,15 +1656,39 @@
           <input type="text" id="educationTitle" required style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;" placeholder="Ej: Cómo hacer tu primera venta">
         </div>
 
-        <div style="margin-bottom:16px;">
+        <!-- Campo de URL para contenido NO-PEC -->
+        <div id="educationUrlField" style="margin-bottom:16px;">
           <label style="display:block;margin-bottom:6px;font-weight:600;">URL del recurso *</label>
-          <input type="url" id="educationUrl" required style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;" placeholder="https://...">
+          <input type="url" id="educationUrl" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;" placeholder="https://...">
           <small style="color:#666;display:block;margin-top:4px;">Para videos de YouTube, usa el link normal (no el embed)</small>
         </div>
 
         <div style="margin-bottom:16px;">
           <label style="display:block;margin-bottom:6px;font-weight:600;">Descripción (opcional)</label>
           <textarea id="educationDescription" rows="3" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical;" placeholder="Breve descripción del contenido..."></textarea>
+        </div>
+
+        <!-- Campos exclusivos para PEC -->
+        <div id="pecFieldsContainer" style="display:none;">
+          <!-- Selector de producto para PEC -->
+          <div id="pecProductField" style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Producto asociado *</label>
+            <select id="educationProductId" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
+              <option value="">Seleccionar producto...</option>
+              <!-- Products will be loaded dynamically -->
+            </select>
+            <small style="color:#666;display:block;margin-top:4px;">Selecciona el producto del catálogo que se mostrará cuando el usuario haga clic en este recurso PEC</small>
+          </div>
+
+          <!-- Campo de imagen para PEC -->
+          <div id="pecImageField" style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Imagen de portada del libro *</label>
+            <input type="text" id="educationImage" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;" placeholder="Ej: libro-liderazgo.jpg">
+            <small style="color:#666;display:block;margin-top:4px;">La imagen debe estar en /images/pec/. Solo ingrese el nombre del archivo (ej: portada-pec-enero.jpg)</small>
+            <div id="pecImagePreview" style="margin-top:12px;display:none;text-align:center;">
+              <img id="pecImagePreviewImg" style="max-width:200px;max-height:280px;border-radius:8px;border:1px solid #ddd;box-shadow:0 4px 12px rgba(0,0,0,0.15);" src="" alt="Vista previa">
+            </div>
+          </div>
         </div>
 
         <div style="margin-bottom:20px;">
@@ -8403,8 +8427,79 @@
         document.getElementById('educationTitle').value = '';
         document.getElementById('educationUrl').value = '';
         document.getElementById('educationDescription').value = '';
+        document.getElementById('educationImage').value = '';
+        document.getElementById('educationProductId').value = '';
         document.getElementById('educationActive').checked = true;
+        document.getElementById('pecFieldsContainer').style.display = 'none';
+        document.getElementById('educationUrlField').style.display = 'block';
+        document.getElementById('pecImagePreview').style.display = 'none';
+        // Load products for PEC selector
+        loadProductsForPECSelector();
         educationModal.style.display = 'flex';
+      });
+    }
+
+    // Load products into PEC product selector
+    async function loadProductsForPECSelector() {
+      const selector = document.getElementById('educationProductId');
+      if (!selector) return;
+
+      try {
+        const productosCol = collection(db, 'productos');
+        const snapshot = await getDocs(productosCol);
+
+        selector.innerHTML = '<option value="">Seleccionar producto...</option>';
+
+        snapshot.docs.forEach(doc => {
+          const prod = doc.data();
+          const option = document.createElement('option');
+          option.value = doc.id;
+          option.textContent = prod.nombre || prod.name || doc.id;
+          selector.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading products for PEC selector:', error);
+      }
+    }
+
+    // Toggle PEC fields based on content type
+    const educationType = document.getElementById('educationType');
+    if (educationType) {
+      educationType.addEventListener('change', (e) => {
+        const pecFieldsContainer = document.getElementById('pecFieldsContainer');
+        const educationUrlField = document.getElementById('educationUrlField');
+        const educationUrl = document.getElementById('educationUrl');
+
+        if (e.target.value === 'pec') {
+          // Show PEC fields, hide URL field
+          pecFieldsContainer.style.display = 'block';
+          educationUrlField.style.display = 'none';
+          educationUrl.removeAttribute('required');
+          // Load products if not already loaded
+          loadProductsForPECSelector();
+        } else {
+          // Hide PEC fields, show URL field
+          pecFieldsContainer.style.display = 'none';
+          educationUrlField.style.display = 'block';
+          educationUrl.setAttribute('required', 'required');
+        }
+      });
+    }
+
+    // Preview PEC image when filename is entered
+    const educationImageInput = document.getElementById('educationImage');
+    if (educationImageInput) {
+      educationImageInput.addEventListener('input', (e) => {
+        const filename = e.target.value.trim();
+        const previewContainer = document.getElementById('pecImagePreview');
+        const previewImg = document.getElementById('pecImagePreviewImg');
+        if (filename) {
+          previewImg.src = '/images/pec/' + filename;
+          previewImg.onerror = () => { previewContainer.style.display = 'none'; };
+          previewImg.onload = () => { previewContainer.style.display = 'block'; };
+        } else {
+          previewContainer.style.display = 'none';
+        }
       });
     }
 
@@ -8433,22 +8528,52 @@
         const titulo = document.getElementById('educationTitle').value.trim();
         const url = document.getElementById('educationUrl').value.trim();
         const descripcion = document.getElementById('educationDescription').value.trim();
+        const imagen = document.getElementById('educationImage').value.trim();
+        const productoId = document.getElementById('educationProductId').value;
         const activo = document.getElementById('educationActive').checked;
 
-        if (!tipo || !titulo || !url) {
+        // Validation based on content type
+        if (!tipo || !titulo) {
           alert('Por favor complete todos los campos obligatorios');
           return;
+        }
+
+        // For PEC: require product ID and image; for others: require URL
+        if (tipo === 'pec') {
+          if (!productoId) {
+            alert('Por favor seleccione un producto asociado para el recurso PEC');
+            return;
+          }
+          if (!imagen) {
+            alert('Por favor ingrese el nombre del archivo de imagen de portada');
+            return;
+          }
+        } else {
+          if (!url) {
+            alert('Por favor ingrese la URL del recurso');
+            return;
+          }
         }
 
         try {
           const data = {
             tipo,
             titulo,
-            url,
             descripcion,
             activo,
             fecha: new Date()
           };
+
+          // For PEC content: add imagen and productoId, no URL
+          if (tipo === 'pec') {
+            data.imagen = imagen;
+            data.productoId = productoId;
+            // Remove url field for PEC if it exists
+            data.url = '';
+          } else {
+            // For non-PEC content: add URL
+            data.url = url;
+          }
 
           if (id) {
             // Update existing
@@ -8473,13 +8598,41 @@
       const item = educationData.find(e => e.id === id);
       if (!item) return;
 
+      // Load products for selector first
+      await loadProductsForPECSelector();
+
       document.getElementById('educationModalTitle').textContent = 'Editar Enlace Educativo';
       document.getElementById('educationId').value = id;
       document.getElementById('educationType').value = item.tipo || '';
       document.getElementById('educationTitle').value = item.titulo || '';
       document.getElementById('educationUrl').value = item.url || '';
       document.getElementById('educationDescription').value = item.descripcion || '';
+      document.getElementById('educationImage').value = item.imagen || '';
+      document.getElementById('educationProductId').value = item.productoId || '';
       document.getElementById('educationActive').checked = item.activo !== false;
+
+      // Show/hide fields based on content type
+      const pecFieldsContainer = document.getElementById('pecFieldsContainer');
+      const educationUrlField = document.getElementById('educationUrlField');
+      const pecImagePreview = document.getElementById('pecImagePreview');
+      const pecImagePreviewImg = document.getElementById('pecImagePreviewImg');
+
+      if (item.tipo === 'pec') {
+        pecFieldsContainer.style.display = 'block';
+        educationUrlField.style.display = 'none';
+        if (item.imagen) {
+          pecImagePreviewImg.src = '/images/pec/' + item.imagen;
+          pecImagePreviewImg.onerror = () => { pecImagePreview.style.display = 'none'; };
+          pecImagePreviewImg.onload = () => { pecImagePreview.style.display = 'block'; };
+        } else {
+          pecImagePreview.style.display = 'none';
+        }
+      } else {
+        pecFieldsContainer.style.display = 'none';
+        educationUrlField.style.display = 'block';
+        pecImagePreview.style.display = 'none';
+      }
+
       educationModal.style.display = 'flex';
     };
 
