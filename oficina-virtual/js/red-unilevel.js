@@ -1304,7 +1304,8 @@ async function readAndRenderPoints(userId) {
     if (pointsEl) pointsEl.textContent = String(personal);
 
     const tpEl = document.getElementById("teamPoints");
-    if (tpEl) tpEl.textContent = String(teamPersisted);
+    // Round to max 2 decimal places to avoid displaying excessive decimals
+    if (tpEl) tpEl.textContent = String(Math.round(teamPersisted * 100) / 100);
 
     const alertEl = document.getElementById("activationAlert");
     if (alertEl) alertEl.style.display = (personal < 50) ? "block" : "none";
@@ -1379,12 +1380,14 @@ onAuthStateChanged(auth, async (user) => {
 
     if (typeof d.groupPoints === "number") {
       const tpEl2 = document.getElementById("teamPoints");
-      if (tpEl2) tpEl2.textContent = String(d.groupPoints);
+      // Round to max 2 decimal places to avoid displaying excessive decimals
+      if (tpEl2) tpEl2.textContent = String(Math.round(d.groupPoints * 100) / 100);
     } else {
       try {
         const totalTeamPoints = await calculateTeamPoints(user.uid);
         const tpEl2 = document.getElementById("teamPoints");
-        if (tpEl2) tpEl2.textContent = String(totalTeamPoints);
+        // Round to max 2 decimal places to avoid displaying excessive decimals
+        if (tpEl2) tpEl2.textContent = String(Math.round(totalTeamPoints * 100) / 100);
       } catch (e) {
         console.warn("No se pudo calcular groupPoints para mostrar:", e);
       }

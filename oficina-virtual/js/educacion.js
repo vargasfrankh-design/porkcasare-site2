@@ -167,21 +167,21 @@ function renderResourceLink(item, type) {
 }
 
 /**
- * Product image cache to avoid repeated Firestore queries
+ * Product data cache to avoid repeated Firestore queries
  */
-const productImageCache = new Map();
+const productDataCache = new Map();
 
 /**
- * Fetch product image URL from the productos collection
+ * Fetch product data (image, title, description) from the productos collection
  * @param {string} productoId - The product ID to fetch
- * @returns {Promise<string|null>} The product image URL or null
+ * @returns {Promise<{imagen: string|null, nombre: string|null, descripcion: string|null}>} Product data
  */
-async function fetchProductImage(productoId) {
-  if (!productoId || !db) return null;
+async function fetchProductData(productoId) {
+  if (!productoId || !db) return { imagen: null, nombre: null, descripcion: null };
 
   // Check cache first
-  if (productImageCache.has(productoId)) {
-    return productImageCache.get(productoId);
+  if (productDataCache.has(productoId)) {
+    return productDataCache.get(productoId);
   }
 
   try {
@@ -190,27 +190,41 @@ async function fetchProductImage(productoId) {
 
     if (productSnap.exists()) {
       const productData = productSnap.data();
-      const imageUrl = productData.imagen || null;
-      productImageCache.set(productoId, imageUrl);
-      return imageUrl;
+      const data = {
+        imagen: productData.imagen || null,
+        nombre: productData.nombre || null,
+        descripcion: productData.descripcion || null
+      };
+      productDataCache.set(productoId, data);
+      return data;
     }
   } catch (error) {
-    console.warn('[educacion.js] Error fetching product image:', error);
+    console.warn('[educacion.js] Error fetching product data:', error);
   }
 
-  productImageCache.set(productoId, null);
-  return null;
+  const emptyData = { imagen: null, nombre: null, descripcion: null };
+  productDataCache.set(productoId, emptyData);
+  return emptyData;
+
+}
+
+/**
+ * Legacy wrapper for backwards compatibility
+ */
+async function fetchProductImage(productoId) {
+  const data = await fetchProductData(productoId);
+  return data.imagen;
 }
 
 /**
  * Render a PEC card with image, title, and description
  * When clicked, redirects to the consumo section and highlights the associated product
- * If a productoId is specified, fetches and displays the product's image
+ * If a productoId is specified, fetches and displays the product's image, title and description
  */
 function renderPECCard(item) {
   const card = document.createElement('div');
-  const title = escapeHtml(item.titulo || item.title || 'Material PEC');
-  const description = escapeHtml(item.descripcion || '');
+  const itemTitle = escapeHtml(item.titulo || item.title || '');
+  const itemDescription = escapeHtml(item.descripcion || '');
   // Handle imagen path - if it already starts with '/' or 'http', use as-is, otherwise prepend /images/pec/
   let pecImageSrc = null;
   if (item.imagen) {
@@ -232,30 +246,76 @@ function renderPECCard(item) {
     card.style.cursor = 'pointer';
   }
 
+  // Use item title/description if available, otherwise show placeholder
+  const displayTitle = itemTitle || 'Material PEC';
+  const displayDescription = itemDescription;
+
+  // Determine if we should show loading placeholder for description
+  // Only show loading if we have a productoId (so we can fetch the product data)
+  // and the PEC item doesn't have its own description
+  const showDescriptionLoading = !displayDescription && productoId;
+
   // Initial render with PEC image or placeholder
   card.innerHTML = `
     <div class="pec-card-image-container">
       ${pecImageSrc ?
-        `<img class="pec-card-image" src="${pecImageSrc}" alt="${title}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image');">` :
+        `<img class="pec-card-image" src="${pecImageSrc}" alt="${displayTitle}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image');">` :
         `<div class="pec-card-placeholder-icon">📋</div>`
       }
     </div>
     <div class="pec-card-content">
-      <h4 class="pec-card-title">${title}</h4>
-      ${description ? `<p class="pec-card-description">${description}</p>` : ''}
+      <h4 class="pec-card-title">${displayTitle}</h4>
+      ${displayDescription ? `<p class="pec-card-description">${displayDescription}</p>` : (showDescriptionLoading ? '<p class="pec-card-description pec-loading">Cargando información...</p>' : '')}
     </div>
     <div class="pec-card-footer">
       ${productoId ? `<span class="pec-card-action">Ver producto →</span>` : ''}
     </div>
   `;
 
-  // If there's a linked product, fetch its image and update the card
+  // If there's a linked product, fetch its data and update the card
   if (productoId) {
-    fetchProductImage(productoId).then(productImageUrl => {
-      if (productImageUrl) {
+    fetchProductData(productoId).then(productData => {
+      // Update image ONLY if the PEC item doesn't have its own image
+      // This preserves the PEC-specific cover image when configured
+      if (!pecImageSrc && productData.imagen) {
         const imageContainer = card.querySelector('.pec-card-image-container');
         if (imageContainer) {
-          imageContainer.innerHTML = `<img class="pec-card-image" src="${productImageUrl}" alt="${title}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image');">`;
+          imageContainer.innerHTML = `<img class="pec-card-image" src="${productData.imagen}" alt="${productData.nombre || displayTitle}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image');">`;
+        }
+      }
+
+      // Update title if PEC item doesn't have one
+      if (!itemTitle && productData.nombre) {
+        const titleEl = card.querySelector('.pec-card-title');
+        if (titleEl) {
+          titleEl.textContent = productData.nombre;
+        }
+      }
+
+      // Update description: if PEC item doesn't have one, use product description
+      const descEl = card.querySelector('.pec-card-description');
+      if (!itemDescription && productData.descripcion) {
+        // PEC has no description but product does - update or create description element
+        if (descEl) {
+          descEl.textContent = productData.descripcion;
+          descEl.classList.remove('pec-loading');
+        } else {
+          // Create description element if it doesn't exist
+          const contentEl = card.querySelector('.pec-card-content');
+          if (contentEl) {
+            const newDescEl = document.createElement('p');
+            newDescEl.className = 'pec-card-description';
+            newDescEl.textContent = productData.descripcion;
+            contentEl.appendChild(newDescEl);
+          }
+        }
+      } else if (descEl) {
+        if (!itemDescription && !productData.descripcion) {
+          // Remove the loading placeholder if no description available anywhere
+          descEl.remove();
+        } else {
+          // PEC has its own description, just remove loading class
+          descEl.classList.remove('pec-loading');
         }
       }
     });

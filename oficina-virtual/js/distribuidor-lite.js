@@ -306,7 +306,8 @@ if (historyWrap) {
       const teamEl = document.getElementById("teamPoints");
       const groupPointsValue = Number(userData.groupPoints ?? 0);
       if (teamEl) {
-        teamEl.textContent = String(groupPointsValue);
+        // Round to maximum 2 decimal places and remove trailing zeros
+        teamEl.textContent = String(Math.round(groupPointsValue * 100) / 100);
       }
 
       // ----------------------------------------------

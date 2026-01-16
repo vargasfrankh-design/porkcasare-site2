@@ -538,7 +538,10 @@ const uRef = doc(db, "usuarios", uid);
     if (elTotal) elTotal.textContent = formatCurrency(Number(data.totalComisiones ?? data.totalCommissions ?? 0));
     if (elComisionesCobradas) elComisionesCobradas.textContent = formatCurrency(Number(data.totalComisionesCobradas ?? 0));
     if (elWallet) elWallet.textContent = formatCurrency(Number(data.walletBalance ?? 0));
-    if (elGroupPoints) elGroupPoints.textContent = (data.groupPoints !== undefined) ? String(data.groupPoints) : (data.puntosGrupales !== undefined ? String(data.puntosGrupales) : '0');
+    // Round group points to remove excessive decimals (max 2 decimal places)
+    const groupPointsRaw = Number(data.groupPoints !== undefined ? data.groupPoints : (data.puntosGrupales !== undefined ? data.puntosGrupales : 0));
+    const groupPointsRounded = Math.round(groupPointsRaw * 100) / 100;
+    if (elGroupPoints) elGroupPoints.textContent = String(groupPointsRounded);
 
     renderCombinedHistory();
 
@@ -555,20 +558,29 @@ const uRef = doc(db, "usuarios", uid);
     try {
       const consumedAt = data.groupPointsConsumedAt ? (data.groupPointsConsumedAt.toMillis ? data.groupPointsConsumedAt.toMillis() : (typeof data.groupPointsConsumedAt === 'number' ? data.groupPointsConsumedAt : null)) : null;
       let computedGroupPoints = 0;
-      
+
       if (Array.isArray(userHistoryArray)) {
         for (const e of userHistoryArray) {
-          const pts = e && (e.points ?? e.pointsUsed) ? Number(e.points ?? e.pointsUsed) : 0;
-          if (!pts || pts <= 0) continue;
-          
           const entryType = e.type || '';
           const isWithdraw = entryType === 'withdraw';
           const isPurchase = entryType === 'purchase' || (!entryType && e.orderId && e.action && e.action.includes('Compra'));
-          
+
           const isCommission = entryType === 'group_points' || entryType === 'quick_start_bonus' || entryType === 'quick_start_upper_level' || entryType === 'earning';
-          
+
           if (isPurchase) continue;
-          
+
+          // Use the correct field based on entry type:
+          // - For withdrawals: use pointsUsed (points that were deducted)
+          // - For commissions: use points (points that were earned)
+          let pts = 0;
+          if (isWithdraw) {
+            pts = e.pointsUsed ? Number(e.pointsUsed) : 0;
+          } else if (isCommission) {
+            pts = e.points ? Number(e.points) : 0;
+          }
+
+          if (!pts || pts <= 0) continue;
+
           let entryTs = null;
           if (e.originMs !== undefined && e.originMs !== null) {
             entryTs = Number(e.originMs);
@@ -583,7 +595,7 @@ const uRef = doc(db, "usuarios", uid);
             const parsed = Date.parse(e.date);
             if (!isNaN(parsed)) entryTs = parsed;
           }
-          
+
           if (consumedAt) {
             if (entryTs && entryTs > consumedAt) {
               if (isWithdraw) {
@@ -603,16 +615,28 @@ const uRef = doc(db, "usuarios", uid);
       }
       
       computedGroupPoints = Math.max(0, computedGroupPoints);
-      
+
       const dbGroupPoints = Number(data.groupPoints ?? data.puntosGrupales ?? 0);
-      if (Math.abs(dbGroupPoints - computedGroupPoints) > 0.01) {
+
+      // Only auto-update groupPoints if:
+      // 1. The computed value is greater than the DB value (user earned more points)
+      // 2. OR the computed value is significantly different AND the computed value is > 0
+      //    (don't auto-reduce to 0 as it may indicate incomplete history data)
+      // This prevents accidentally resetting groupPoints to 0 due to missing/malformed history entries
+      const shouldUpdate = computedGroupPoints > dbGroupPoints ||
+        (computedGroupPoints > 0 && Math.abs(dbGroupPoints - computedGroupPoints) > 0.01);
+
+      if (shouldUpdate) {
         try {
           await runTransaction(db, async (tx) => {
             const s = await tx.get(uRef);
             if (!s.exists()) return;
             const d = s.data();
             const currentDbGroup = Number(d.groupPoints ?? d.puntosGrupales ?? 0);
-            if (Math.abs(currentDbGroup - computedGroupPoints) > 0.01) {
+            // Same protection inside transaction
+            const shouldUpdateInTx = computedGroupPoints > currentDbGroup ||
+              (computedGroupPoints > 0 && Math.abs(currentDbGroup - computedGroupPoints) > 0.01);
+            if (shouldUpdateInTx) {
               tx.update(uRef, { groupPoints: computedGroupPoints });
               console.log(`✅ groupPoints actualizado automáticamente: ${currentDbGroup} → ${computedGroupPoints}`);
             }
