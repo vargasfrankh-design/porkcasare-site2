@@ -333,7 +333,7 @@ async function loadProductsFromFirestore() {
     // Si no hay cache, cargar de Firestore
     const productsSnap = await getDocs(collection(db, "productos"));
     productos = productsSnap.docs
-      .map(d => ({ docId: d.id, ...d.data() }))
+      .map(d => ({ ...d.data(), docId: d.id, id: d.id }))
       .filter(p => !p.deleted && !p.hidden)
       .sort((a, b) => {
         // Priority 1: Launch products (Super Destacados) go first
