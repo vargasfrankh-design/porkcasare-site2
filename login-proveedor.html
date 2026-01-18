@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proveedor - Login</title>
+  <!-- Brand Loader for dynamic styling -->
+  <script src="/js/brand-loader.js"></script>
   <style>
     body {
       display: flex;
@@ -11,12 +13,12 @@
       align-items: center;
       height: 100vh;
       margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--brand-gradient, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+      font-family: var(--brand-font-body, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
     }
 
     .login-box {
-      background: #fff;
+      background: var(--brand-card-background, #fff);
       padding: 2.5rem;
       border-radius: 20px;
       box-shadow: 0px 10px 40px rgba(0,0,0,0.3);
@@ -34,13 +36,13 @@
     }
 
     .login-box h2 {
-      color: #2d3748;
+      color: var(--brand-text-primary, #2d3748);
       margin-bottom: 0.5rem;
       font-size: 1.8rem;
     }
 
     .login-box p {
-      color: #6c757d;
+      color: var(--brand-text-secondary, #6c757d);
       margin-bottom: 2rem;
       font-size: 1rem;
     }
@@ -49,7 +51,7 @@
       display: flex;
       align-items: center;
       margin: 1rem 0;
-      background: #f8f9fa;
+      background: var(--brand-background, #f8f9fa);
       padding: 0.8rem;
       border-radius: 12px;
       border: 2px solid transparent;
@@ -57,7 +59,7 @@
     }
 
     .input-group:focus-within {
-      border-color: #667eea;
+      border-color: var(--brand-primary, #667eea);
       background: white;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
@@ -65,7 +67,7 @@
     .input-group span {
       font-size: 1.4rem;
       margin-right: 10px;
-      color: #667eea;
+      color: var(--brand-primary, #667eea);
     }
 
     .input-group input {
@@ -74,7 +76,7 @@
       outline: none;
       flex: 1;
       font-size: 1rem;
-      color: #2d3748;
+      color: var(--brand-text-primary, #2d3748);
     }
 
     .input-group input::placeholder {
@@ -85,7 +87,7 @@
       width: 100%;
       padding: 1rem;
       margin-top: 1.5rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--brand-gradient, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
       color: white;
       border: none;
       border-radius: 12px;
@@ -115,7 +117,7 @@
       display: block;
       margin-top: 1.5rem;
       font-size: 0.95rem;
-      color: #667eea;
+      color: var(--brand-primary, #667eea);
       text-decoration: none;
       cursor: pointer;
       font-weight: 600;
@@ -154,9 +156,9 @@
 </head>
 <body>
   <div class="login-box">
-    <img src="/images/productos/inicio.jpg" alt="PorKCasare Logo">
-    <h2>Portal de Proveedores</h2>
-    <p>Ingresa tus credenciales para acceder</p>
+    <img data-brand-logo src="/images/productos/inicio.jpg" alt="Logo">
+    <h2 data-brand-text="loginTexts.proveedorTitle">Portal de Proveedores</h2>
+    <p data-brand-text="loginTexts.proveedorSubtitle">Ingresa tus credenciales para acceder</p>
 
     <form id="loginForm">
       <div class="input-group">

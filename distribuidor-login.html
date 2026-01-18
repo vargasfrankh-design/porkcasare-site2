@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Distribuidor - Login</title>
+  <!-- Brand Loader for dynamic styling -->
+  <script src="/js/brand-loader.js"></script>
   <style>
     body {
       display: flex;
@@ -11,12 +13,12 @@
       align-items: center;
       height: 100vh;
       margin: 0;
-      background: #f4f7fa;
-      font-family: Arial, sans-serif;
+      background: var(--brand-background, #f4f7fa);
+      font-family: var(--brand-font-body, Arial, sans-serif);
     }
 
     .login-box {
-      background: #fff;
+      background: var(--brand-card-background, #fff);
       padding: 2rem;
       border-radius: 15px;
       box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
@@ -36,7 +38,7 @@
       display: flex;
       align-items: center;
       margin: 0.7rem 0;
-      background: #f0f0f0;
+      background: var(--brand-background, #f0f0f0);
       padding: 0.6rem;
       border-radius: 8px;
     }
@@ -44,7 +46,7 @@
     .input-group span {
       font-size: 1.4rem;
       margin-right: 8px;
-      color: #2563eb; /* 🔵 Emojis azulados */
+      color: var(--brand-primary, #2563eb);
     }
 
     .input-group input {
@@ -53,30 +55,33 @@
       outline: none;
       flex: 1;
       font-size: 1rem;
+      color: var(--brand-text-primary, #333);
     }
 
     button {
       width: 100%;
       padding: 0.8rem;
       margin-top: 1rem;
-      background: #2563eb;
+      background: var(--brand-gradient, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
       color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
       font-size: 1rem;
+      transition: all 0.3s;
     }
 
     button:hover {
-      background: #1e40af;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     }
 
     .login-box a {
       display: block;
       margin-top: 1rem;
       font-size: 0.9rem;
-      color: #2563eb;
+      color: var(--brand-primary, #2563eb);
       text-decoration: none;
       cursor: pointer;
     }
@@ -85,7 +90,6 @@
       text-decoration: underline;
     }
 
-    /* 📱 Ajustes para celular */
     @media (max-width: 500px) {
       .login-box {
         padding: 1.5rem;
@@ -114,10 +118,8 @@
 </head>
 <body>
   <div class="login-box">
-    <!-- 🔹 Logo redondo -->
-    <img src="images/logo.webp" alt="PorkCasare Logo">
+    <img data-brand-logo src="images/logo.webp" alt="Logo">
 
-    <!-- 🔹 Formulario -->
     <form id="distribuidorLogin">
       <div class="input-group">
         <span>👤</span>
@@ -129,16 +131,14 @@
         <input type="password" id="password" placeholder="Contraseña" required>
       </div>
 
-      <button type="submit">Acceder</button>
+      <button type="submit" data-brand-text="loginTexts.loginButton">Acceder</button>
     </form>
 
-    <!-- 🔑 Recuperar contraseña -->
-    <a id="recuperarClave">🔑 Recuperar contraseña</a>
+    <a id="recuperarClave" data-brand-text="loginTexts.forgotPassword">Recuperar contraseña</a>
   </div>
 
   <script src="env.js"></script>
 <script type="module" src="main.js"></script>
-<!-- SweetAlert2 para notificaciones -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script type="module" src="login-distribuidor.js"></script>
 </body>

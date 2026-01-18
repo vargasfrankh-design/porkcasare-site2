@@ -631,6 +631,7 @@
       <button class="tab-button" data-tab="calculator">Calculadora de Puntos</button>
       <button class="tab-button" data-tab="profits">Ganancias</button>
       <button class="tab-button" data-tab="education">Educación</button>
+      <button class="tab-button" data-tab="branding">Identidad Visual</button>
     </div>
 
     <!-- Tab: Resumen -->
@@ -1625,6 +1626,404 @@
         <div id="educationList" style="display:grid;gap:16px;">
           <div style="text-align:center;color:#666;padding:40px;">Cargando contenido educativo...</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Tab: Identidad Visual -->
+    <div id="tab-branding" class="tab-content">
+      <div style="max-width:1200px;margin:0 auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:16px;">
+          <div>
+            <h2 style="margin:0;">Identidad Visual</h2>
+            <p style="margin:8px 0 0 0;color:#666;font-size:14px;">Personaliza la apariencia de tu plataforma sin tocar código</p>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button id="resetBrandingBtn" class="btn-secondary" style="display:flex;align-items:center;gap:6px;">
+              <span>↺</span> Restaurar Valores
+            </button>
+            <button id="saveBrandingBtn" class="btn-success" style="display:flex;align-items:center;gap:8px;padding:12px 24px;font-size:15px;">
+              <span>💾</span> Guardar Cambios
+            </button>
+          </div>
+        </div>
+
+        <!-- Última actualización -->
+        <div id="brandingLastUpdated" style="display:none;background:#e8f4fd;padding:12px 16px;border-radius:8px;margin-bottom:24px;font-size:13px;color:#0052cc;">
+          <strong>Última actualización:</strong> <span id="brandingLastUpdatedDate">--</span> por <span id="brandingLastUpdatedBy">--</span>
+        </div>
+
+        <!-- Grid de secciones -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(500px, 1fr));gap:24px;">
+
+          <!-- Sección: Información de la Empresa -->
+          <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+            <h3 style="margin:0 0 20px 0;font-size:18px;color:#333;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:24px;">🏢</span> Información de la Empresa
+            </h3>
+
+            <div style="margin-bottom:16px;">
+              <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;color:#333;">Nombre de la Plataforma</label>
+              <input type="text" id="brandPlatformName" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;" placeholder="Ej: PorKCasare" value="PorKCasare">
+            </div>
+
+            <div style="margin-bottom:16px;">
+              <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;color:#333;">Eslogan / Tagline</label>
+              <input type="text" id="brandTagline" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;" placeholder="Ej: Carne empacada al vacío" value="Carne empacada al vacío">
+            </div>
+
+            <div style="margin-bottom:16px;">
+              <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;color:#333;">Logo Principal</label>
+              <div style="display:flex;align-items:center;gap:16px;">
+                <div style="width:80px;height:80px;border-radius:50%;background:#f8f9fa;display:flex;align-items:center;justify-content:center;border:2px solid #e9ecef;overflow:hidden;">
+                  <img id="brandLogoPreview" src="/images/logo.webp" alt="Logo" style="width:100%;height:100%;object-fit:cover;">
+                </div>
+                <div style="flex:1;">
+                  <input type="text" id="brandLogoUrl" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;" placeholder="/images/logo.webp" value="/images/logo.webp">
+                  <small style="color:#666;font-size:12px;display:block;margin-top:4px;">URL relativa o absoluta del logo (ej: /images/logo.webp)</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección: Colores Principales -->
+          <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+            <h3 style="margin:0 0 20px 0;font-size:18px;color:#333;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:24px;">🎨</span> Colores Principales
+            </h3>
+
+            <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;">
+              <div>
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Color Primario</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="color" id="brandColorPrimary" value="#667eea" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                  <input type="text" id="brandColorPrimaryHex" value="#667eea" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                </div>
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Color Secundario</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="color" id="brandColorSecondary" value="#764ba2" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                  <input type="text" id="brandColorSecondaryHex" value="#764ba2" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                </div>
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Color Acento</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="color" id="brandColorAccent" value="#0052cc" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                  <input type="text" id="brandColorAccentHex" value="#0052cc" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                </div>
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Color de Éxito</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="color" id="brandColorSuccess" value="#00875a" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                  <input type="text" id="brandColorSuccessHex" value="#00875a" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                </div>
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Color de Peligro</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="color" id="brandColorDanger" value="#de350b" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                  <input type="text" id="brandColorDangerHex" value="#de350b" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                </div>
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Color de Alerta</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="color" id="brandColorWarning" value="#ff8b00" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                  <input type="text" id="brandColorWarningHex" value="#ff8b00" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Vista previa de gradiente -->
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e9ecef;">
+              <label style="display:block;margin-bottom:10px;font-weight:600;font-size:13px;color:#333;">Vista Previa del Gradiente</label>
+              <div id="brandGradientPreview" style="height:60px;border-radius:8px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+            </div>
+          </div>
+
+          <!-- Sección: Tipografías -->
+          <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+            <h3 style="margin:0 0 20px 0;font-size:18px;color:#333;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:24px;">📝</span> Tipografías
+            </h3>
+
+            <div style="margin-bottom:16px;">
+              <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;color:#333;">Fuente para Títulos</label>
+              <select id="brandFontHeadings" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
+                <option value="'Inter', sans-serif">Inter (Actual)</option>
+                <option value="'Poppins', sans-serif">Poppins</option>
+                <option value="'Roboto', sans-serif">Roboto</option>
+                <option value="'Open Sans', sans-serif">Open Sans</option>
+                <option value="'Montserrat', sans-serif">Montserrat</option>
+                <option value="'Lato', sans-serif">Lato</option>
+                <option value="'Nunito', sans-serif">Nunito</option>
+                <option value="Arial, sans-serif">Arial</option>
+              </select>
+            </div>
+
+            <div style="margin-bottom:16px;">
+              <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;color:#333;">Fuente para Textos</label>
+              <select id="brandFontBody" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
+                <option value="'Inter', sans-serif">Inter (Actual)</option>
+                <option value="'Poppins', sans-serif">Poppins</option>
+                <option value="'Roboto', sans-serif">Roboto</option>
+                <option value="'Open Sans', sans-serif">Open Sans</option>
+                <option value="'Montserrat', sans-serif">Montserrat</option>
+                <option value="'Lato', sans-serif">Lato</option>
+                <option value="'Nunito', sans-serif">Nunito</option>
+                <option value="Arial, sans-serif">Arial</option>
+              </select>
+            </div>
+
+            <!-- Vista previa de tipografía -->
+            <div style="margin-top:16px;padding:16px;background:#f8f9fa;border-radius:8px;">
+              <p id="brandFontPreviewHeading" style="margin:0 0 8px 0;font-size:20px;font-weight:700;font-family:'Inter', sans-serif;">Vista Previa de Título</p>
+              <p id="brandFontPreviewBody" style="margin:0;font-size:14px;color:#666;font-family:'Inter', sans-serif;">Este es un ejemplo de cómo se verá el texto normal en tu plataforma.</p>
+            </div>
+          </div>
+
+          <!-- Sección: Colores de Texto y Fondo -->
+          <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+            <h3 style="margin:0 0 20px 0;font-size:18px;color:#333;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:24px;">🖼️</span> Colores de Texto y Fondo
+            </h3>
+
+            <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;">
+              <div>
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Texto Principal</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="color" id="brandColorTextPrimary" value="#172b4d" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                  <input type="text" id="brandColorTextPrimaryHex" value="#172b4d" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                </div>
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Texto Secundario</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="color" id="brandColorTextSecondary" value="#5e6c84" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                  <input type="text" id="brandColorTextSecondaryHex" value="#5e6c84" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                </div>
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Fondo General</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="color" id="brandColorBackground" value="#f4f5f7" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                  <input type="text" id="brandColorBackgroundHex" value="#f4f5f7" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                </div>
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Fondo de Tarjetas</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="color" id="brandColorCardBackground" value="#ffffff" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                  <input type="text" id="brandColorCardBackgroundHex" value="#ffffff" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección de Textos Editables -->
+        <div style="margin-top:24px;">
+          <h3 style="margin:0 0 20px 0;font-size:20px;color:#333;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:24px;">📄</span> Textos Editables
+          </h3>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(500px, 1fr));gap:24px;">
+
+            <!-- Textos del Home -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+              <h4 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+                <span>🏠</span> Página Principal (Home)
+              </h4>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Título del Hero</label>
+                <input type="text" id="brandHomeHeroTitle" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Carne empacada al vacío — PorKCasare">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Subtítulo del Hero</label>
+                <textarea id="brandHomeHeroSubtitle" rows="2" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical;" placeholder="Seleccionamos, empacamos y distribuimos..."></textarea>
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Título de Misión</label>
+                <input type="text" id="brandHomeMissionTitle" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Misión">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Texto de Misión</label>
+                <textarea id="brandHomeMissionText" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical;" placeholder="En PorkCasare trabajamos día a día..."></textarea>
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Título de Visión</label>
+                <input type="text" id="brandHomeVisionTitle" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Visión">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Texto de Visión</label>
+                <textarea id="brandHomeVisionText" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical;" placeholder="Convertirnos en una granja porcícola líder..."></textarea>
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Texto del Footer</label>
+                <input type="text" id="brandHomeFooterText" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="© PorKCasare by F&F Asociados">
+              </div>
+            </div>
+
+            <!-- Textos de Selección de Acceso -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+              <h4 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+                <span>🚪</span> Pantalla de Selección de Acceso
+              </h4>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Título de Bienvenida</label>
+                <input type="text" id="brandAccessTitle" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Bienvenido a PorkCasare">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Botón Registro Cliente</label>
+                <input type="text" id="brandAccessClientBtn" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Registro de Cliente">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Botón Registro Distribuidor</label>
+                <input type="text" id="brandAccessDistributorBtn" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Registro nuevo Distribuidor">
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Botón Acceso Distribuidor</label>
+                <input type="text" id="brandAccessDistributorAccessBtn" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Acceso del Distribuidor">
+              </div>
+            </div>
+
+            <!-- Textos de Login -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+              <h4 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+                <span>🔐</span> Pantallas de Login
+              </h4>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Título Portal Proveedores</label>
+                <input type="text" id="brandLoginProveedorTitle" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Portal de Proveedores">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Subtítulo Portal Proveedores</label>
+                <input type="text" id="brandLoginProveedorSubtitle" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Ingresa tus credenciales para acceder">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Texto Botón de Login</label>
+                <input type="text" id="brandLoginButton" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Iniciar Sesión">
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Texto Recuperar Contraseña</label>
+                <input type="text" id="brandLoginForgotPassword" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Recuperar contraseña">
+              </div>
+            </div>
+
+            <!-- Textos de Oficina Virtual -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+              <h4 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+                <span>🏪</span> Oficina Virtual
+              </h4>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Título en Navegación</label>
+                <input type="text" id="brandVirtualOfficeNavTitle" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="PorkCasare">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Texto Botón Cerrar Sesión</label>
+                <input type="text" id="brandVirtualOfficeLogoutBtn" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Cerrar sesión">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Mensaje de Alerta de Activación</label>
+                <textarea id="brandVirtualOfficeActivationAlert" rows="2" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical;" placeholder="Debes realizar una compra mínima de 50 puntos..."></textarea>
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Título de Progreso</label>
+                <input type="text" id="brandVirtualOfficeProgressTitle" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="¡Tu camino a Corona!">
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;color:#333;">Subtítulo de Progreso</label>
+                <input type="text" id="brandVirtualOfficeProgressSubtitle" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;" placeholder="Continúa acumulando puntos para alcanzar mayores beneficios">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paletas Predefinidas -->
+        <div style="margin-top:24px;background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+          <h3 style="margin:0 0 20px 0;font-size:18px;color:#333;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:24px;">🌈</span> Paletas Predefinidas
+          </h3>
+          <p style="margin:0 0 16px 0;color:#666;font-size:14px;">Selecciona una paleta para aplicar automáticamente los colores</p>
+
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <button class="brand-palette-btn" data-palette="profesional" style="padding:16px 24px;border:2px solid #667eea;border-radius:10px;cursor:pointer;background:white;transition:all 0.2s;">
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <span style="width:20px;height:20px;border-radius:50%;background:#667eea;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#764ba2;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#0052cc;"></span>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:#333;">Profesional</span>
+            </button>
+
+            <button class="brand-palette-btn" data-palette="natural" style="padding:16px 24px;border:2px solid #e9ecef;border-radius:10px;cursor:pointer;background:white;transition:all 0.2s;">
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <span style="width:20px;height:20px;border-radius:50%;background:#2d6a4f;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#40916c;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#52b788;"></span>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:#333;">Natural</span>
+            </button>
+
+            <button class="brand-palette-btn" data-palette="moderno" style="padding:16px 24px;border:2px solid #e9ecef;border-radius:10px;cursor:pointer;background:white;transition:all 0.2s;">
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <span style="width:20px;height:20px;border-radius:50%;background:#7c3aed;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#a78bfa;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#c4b5fd;"></span>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:#333;">Moderno</span>
+            </button>
+
+            <button class="brand-palette-btn" data-palette="calido" style="padding:16px 24px;border:2px solid #e9ecef;border-radius:10px;cursor:pointer;background:white;transition:all 0.2s;">
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <span style="width:20px;height:20px;border-radius:50%;background:#ea580c;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#fb923c;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#fdba74;"></span>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:#333;">Cálido</span>
+            </button>
+
+            <button class="brand-palette-btn" data-palette="corporativo" style="padding:16px 24px;border:2px solid #e9ecef;border-radius:10px;cursor:pointer;background:white;transition:all 0.2s;">
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <span style="width:20px;height:20px;border-radius:50%;background:#1e293b;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#475569;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#64748b;"></span>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:#333;">Corporativo</span>
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -8649,6 +9048,415 @@
         alert('Error al eliminar: ' + error.message);
       }
     };
+
+    // ===== BRANDING / IDENTIDAD VISUAL SECTION =====
+
+    // Default brand settings
+    const defaultBrandSettings = {
+      branding: {
+        platformName: 'PorKCasare',
+        tagline: 'Carne empacada al vacío',
+        logoUrl: '/images/logo.webp'
+      },
+      colors: {
+        primary: '#667eea',
+        secondary: '#764ba2',
+        accent: '#0052cc',
+        success: '#00875a',
+        danger: '#de350b',
+        warning: '#ff8b00',
+        textPrimary: '#172b4d',
+        textSecondary: '#5e6c84',
+        background: '#f4f5f7',
+        cardBackground: '#ffffff'
+      },
+      fonts: {
+        headings: "'Inter', sans-serif",
+        body: "'Inter', sans-serif"
+      },
+      homeTexts: {
+        heroTitle: 'Carne empacada al vacío — PorKCasare',
+        heroSubtitle: 'Seleccionamos, empacamos y distribuimos cortes de cerdo con trazabilidad y la mejor calidad.',
+        missionTitle: 'Misión',
+        missionText: 'En PorkCasare trabajamos día a día en la crianza y ceba de porcinos con los más altos estándares de nutrición, bioseguridad y bienestar animal, utilizando procesos responsables que impulsan el crecimiento económico local y fortalecen el sector agropecuario.',
+        visionTitle: 'Visión',
+        visionText: 'Convertirnos en una granja porcícola líder en la región, reconocida por la innovación, calidad genética y sostenibilidad ambiental, aportando al desarrollo del campo colombiano y garantizando un producto de confianza para nuestros clientes.',
+        footerText: '© PorKCasare by F&F Asociados'
+      },
+      accessSelectionTexts: {
+        title: 'Bienvenido a PorkCasare',
+        clientRegisterButton: 'Registro de Cliente',
+        distributorRegisterButton: 'Registro nuevo Distribuidor',
+        distributorAccessButton: 'Acceso del Distribuidor'
+      },
+      loginTexts: {
+        proveedorTitle: 'Portal de Proveedores',
+        proveedorSubtitle: 'Ingresa tus credenciales para acceder',
+        loginButton: 'Iniciar Sesión',
+        forgotPassword: 'Recuperar contraseña'
+      },
+      virtualOfficeTexts: {
+        navTitle: 'PorkCasare',
+        logoutButton: 'Cerrar sesión',
+        activationAlert: 'Debes realizar una compra mínima de 50 puntos para activar tu código y comenzar a recibir bonos y pagos.',
+        progressTitle: '¡Tu camino a Corona!',
+        progressSubtitle: 'Continúa acumulando puntos para alcanzar mayores beneficios'
+      }
+    };
+
+    // Palettes definition
+    const colorPalettes = {
+      profesional: {
+        primary: '#667eea',
+        secondary: '#764ba2',
+        accent: '#0052cc',
+        success: '#00875a',
+        danger: '#de350b',
+        warning: '#ff8b00'
+      },
+      natural: {
+        primary: '#2d6a4f',
+        secondary: '#40916c',
+        accent: '#52b788',
+        success: '#2d6a4f',
+        danger: '#c1121f',
+        warning: '#fb8500'
+      },
+      moderno: {
+        primary: '#7c3aed',
+        secondary: '#a78bfa',
+        accent: '#c4b5fd',
+        success: '#10b981',
+        danger: '#ef4444',
+        warning: '#f59e0b'
+      },
+      calido: {
+        primary: '#ea580c',
+        secondary: '#fb923c',
+        accent: '#fdba74',
+        success: '#65a30d',
+        danger: '#dc2626',
+        warning: '#eab308'
+      },
+      corporativo: {
+        primary: '#1e293b',
+        secondary: '#475569',
+        accent: '#64748b',
+        success: '#059669',
+        danger: '#dc2626',
+        warning: '#d97706'
+      }
+    };
+
+    let currentBrandSettings = null;
+
+    // Load brand settings on page load
+    async function loadBrandSettings() {
+      try {
+        const response = await fetch('/.netlify/functions/get-brand-settings');
+        if (!response.ok) throw new Error('Failed to load settings');
+        currentBrandSettings = await response.json();
+        populateBrandingForm(currentBrandSettings);
+      } catch (error) {
+        console.warn('Using default brand settings:', error);
+        currentBrandSettings = defaultBrandSettings;
+        populateBrandingForm(defaultBrandSettings);
+      }
+    }
+
+    // Populate branding form with settings
+    function populateBrandingForm(settings) {
+      // Branding section
+      if (settings.branding) {
+        document.getElementById('brandPlatformName').value = settings.branding.platformName || '';
+        document.getElementById('brandTagline').value = settings.branding.tagline || '';
+        document.getElementById('brandLogoUrl').value = settings.branding.logoUrl || '/images/logo.webp';
+        document.getElementById('brandLogoPreview').src = settings.branding.logoUrl || '/images/logo.webp';
+      }
+
+      // Colors section
+      if (settings.colors) {
+        const colorFields = ['primary', 'secondary', 'accent', 'success', 'danger', 'warning', 'textPrimary', 'textSecondary', 'background', 'cardBackground'];
+        colorFields.forEach(field => {
+          const colorInput = document.getElementById(`brandColor${field.charAt(0).toUpperCase() + field.slice(1)}`);
+          const hexInput = document.getElementById(`brandColor${field.charAt(0).toUpperCase() + field.slice(1)}Hex`);
+          if (colorInput && settings.colors[field]) {
+            colorInput.value = settings.colors[field];
+            if (hexInput) hexInput.value = settings.colors[field];
+          }
+        });
+        updateGradientPreview();
+      }
+
+      // Fonts section
+      if (settings.fonts) {
+        if (settings.fonts.headings) {
+          document.getElementById('brandFontHeadings').value = settings.fonts.headings;
+          document.getElementById('brandFontPreviewHeading').style.fontFamily = settings.fonts.headings;
+        }
+        if (settings.fonts.body) {
+          document.getElementById('brandFontBody').value = settings.fonts.body;
+          document.getElementById('brandFontPreviewBody').style.fontFamily = settings.fonts.body;
+        }
+      }
+
+      // Home texts section
+      if (settings.homeTexts) {
+        document.getElementById('brandHomeHeroTitle').value = settings.homeTexts.heroTitle || '';
+        document.getElementById('brandHomeHeroSubtitle').value = settings.homeTexts.heroSubtitle || '';
+        document.getElementById('brandHomeMissionTitle').value = settings.homeTexts.missionTitle || '';
+        document.getElementById('brandHomeMissionText').value = settings.homeTexts.missionText || '';
+        document.getElementById('brandHomeVisionTitle').value = settings.homeTexts.visionTitle || '';
+        document.getElementById('brandHomeVisionText').value = settings.homeTexts.visionText || '';
+        document.getElementById('brandHomeFooterText').value = settings.homeTexts.footerText || '';
+      }
+
+      // Access selection texts
+      if (settings.accessSelectionTexts) {
+        document.getElementById('brandAccessTitle').value = settings.accessSelectionTexts.title || '';
+        document.getElementById('brandAccessClientBtn').value = settings.accessSelectionTexts.clientRegisterButton || '';
+        document.getElementById('brandAccessDistributorBtn').value = settings.accessSelectionTexts.distributorRegisterButton || '';
+        document.getElementById('brandAccessDistributorAccessBtn').value = settings.accessSelectionTexts.distributorAccessButton || '';
+      }
+
+      // Login texts
+      if (settings.loginTexts) {
+        document.getElementById('brandLoginProveedorTitle').value = settings.loginTexts.proveedorTitle || '';
+        document.getElementById('brandLoginProveedorSubtitle').value = settings.loginTexts.proveedorSubtitle || '';
+        document.getElementById('brandLoginButton').value = settings.loginTexts.loginButton || '';
+        document.getElementById('brandLoginForgotPassword').value = settings.loginTexts.forgotPassword || '';
+      }
+
+      // Virtual office texts
+      if (settings.virtualOfficeTexts) {
+        document.getElementById('brandVirtualOfficeNavTitle').value = settings.virtualOfficeTexts.navTitle || '';
+        document.getElementById('brandVirtualOfficeLogoutBtn').value = settings.virtualOfficeTexts.logoutButton || '';
+        document.getElementById('brandVirtualOfficeActivationAlert').value = settings.virtualOfficeTexts.activationAlert || '';
+        document.getElementById('brandVirtualOfficeProgressTitle').value = settings.virtualOfficeTexts.progressTitle || '';
+        document.getElementById('brandVirtualOfficeProgressSubtitle').value = settings.virtualOfficeTexts.progressSubtitle || '';
+      }
+
+      // Last updated
+      if (settings.metadata && settings.metadata.lastUpdated) {
+        const lastUpdatedEl = document.getElementById('brandingLastUpdated');
+        document.getElementById('brandingLastUpdatedDate').textContent = new Date(settings.metadata.lastUpdated).toLocaleString('es-CO');
+        document.getElementById('brandingLastUpdatedBy').textContent = settings.metadata.updatedBy || 'admin';
+        lastUpdatedEl.style.display = 'block';
+      }
+    }
+
+    // Collect brand settings from form
+    function collectBrandSettings() {
+      return {
+        branding: {
+          platformName: document.getElementById('brandPlatformName').value.trim(),
+          tagline: document.getElementById('brandTagline').value.trim(),
+          logoUrl: document.getElementById('brandLogoUrl').value.trim()
+        },
+        colors: {
+          primary: document.getElementById('brandColorPrimaryHex').value,
+          secondary: document.getElementById('brandColorSecondaryHex').value,
+          accent: document.getElementById('brandColorAccentHex').value,
+          success: document.getElementById('brandColorSuccessHex').value,
+          danger: document.getElementById('brandColorDangerHex').value,
+          warning: document.getElementById('brandColorWarningHex').value,
+          textPrimary: document.getElementById('brandColorTextPrimaryHex').value,
+          textSecondary: document.getElementById('brandColorTextSecondaryHex').value,
+          background: document.getElementById('brandColorBackgroundHex').value,
+          cardBackground: document.getElementById('brandColorCardBackgroundHex').value,
+          gradientStart: document.getElementById('brandColorPrimaryHex').value,
+          gradientEnd: document.getElementById('brandColorSecondaryHex').value
+        },
+        fonts: {
+          headings: document.getElementById('brandFontHeadings').value,
+          body: document.getElementById('brandFontBody').value
+        },
+        homeTexts: {
+          heroTitle: document.getElementById('brandHomeHeroTitle').value.trim(),
+          heroSubtitle: document.getElementById('brandHomeHeroSubtitle').value.trim(),
+          missionTitle: document.getElementById('brandHomeMissionTitle').value.trim(),
+          missionText: document.getElementById('brandHomeMissionText').value.trim(),
+          visionTitle: document.getElementById('brandHomeVisionTitle').value.trim(),
+          visionText: document.getElementById('brandHomeVisionText').value.trim(),
+          footerText: document.getElementById('brandHomeFooterText').value.trim()
+        },
+        accessSelectionTexts: {
+          title: document.getElementById('brandAccessTitle').value.trim(),
+          clientRegisterButton: document.getElementById('brandAccessClientBtn').value.trim(),
+          distributorRegisterButton: document.getElementById('brandAccessDistributorBtn').value.trim(),
+          distributorAccessButton: document.getElementById('brandAccessDistributorAccessBtn').value.trim()
+        },
+        loginTexts: {
+          proveedorTitle: document.getElementById('brandLoginProveedorTitle').value.trim(),
+          proveedorSubtitle: document.getElementById('brandLoginProveedorSubtitle').value.trim(),
+          loginButton: document.getElementById('brandLoginButton').value.trim(),
+          forgotPassword: document.getElementById('brandLoginForgotPassword').value.trim()
+        },
+        virtualOfficeTexts: {
+          navTitle: document.getElementById('brandVirtualOfficeNavTitle').value.trim(),
+          logoutButton: document.getElementById('brandVirtualOfficeLogoutBtn').value.trim(),
+          activationAlert: document.getElementById('brandVirtualOfficeActivationAlert').value.trim(),
+          progressTitle: document.getElementById('brandVirtualOfficeProgressTitle').value.trim(),
+          progressSubtitle: document.getElementById('brandVirtualOfficeProgressSubtitle').value.trim()
+        }
+      };
+    }
+
+    // Save brand settings
+    async function saveBrandSettings() {
+      const saveBtn = document.getElementById('saveBrandingBtn');
+      const originalText = saveBtn.innerHTML;
+
+      try {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span>⏳</span> Guardando...';
+
+        const settings = collectBrandSettings();
+
+        // Get Firebase auth token if user is logged in
+        let adminToken = null;
+        if (auth.currentUser) {
+          adminToken = await auth.currentUser.getIdToken();
+        }
+
+        const response = await fetch('/.netlify/functions/save-brand-settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            settings: settings,
+            adminToken: adminToken
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to save settings');
+        }
+
+        // Update last updated info
+        const lastUpdatedEl = document.getElementById('brandingLastUpdated');
+        document.getElementById('brandingLastUpdatedDate').textContent = new Date().toLocaleString('es-CO');
+        document.getElementById('brandingLastUpdatedBy').textContent = auth.currentUser?.email || 'admin';
+        lastUpdatedEl.style.display = 'block';
+
+        Swal.fire({
+          icon: 'success',
+          title: '¡Guardado!',
+          text: 'Los cambios de identidad visual se han guardado correctamente. Los cambios se aplicarán en todas las páginas.',
+          confirmButtonColor: '#667eea'
+        });
+
+      } catch (error) {
+        console.error('Error saving brand settings:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudieron guardar los cambios: ' + error.message,
+          confirmButtonColor: '#de350b'
+        });
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+      }
+    }
+
+    // Update gradient preview
+    function updateGradientPreview() {
+      const primary = document.getElementById('brandColorPrimaryHex').value;
+      const secondary = document.getElementById('brandColorSecondaryHex').value;
+      const preview = document.getElementById('brandGradientPreview');
+      if (preview) {
+        preview.style.background = `linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`;
+      }
+    }
+
+    // Sync color input with hex input
+    function syncColorInputs(colorId, hexId) {
+      const colorInput = document.getElementById(colorId);
+      const hexInput = document.getElementById(hexId);
+
+      if (colorInput && hexInput) {
+        colorInput.addEventListener('input', () => {
+          hexInput.value = colorInput.value;
+          updateGradientPreview();
+        });
+
+        hexInput.addEventListener('input', () => {
+          if (/^#[0-9A-Fa-f]{6}$/.test(hexInput.value)) {
+            colorInput.value = hexInput.value;
+            updateGradientPreview();
+          }
+        });
+      }
+    }
+
+    // Apply palette
+    function applyPalette(paletteName) {
+      const palette = colorPalettes[paletteName];
+      if (!palette) return;
+
+      Object.entries(palette).forEach(([key, value]) => {
+        const colorInput = document.getElementById(`brandColor${key.charAt(0).toUpperCase() + key.slice(1)}`);
+        const hexInput = document.getElementById(`brandColor${key.charAt(0).toUpperCase() + key.slice(1)}Hex`);
+        if (colorInput) colorInput.value = value;
+        if (hexInput) hexInput.value = value;
+      });
+
+      updateGradientPreview();
+
+      // Update palette button styles
+      document.querySelectorAll('.brand-palette-btn').forEach(btn => {
+        btn.style.borderColor = btn.dataset.palette === paletteName ? palette.primary : '#e9ecef';
+      });
+    }
+
+    // Initialize branding section
+    function initBrandingSection() {
+      // Sync color inputs
+      const colorFields = ['Primary', 'Secondary', 'Accent', 'Success', 'Danger', 'Warning', 'TextPrimary', 'TextSecondary', 'Background', 'CardBackground'];
+      colorFields.forEach(field => {
+        syncColorInputs(`brandColor${field}`, `brandColor${field}Hex`);
+      });
+
+      // Font preview updates
+      document.getElementById('brandFontHeadings')?.addEventListener('change', function() {
+        document.getElementById('brandFontPreviewHeading').style.fontFamily = this.value;
+      });
+
+      document.getElementById('brandFontBody')?.addEventListener('change', function() {
+        document.getElementById('brandFontPreviewBody').style.fontFamily = this.value;
+      });
+
+      // Logo preview update
+      document.getElementById('brandLogoUrl')?.addEventListener('input', function() {
+        document.getElementById('brandLogoPreview').src = this.value || '/images/logo.webp';
+      });
+
+      // Palette buttons
+      document.querySelectorAll('.brand-palette-btn').forEach(btn => {
+        btn.addEventListener('click', () => applyPalette(btn.dataset.palette));
+      });
+
+      // Save button
+      document.getElementById('saveBrandingBtn')?.addEventListener('click', saveBrandSettings);
+
+      // Reset button
+      document.getElementById('resetBrandingBtn')?.addEventListener('click', () => {
+        if (confirm('¿Estás seguro de restaurar los valores predeterminados? Esto no guardará los cambios automáticamente.')) {
+          populateBrandingForm(defaultBrandSettings);
+        }
+      });
+
+      // Load current settings
+      loadBrandSettings();
+    }
+
+    // Initialize branding when tab is clicked
+    document.querySelector('[data-tab="branding"]')?.addEventListener('click', initBrandingSection, { once: true });
+
   </script>
   <script type="module" src="/js/session-timeout.js"></script>
 </body>

@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Oficina Virtual - PorkCasare</title>
   <link rel="stylesheet" href="css/style.css" />
+  <!-- Brand Loader for dynamic styling -->
+  <script src="/js/brand-loader.js"></script>
 <style>
 /* Loading overlay styles */
 #page-loading-overlay {
@@ -104,8 +106,8 @@
       <div class="dot"></div>
     </div>
     <div class="loader-text">
-      <div class="title">Cargando Oficina Virtual…</div>
-      <div class="subtitle">Estamos preparando tu espacio. Esto no debería tardar mucho.</div>
+      <div class="title" data-brand-text="virtualOfficeTexts.loadingTitle">Cargando Oficina Virtual…</div>
+      <div class="subtitle" data-brand-text="virtualOfficeTexts.loadingSubtitle">Estamos preparando tu espacio. Esto no debería tardar mucho.</div>
     </div>
   </div>
 </div>
@@ -114,11 +116,11 @@
   <!-- Barra de navegación -->
   <nav class="nav">
     <div class="brand">
-      <img src="/images/logo.webp" alt="PorkCasare" class="logo" />
-      <h2>PorkCasare</h2>
+      <img data-brand-logo src="/images/logo.webp" alt="Logo" class="logo" />
+      <h2 data-brand-text="virtualOfficeTexts.navTitle">PorkCasare</h2>
     </div>
     <div class="nav-actions">
-      <button id="logoutBtn" class="btn btn-logout">Cerrar sesión</button>
+      <button id="logoutBtn" class="btn btn-logout" data-brand-text="virtualOfficeTexts.logoutButton">Cerrar sesión</button>
     </div>
   </nav>
 
@@ -185,15 +187,15 @@
   </script>
 
   <!-- Alerta de activación -->
-  <div id="activationAlert" class="activation-alert" style="display:none;">
-    ⚠️ Debes realizar una compra mínima de 50 puntos para activar tu código y comenzar a recibir bonos y pagos.
+  <div id="activationAlert" class="activation-alert" style="display:none;" data-brand-text="virtualOfficeTexts.activationAlert">
+    Debes realizar una compra mínima de 50 puntos para activar tu código y comenzar a recibir bonos y pagos.
   </div>
 
   <!-- Barra de progreso de metas -->
   <div id="progressBarContainer" class="progress-bar-container" style="display:none;">
     <div class="progress-bar-header">
-      <h3>¡Tu camino a Corona!</h3>
-      <p class="progress-subtitle">Continúa acumulando puntos para alcanzar mayores beneficios</p>
+      <h3 data-brand-text="virtualOfficeTexts.progressTitle">¡Tu camino a Corona!</h3>
+      <p class="progress-subtitle" data-brand-text="virtualOfficeTexts.progressSubtitle">Continúa acumulando puntos para alcanzar mayores beneficios</p>
     </div>
     <div class="progress-bar-wrapper">
       <div class="progress-bar-track">
