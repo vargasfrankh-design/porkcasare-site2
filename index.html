@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PorKCasare</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- Brand Loader for dynamic styling -->
+  <script src="/js/brand-loader.js"></script>
   <style>
     .hero {
       background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
@@ -538,19 +540,19 @@
 <body>
 <header class="nav">
   <div class="brand">
-    <img src="images/logo.webp" alt="logo" style="height: 50px; width: 50px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-    <div><strong style="font-size: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">PorKCasare</strong></div>
+    <img data-brand-logo src="images/logo.webp" alt="logo" style="height: 50px; width: 50px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+    <div><strong data-brand-text="platformName" style="font-size: 20px; background: linear-gradient(135deg, var(--brand-primary, #667eea) 0%, var(--brand-secondary, #764ba2) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">PorKCasare</strong></div>
   </div>
   <div style="display: flex; gap: 10px;">
-    <a class="btn" href="login.html" style="background: #fff; color: #667eea; border: 2px solid #667eea; box-shadow: none;">Entrar</a>
-    <a class="btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" href="login.html">Registrarse</a>
+    <a class="btn" href="login.html" style="background: #fff; color: var(--brand-primary, #667eea); border: 2px solid var(--brand-primary, #667eea); box-shadow: none;">Entrar</a>
+    <a class="btn" style="background: linear-gradient(135deg, var(--brand-primary, #667eea) 0%, var(--brand-secondary, #764ba2) 100%);" href="login.html">Registrarse</a>
   </div>
 </header>
 <main class="container">
   <section class="hero">
     <div style="flex:1">
-      <h1>Carne empacada al vacío — PorKCasare 🥩</h1>
-      <p class="lead">Seleccionamos, empacamos y distribuimos cortes de cerdo con trazabilidad y la mejor calidad.</p>
+      <h1 data-brand-text="homeTexts.heroTitle">Carne empacada al vacío — PorKCasare</h1>
+      <p class="lead" data-brand-text="homeTexts.heroSubtitle">Seleccionamos, empacamos y distribuimos cortes de cerdo con trazabilidad y la mejor calidad.</p>
       <div class="card" style="margin-top:14px">
         <h4>¿Cómo funciona el plan de referidos?</h4>
         <ul>
@@ -590,13 +592,13 @@
   </section>
 
   <section style="margin-top:20px" class="card">
-    <h3>🎯Misión</h3>
-    <p>En PorkCasare trabajamos día a día en la crianza y ceba de porcinos con los más altos estándares de nutrición, bioseguridad y bienestar animal, utilizando procesos responsables que impulsan el crecimiento económico local y fortalecen el sector agropecuario.</p>
+    <h3 data-brand-text="homeTexts.missionTitle">Misión</h3>
+    <p data-brand-text="homeTexts.missionText">En PorkCasare trabajamos día a día en la crianza y ceba de porcinos con los más altos estándares de nutrición, bioseguridad y bienestar animal, utilizando procesos responsables que impulsan el crecimiento económico local y fortalecen el sector agropecuario.</p>
   </section>
 
   <section style="margin-top:20px" class="card">
-    <h3>🌱Visión</h3>
-    <p>Convertirnos en una granja porcícola líder en la región, reconocida por la innovación, calidad genética y sostenibilidad ambiental, aportando al desarrollo del campo colombiano y garantizando un producto de confianza para nuestros clientes.</p>
+    <h3 data-brand-text="homeTexts.visionTitle">Visión</h3>
+    <p data-brand-text="homeTexts.visionText">Convertirnos en una granja porcícola líder en la región, reconocida por la innovación, calidad genética y sostenibilidad ambiental, aportando al desarrollo del campo colombiano y garantizando un producto de confianza para nuestros clientes.</p>
   </section>
 
   <!-- Sección de Productos para Clientes -->
@@ -690,11 +692,11 @@
 
 <footer class="footer">
   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-    <strong>© PorKCasare by F&amp;F Asociados</strong>
+    <strong data-brand-text="homeTexts.footerText">© PorKCasare by F&amp;F Asociados</strong>
     <div style="display: flex; gap: 15px; align-items: center;">
-      <a href="/distribuidor-login.html" style="color: #667eea; text-decoration: none; font-weight: 600;">Portal Distribuidores</a>
+      <a href="/distribuidor-login.html" style="color: var(--brand-primary, #667eea); text-decoration: none; font-weight: 600;">Portal Distribuidores</a>
       <span style="color: #dee2e6;">|</span>
-      <a href="/login-proveedor.html" style="color: #667eea; text-decoration: none; font-weight: 600;">Portal Proveedores</a>
+      <a href="/login-proveedor.html" style="color: var(--brand-primary, #667eea); text-decoration: none; font-weight: 600;">Portal Proveedores</a>
     </div>
   </div>
 </footer>
