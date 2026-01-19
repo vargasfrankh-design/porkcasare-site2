@@ -579,6 +579,37 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(46,160,67,0.3);
     }
+
+    /* Unsaved changes indicator for branding section */
+    .btn-pulse {
+      animation: pulse-save 1.5s infinite;
+      box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.5);
+    }
+
+    @keyframes pulse-save {
+      0% {
+        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.5);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+      }
+    }
+
+    .unsaved-indicator {
+      display: none;
+      color: var(--warning-orange);
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-left: 8px;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0.5; }
+    }
   </style>
 </head>
 <body>
@@ -1637,13 +1668,27 @@
             <h2 style="margin:0;">Identidad Visual</h2>
             <p style="margin:8px 0 0 0;color:#666;font-size:14px;">Personaliza la apariencia de tu plataforma sin tocar código</p>
           </div>
-          <div style="display:flex;gap:10px;">
-            <button id="resetBrandingBtn" class="btn-secondary" style="display:flex;align-items:center;gap:6px;">
-              <span>↺</span> Restaurar Valores
-            </button>
-            <button id="saveBrandingBtn" class="btn-success" style="display:flex;align-items:center;gap:8px;padding:12px 24px;font-size:15px;">
-              <span>💾</span> Guardar Cambios
-            </button>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;">
+              <button id="exportBrandingBtn" class="btn-secondary" style="display:flex;align-items:center;gap:6px;padding:8px 12px;font-size:13px;" title="Exportar configuración como archivo JSON">
+                <span>📥</span> Exportar
+              </button>
+              <button id="importBrandingBtn" class="btn-secondary" style="display:flex;align-items:center;gap:6px;padding:8px 12px;font-size:13px;" title="Importar configuración desde archivo JSON">
+                <span>📤</span> Importar
+              </button>
+              <button id="restoreBackupBtn" class="btn-secondary" style="display:flex;align-items:center;gap:6px;padding:8px 12px;font-size:13px;" title="Restaurar desde backup local">
+                <span>🔄</span> Backup Local
+              </button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button id="resetBrandingBtn" class="btn-secondary" style="display:flex;align-items:center;gap:6px;">
+                <span>↺</span> Restaurar Valores
+              </button>
+              <button id="saveBrandingBtn" class="btn-success" style="display:flex;align-items:center;gap:8px;padding:12px 24px;font-size:15px;">
+                <span>💾</span> Guardar cambios
+              </button>
+            </div>
+            <span id="brandingUnsavedIndicator" class="unsaved-indicator">⚠️ Cambios sin guardar</span>
           </div>
         </div>
 
@@ -2670,15 +2715,31 @@
     const logoutBtn = document.getElementById("logoutBtn");
 
     let currentUser = null;
+    let currentTab = 'overview';
 
-    // Tab switching
+    // Tab switching with unsaved changes protection
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.addEventListener('click', () => {
         const tabId = btn.dataset.tab;
-        
+
+        // Check for unsaved branding changes when leaving branding tab
+        if (currentTab === 'branding' && tabId !== 'branding' && typeof hasUnsavedBrandingChanges !== 'undefined' && hasUnsavedBrandingChanges) {
+          const confirmLeave = confirm('Tienes cambios sin guardar en Identidad Visual. ¿Estás seguro de que deseas salir sin guardar?');
+          if (!confirmLeave) {
+            return; // Stay on branding tab
+          }
+          // User chose to leave without saving - reset the flag
+          hasUnsavedBrandingChanges = false;
+          if (typeof updateUnsavedChangesIndicator === 'function') {
+            updateUnsavedChangesIndicator();
+          }
+        }
+
+        currentTab = tabId;
+
         document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        
+
         btn.classList.add('active');
         document.getElementById(`tab-${tabId}`).classList.add('active');
       });
@@ -9149,18 +9210,217 @@
     };
 
     let currentBrandSettings = null;
+    let hasUnsavedBrandingChanges = false;
+    let brandingFormInitialized = false;
+    const LOCAL_BACKUP_KEY = 'brand-settings-local-backup';
+    const PENDING_SAVE_KEY = 'brand-settings-pending-save';
 
-    // Load brand settings on page load
-    async function loadBrandSettings() {
+    // Save to local backup (localStorage)
+    function saveToLocalBackup(settings) {
+      try {
+        localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({
+          settings: settings,
+          timestamp: new Date().toISOString()
+        }));
+        console.log('✅ Backup local guardado');
+        return true;
+      } catch (error) {
+        console.error('Error guardando backup local:', error);
+        return false;
+      }
+    }
+
+    // Get local backup
+    function getLocalBackup() {
+      try {
+        const backup = localStorage.getItem(LOCAL_BACKUP_KEY);
+        return backup ? JSON.parse(backup) : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    // Clear local backup
+    function clearLocalBackup() {
+      localStorage.removeItem(LOCAL_BACKUP_KEY);
+      localStorage.removeItem(PENDING_SAVE_KEY);
+    }
+
+    // Mark pending save for later sync
+    function markPendingSave(settings) {
+      try {
+        localStorage.setItem(PENDING_SAVE_KEY, JSON.stringify({
+          settings: settings,
+          timestamp: new Date().toISOString()
+        }));
+      } catch (error) {
+        console.error('Error marcando guardado pendiente:', error);
+      }
+    }
+
+    // Check for pending saves on load
+    function checkPendingSave() {
+      try {
+        const pending = localStorage.getItem(PENDING_SAVE_KEY);
+        if (pending) {
+          const data = JSON.parse(pending);
+          return data;
+        }
+      } catch (error) {
+        return null;
+      }
+      return null;
+    }
+
+    // Export settings to JSON file
+    function exportBrandSettings() {
+      const settings = collectBrandSettings();
+      settings.exportDate = new Date().toISOString();
+      const dataStr = JSON.stringify(settings, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+      const filename = `identidad-visual-${new Date().toISOString().split('T')[0]}.json`;
+
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', filename);
+      linkElement.click();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Exportado',
+        text: `Configuración exportada como ${filename}`,
+        confirmButtonColor: '#667eea'
+      });
+    }
+
+    // Import settings from JSON file
+    function importBrandSettings() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+          const text = await file.text();
+          const settings = JSON.parse(text);
+
+          // Validate structure
+          if (!settings.branding && !settings.colors && !settings.fonts) {
+            throw new Error('Archivo de configuración inválido');
+          }
+
+          populateBrandingForm(settings);
+          markBrandingAsChanged();
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Importado',
+            text: 'Configuración importada. Recuerda guardar los cambios para aplicarlos.',
+            confirmButtonColor: '#667eea'
+          });
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo importar el archivo: ' + error.message,
+            confirmButtonColor: '#de350b'
+          });
+        }
+      };
+
+      input.click();
+    }
+
+    // Restore from local backup
+    async function restoreFromLocalBackup() {
+      const backup = getLocalBackup();
+      if (!backup) {
+        Swal.fire({
+          icon: 'info',
+          title: 'Sin backup',
+          text: 'No hay backup local disponible.',
+          confirmButtonColor: '#667eea'
+        });
+        return;
+      }
+
+      const result = await Swal.fire({
+        icon: 'question',
+        title: 'Restaurar backup',
+        text: `¿Restaurar la configuración del ${new Date(backup.timestamp).toLocaleString('es-CO')}?`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, restaurar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#667eea'
+      });
+
+      if (result.isConfirmed) {
+        populateBrandingForm(backup.settings);
+        markBrandingAsChanged();
+        Swal.fire({
+          icon: 'success',
+          title: 'Restaurado',
+          text: 'Configuración restaurada desde backup local. Recuerda guardar los cambios.',
+          confirmButtonColor: '#667eea'
+        });
+      }
+    }
+
+    // Mark branding as having unsaved changes
+    function markBrandingAsChanged() {
+      if (!brandingFormInitialized) return;
+      hasUnsavedBrandingChanges = true;
+      updateUnsavedChangesIndicator();
+    }
+
+    // Update visual indicator for unsaved changes
+    function updateUnsavedChangesIndicator() {
+      const saveBtn = document.getElementById('saveBrandingBtn');
+      const indicator = document.getElementById('brandingUnsavedIndicator');
+
+      if (hasUnsavedBrandingChanges) {
+        if (saveBtn) {
+          saveBtn.classList.add('btn-pulse');
+          saveBtn.innerHTML = '<span>💾</span> Guardar cambios *';
+        }
+        if (indicator) {
+          indicator.style.display = 'inline';
+        }
+      } else {
+        if (saveBtn) {
+          saveBtn.classList.remove('btn-pulse');
+          saveBtn.innerHTML = '<span>💾</span> Guardar cambios';
+        }
+        if (indicator) {
+          indicator.style.display = 'none';
+        }
+      }
+    }
+
+    // Load brand settings on page load (with protection against overwriting unsaved changes)
+    async function loadBrandSettings(forceReload = false) {
+      // Protect against overwriting unsaved changes
+      if (hasUnsavedBrandingChanges && !forceReload) {
+        console.log('⚠️ Skipping brand settings reload - unsaved changes exist');
+        return;
+      }
+
       try {
         const response = await fetch('/.netlify/functions/get-brand-settings');
         if (!response.ok) throw new Error('Failed to load settings');
         currentBrandSettings = await response.json();
         populateBrandingForm(currentBrandSettings);
+        hasUnsavedBrandingChanges = false;
+        updateUnsavedChangesIndicator();
       } catch (error) {
         console.warn('Using default brand settings:', error);
         currentBrandSettings = defaultBrandSettings;
         populateBrandingForm(defaultBrandSettings);
+        hasUnsavedBrandingChanges = false;
+        updateUnsavedChangesIndicator();
       }
     }
 
@@ -9302,21 +9562,31 @@
       };
     }
 
-    // Save brand settings
-    async function saveBrandSettings() {
+    // Save brand settings with retry logic and local backup
+    async function saveBrandSettings(retryCount = 0) {
+      const maxRetries = 3;
       const saveBtn = document.getElementById('saveBrandingBtn');
       const originalText = saveBtn.innerHTML;
 
       try {
         saveBtn.disabled = true;
-        saveBtn.innerHTML = '<span>⏳</span> Guardando...';
+        saveBtn.innerHTML = retryCount > 0
+          ? `<span>🔄</span> Reintentando (${retryCount}/${maxRetries})...`
+          : '<span>⏳</span> Guardando...';
 
         const settings = collectBrandSettings();
+
+        // Always save local backup first
+        saveToLocalBackup(settings);
 
         // Get Firebase auth token if user is logged in
         let adminToken = null;
         if (auth.currentUser) {
-          adminToken = await auth.currentUser.getIdToken();
+          try {
+            adminToken = await auth.currentUser.getIdToken(true); // Force refresh token
+          } catch (tokenError) {
+            console.warn('Error obteniendo token, intentando sin autenticación:', tokenError);
+          }
         }
 
         const response = await fetch('/.netlify/functions/save-brand-settings', {
@@ -9342,6 +9612,13 @@
         document.getElementById('brandingLastUpdatedBy').textContent = auth.currentUser?.email || 'admin';
         lastUpdatedEl.style.display = 'block';
 
+        // Reset unsaved changes flag after successful save
+        hasUnsavedBrandingChanges = false;
+        updateUnsavedChangesIndicator();
+
+        // Clear pending save marker on success
+        localStorage.removeItem(PENDING_SAVE_KEY);
+
         Swal.fire({
           icon: 'success',
           title: '¡Guardado!',
@@ -9351,15 +9628,48 @@
 
       } catch (error) {
         console.error('Error saving brand settings:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudieron guardar los cambios: ' + error.message,
-          confirmButtonColor: '#de350b'
+
+        // Mark as pending for later sync
+        markPendingSave(collectBrandSettings());
+
+        // Retry logic for network errors
+        if (retryCount < maxRetries && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
+          const waitTime = Math.pow(2, retryCount) * 1000; // Exponential backoff
+          console.log(`Reintentando en ${waitTime/1000}s...`);
+          setTimeout(() => saveBrandSettings(retryCount + 1), waitTime);
+          return;
+        }
+
+        // Show options to user when save fails
+        const result = await Swal.fire({
+          icon: 'warning',
+          title: 'Error al guardar en servidor',
+          html: `
+            <p>No se pudieron guardar los cambios en el servidor: <strong>${error.message}</strong></p>
+            <p style="margin-top: 10px;">Tu configuración se ha guardado <strong>localmente</strong> como respaldo.</p>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #666;">Opciones disponibles:</p>
+          `,
+          showCancelButton: true,
+          showDenyButton: true,
+          confirmButtonText: '📥 Exportar como archivo',
+          denyButtonText: '🔄 Reintentar',
+          cancelButtonText: 'Cerrar',
+          confirmButtonColor: '#667eea',
+          denyButtonColor: '#f59e0b'
         });
+
+        if (result.isConfirmed) {
+          exportBrandSettings();
+        } else if (result.isDenied) {
+          saveBrandSettings(0); // Retry from start
+        }
       } finally {
         saveBtn.disabled = false;
-        saveBtn.innerHTML = originalText;
+        if (!hasUnsavedBrandingChanges) {
+          saveBtn.innerHTML = '<span>💾</span> Guardar cambios';
+        } else {
+          saveBtn.innerHTML = '<span>💾</span> Guardar cambios *';
+        }
       }
     }
 
@@ -9393,7 +9703,7 @@
       }
     }
 
-    // Apply palette
+    // Apply palette (also marks as changed)
     function applyPalette(paletteName) {
       const palette = colorPalettes[paletteName];
       if (!palette) return;
@@ -9411,6 +9721,9 @@
       document.querySelectorAll('.brand-palette-btn').forEach(btn => {
         btn.style.borderColor = btn.dataset.palette === paletteName ? palette.primary : '#e9ecef';
       });
+
+      // Mark as changed since user selected a palette
+      markBrandingAsChanged();
     }
 
     // Initialize branding section
@@ -9424,15 +9737,18 @@
       // Font preview updates
       document.getElementById('brandFontHeadings')?.addEventListener('change', function() {
         document.getElementById('brandFontPreviewHeading').style.fontFamily = this.value;
+        markBrandingAsChanged();
       });
 
       document.getElementById('brandFontBody')?.addEventListener('change', function() {
         document.getElementById('brandFontPreviewBody').style.fontFamily = this.value;
+        markBrandingAsChanged();
       });
 
       // Logo preview update
       document.getElementById('brandLogoUrl')?.addEventListener('input', function() {
         document.getElementById('brandLogoPreview').src = this.value || '/images/logo.webp';
+        markBrandingAsChanged();
       });
 
       // Palette buttons
@@ -9443,15 +9759,81 @@
       // Save button
       document.getElementById('saveBrandingBtn')?.addEventListener('click', saveBrandSettings);
 
+      // Export button
+      document.getElementById('exportBrandingBtn')?.addEventListener('click', exportBrandSettings);
+
+      // Import button
+      document.getElementById('importBrandingBtn')?.addEventListener('click', importBrandSettings);
+
+      // Restore from local backup button
+      document.getElementById('restoreBackupBtn')?.addEventListener('click', restoreFromLocalBackup);
+
       // Reset button
       document.getElementById('resetBrandingBtn')?.addEventListener('click', () => {
         if (confirm('¿Estás seguro de restaurar los valores predeterminados? Esto no guardará los cambios automáticamente.')) {
+          hasUnsavedBrandingChanges = false;
           populateBrandingForm(defaultBrandSettings);
+          markBrandingAsChanged();
+        }
+      });
+
+      // Add change detection to all branding form inputs
+      const brandingTabContent = document.getElementById('tab-branding');
+      if (brandingTabContent) {
+        brandingTabContent.querySelectorAll('input, select, textarea').forEach(input => {
+          input.addEventListener('input', markBrandingAsChanged);
+          input.addEventListener('change', markBrandingAsChanged);
+        });
+      }
+
+      // Warn user before leaving page with unsaved changes
+      window.addEventListener('beforeunload', function(e) {
+        if (hasUnsavedBrandingChanges) {
+          e.preventDefault();
+          e.returnValue = 'Tienes cambios sin guardar en Identidad Visual. ¿Estás seguro de que deseas salir?';
+          return e.returnValue;
         }
       });
 
       // Load current settings
       loadBrandSettings();
+
+      // Check for pending saves and notify user
+      const pendingSave = checkPendingSave();
+      if (pendingSave) {
+        setTimeout(async () => {
+          const result = await Swal.fire({
+            icon: 'info',
+            title: 'Guardado pendiente encontrado',
+            html: `
+              <p>Hay una configuración que no se pudo guardar el ${new Date(pendingSave.timestamp).toLocaleString('es-CO')}.</p>
+              <p style="margin-top: 10px;">¿Qué deseas hacer?</p>
+            `,
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonText: '🔄 Reintentar guardar',
+            denyButtonText: '📋 Cargar en formulario',
+            cancelButtonText: 'Ignorar',
+            confirmButtonColor: '#667eea',
+            denyButtonColor: '#f59e0b'
+          });
+
+          if (result.isConfirmed) {
+            // Populate form with pending data and save
+            populateBrandingForm(pendingSave.settings);
+            saveBrandSettings();
+          } else if (result.isDenied) {
+            // Just populate form, let user review
+            populateBrandingForm(pendingSave.settings);
+            markBrandingAsChanged();
+          }
+        }, 1000);
+      }
+
+      // Mark as initialized (prevents marking changes during initial population)
+      setTimeout(() => {
+        brandingFormInitialized = true;
+      }, 500);
     }
 
     // Initialize branding when tab is clicked
