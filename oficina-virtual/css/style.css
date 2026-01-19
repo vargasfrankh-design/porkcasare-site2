@@ -6,6 +6,37 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* CSS Variables for brand customization */
+:root {
+  /* Virtual Office Colors */
+  --vo-primary: #4a90e2;
+  --vo-secondary: #667eea;
+  --vo-accent: #007bff;
+  --vo-nav-background: #4a90e2;
+  --vo-btn-normal: #007bff;
+  --vo-btn-hover: #0056b3;
+  --vo-btn-text: #ffffff;
+  --vo-btn-logout: #667eea;
+  --vo-btn-logout-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  /* Product Button Colors */
+  --product-btn-buy: #2563a0;
+  --product-btn-buy-hover: #3573b0;
+  --product-btn-add: #007bff;
+  --product-btn-view-more: #6c757d;
+  --product-btn-text: #ffffff;
+  --product-qty-border: #1e88e5;
+
+  /* Product Card Colors */
+  --product-card-bg: #ffffff;
+  --product-card-border: #e8e8e8;
+  --product-card-title: #1e293b;
+  --product-card-price: #007bff;
+  --product-card-desc: #64748b;
+  --product-card-shadow: #000000;
+  --product-card-shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
 body {
   background-color: #f4f6f8;
   color: #333;
@@ -130,7 +161,7 @@ body {
 
 /* Barra superior */
 .nav {
-  background-color: #4a90e2; /* Azul tenue */
+  background-color: var(--vo-nav-background, #4a90e2);
   color: #fff;
   padding: 10px 20px;
   display: flex;
@@ -159,8 +190,8 @@ body {
 
 /* Botones */
 .btn {
-  background-color: #007bff;
-  color: #fff;
+  background-color: var(--vo-btn-normal, #007bff);
+  color: var(--vo-btn-text, #fff);
   padding: 10px 16px;
   border: none;
   border-radius: 6px;
@@ -174,12 +205,12 @@ body {
 }
 
 .btn:hover {
-  background-color: #0056b3;
+  background-color: var(--vo-btn-hover, #0056b3);
 }
 
 .btn-logout {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
+  background: var(--vo-btn-logout-gradient, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+  color: var(--vo-btn-text, #fff);
   font-weight: 600;
   padding: 10px 20px;
   border-radius: 8px;
@@ -2603,8 +2634,8 @@ body {
 
 /* Product Cards - consistent styling */
 .product-card {
-  background: #fff;
-  border: 1px solid #e8e8e8;
+  background: var(--product-card-bg, #fff);
+  border: 1px solid var(--product-card-border, #e8e8e8);
   border-radius: 12px;
   padding: 14px;
   text-align: center;
@@ -2618,7 +2649,7 @@ body {
 
 .product-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--product-card-shadow-hover, 0 6px 20px rgba(0, 0, 0, 0.12));
 }
 
 .product-card img {
@@ -2639,12 +2670,12 @@ body {
   justify-content: center;
   text-align: center;
   line-height: 1.3;
-  color: #1e293b;
+  color: var(--product-card-title, #1e293b);
 }
 
 .product-card > p:not(.unit-price):not(.total-price) {
   font-size: 12px;
-  color: #64748b;
+  color: var(--product-card-desc, #64748b);
   min-height: 32px;
   margin: 4px 0;
   line-height: 1.3;
@@ -2658,7 +2689,7 @@ body {
 
 .product-card .total-price {
   font-size: 15px;
-  color: #007bff;
+  color: var(--product-card-price, #007bff);
   margin: 6px 0;
   font-weight: 600;
 }
@@ -2673,6 +2704,8 @@ body {
   width: 30px;
   height: 30px;
   font-size: 16px;
+  border-color: var(--product-qty-border, #1e88e5);
+  color: var(--product-qty-border, #1e88e5);
 }
 
 .product-card .qty-input {
@@ -2685,6 +2718,8 @@ body {
   padding: 8px 12px;
   font-size: 12px;
   margin-top: auto;
+  background-color: var(--product-btn-add, #007bff);
+  color: var(--product-btn-text, #fff);
 }
 
 /* Points badge in product cards */

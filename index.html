@@ -8,6 +8,21 @@
   <!-- Brand Loader for dynamic styling -->
   <script src="/js/brand-loader.js"></script>
   <style>
+    /* CSS Variables for brand customization - defaults with fallbacks */
+    :root {
+      --product-btn-buy: #2563a0;
+      --product-btn-buy-hover: #3573b0;
+      --product-btn-add: #007bff;
+      --product-btn-text: #ffffff;
+      --product-qty-border: #1e88e5;
+      --product-card-bg: #ffffff;
+      --product-card-border: #e8e8e8;
+      --product-card-title: #1e293b;
+      --product-card-price: #007bff;
+      --product-card-desc: #64748b;
+      --product-card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
     .hero {
       background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
       border-radius: 16px;
@@ -99,7 +114,7 @@
     }
 
     .product-card {
-      background: #fff;
+      background: var(--product-card-bg, #fff);
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -108,7 +123,7 @@
 
     .product-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      box-shadow: var(--product-card-shadow-hover, 0 8px 24px rgba(0,0,0,0.12));
     }
 
     .product-card img {
@@ -124,13 +139,13 @@
     .product-card .product-name {
       font-weight: 700;
       font-size: 16px;
-      color: #333;
+      color: var(--product-card-title, #333);
       margin-bottom: 6px;
     }
 
     .product-card .product-desc {
       font-size: 13px;
-      color: #6c757d;
+      color: var(--product-card-desc, #6c757d);
       margin-bottom: 12px;
       min-height: 36px;
     }
@@ -138,12 +153,8 @@
     .product-card .product-price {
       font-size: 15px;
       font-weight: 700;
-      color: #1e88e5;
+      color: var(--product-card-price, #1e88e5);
       margin-bottom: 4px;
-      background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
     }
 
     .product-card .product-unit {
@@ -172,9 +183,9 @@
     .product-card .qty-btn {
       width: 36px;
       height: 36px;
-      border: 2px solid #1e88e5;
+      border: 2px solid var(--product-qty-border, #1e88e5);
       background: #fff;
-      color: #1e88e5;
+      color: var(--product-qty-border, #1e88e5);
       border-radius: 50%;
       font-size: 20px;
       font-weight: 700;
@@ -187,7 +198,7 @@
     }
 
     .product-card .qty-btn:hover {
-      background: #1e88e5;
+      background: var(--product-qty-border, #1e88e5);
       color: #fff;
       box-shadow: 0 4px 12px rgba(30, 136, 229, 0.35);
       transform: scale(1.05);
@@ -211,7 +222,7 @@
 
     .product-card .total-price {
       font-size: 16px;
-      color: #1565c0;
+      color: var(--product-card-price, #1565c0);
       margin-bottom: 14px;
       text-align: center;
       font-weight: 700;
@@ -229,26 +240,22 @@
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
-      background: linear-gradient(180deg, #6ca6d9 0%, #3a7bc8 25%, #2563a0 50%, #1e5290 75%, #1a4578 100%);
-      color: #fff;
-      box-shadow: 0 2px 6px rgba(30, 82, 144, 0.35), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.15);
+      background: var(--product-btn-buy, #2563a0);
+      color: var(--product-btn-text, #fff);
+      box-shadow: 0 2px 6px rgba(30, 82, 144, 0.35);
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-      border-top: 1px solid rgba(255,255,255,0.3);
-      border-bottom: 1px solid rgba(0,0,0,0.2);
     }
 
     .product-card .btn-buy:hover {
       transform: translateY(-1px);
-      box-shadow: 0 3px 10px rgba(30, 82, 144, 0.45), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.2);
-      background: linear-gradient(180deg, #7cb4e5 0%, #4a8bd8 25%, #3573b0 50%, #2a62a0 75%, #245588 100%);
+      box-shadow: 0 3px 10px rgba(30, 82, 144, 0.45);
+      background: var(--product-btn-buy-hover, #3573b0);
     }
 
     .product-card .btn-buy:active {
       transform: translateY(0);
-      box-shadow: 0 1px 4px rgba(30, 82, 144, 0.3), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 2px 3px rgba(0,0,0,0.1);
-      background: linear-gradient(180deg, #5a98c5 0%, #2a6bb8 25%, #1a5390 50%, #154280 75%, #103568 100%);
+      box-shadow: 0 1px 4px rgba(30, 82, 144, 0.3);
     }
 
     .product-card .btn-buy:disabled {

@@ -2014,6 +2014,263 @@
           </div>
         </div>
 
+        <!-- Sección: Configuración Visual Avanzada -->
+        <div style="margin-top:24px;">
+          <h3 style="margin:0 0 20px 0;font-size:20px;color:#333;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:24px;">🎯</span> Configuración Visual Avanzada
+          </h3>
+          <p style="margin:0 0 16px 0;color:#666;font-size:14px;">Personaliza la apariencia de la oficina virtual, productos y home de clientes</p>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(500px, 1fr));gap:24px;">
+
+            <!-- Colores de la Oficina Virtual -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+              <h4 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+                <span>🏢</span> Colores Oficina Virtual
+              </h4>
+              <p style="margin:0 0 16px 0;color:#666;font-size:13px;">Paleta de colores para el panel de distribuidores</p>
+
+              <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;">
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Color Principal</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandVOColorPrimary" value="#4a90e2" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandVOColorPrimaryHex" value="#4a90e2" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Color Secundario</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandVOColorSecondary" value="#667eea" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandVOColorSecondaryHex" value="#667eea" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Color Acento</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandVOColorAccent" value="#007bff" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandVOColorAccentHex" value="#007bff" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Fondo de Navegación</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandVONavBackground" value="#4a90e2" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandVONavBackgroundHex" value="#4a90e2" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vista previa navegación -->
+              <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e9ecef;">
+                <label style="display:block;margin-bottom:10px;font-weight:600;font-size:13px;color:#333;">Vista Previa Navegación</label>
+                <div id="brandVONavPreview" style="height:50px;border-radius:8px;background:#4a90e2;display:flex;align-items:center;justify-content:space-between;padding:0 16px;color:#fff;">
+                  <span style="font-weight:600;">PorkCasare</span>
+                  <span style="font-size:13px;">Cerrar sesión</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de la Oficina Virtual -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+              <h4 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+                <span>🔘</span> Botones Oficina Virtual
+              </h4>
+              <p style="margin:0 0 16px 0;color:#666;font-size:13px;">Colores de botones generales del panel</p>
+
+              <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;">
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Botón Normal</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandVOBtnNormal" value="#007bff" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandVOBtnNormalHex" value="#007bff" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Botón Hover</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandVOBtnHover" value="#0056b3" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandVOBtnHoverHex" value="#0056b3" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Texto de Botones</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandVOBtnText" value="#ffffff" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandVOBtnTextHex" value="#ffffff" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Botón Cerrar Sesión</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandVOBtnLogout" value="#667eea" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandVOBtnLogoutHex" value="#667eea" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vista previa de botones -->
+              <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e9ecef;">
+                <label style="display:block;margin-bottom:10px;font-weight:600;font-size:13px;color:#333;">Vista Previa de Botones</label>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                  <button id="brandVOBtnPreviewNormal" type="button" style="padding:10px 20px;border:none;border-radius:6px;background:#007bff;color:#fff;font-weight:600;cursor:pointer;">Botón Normal</button>
+                  <button id="brandVOBtnPreviewLogout" type="button" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;font-weight:600;cursor:pointer;">Cerrar Sesión</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de Productos -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+              <h4 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+                <span>🛒</span> Botones de Productos
+              </h4>
+              <p style="margin:0 0 16px 0;color:#666;font-size:13px;">Colores para botones de comprar, ver más y agregar al carrito</p>
+
+              <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;">
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Botón Comprar (Normal)</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductBtnBuy" value="#2563a0" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductBtnBuyHex" value="#2563a0" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Botón Comprar (Hover)</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductBtnBuyHover" value="#3573b0" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductBtnBuyHoverHex" value="#3573b0" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Botón Agregar</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductBtnAdd" value="#007bff" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductBtnAddHex" value="#007bff" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Botón Ver Más</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductBtnViewMore" value="#6c757d" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductBtnViewMoreHex" value="#6c757d" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Texto de Botones</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductBtnText" value="#ffffff" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductBtnTextHex" value="#ffffff" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Borde de Cantidad (+/-)</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductQtyBorder" value="#1e88e5" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductQtyBorderHex" value="#1e88e5" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vista previa de botones de producto -->
+              <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e9ecef;">
+                <label style="display:block;margin-bottom:10px;font-weight:600;font-size:13px;color:#333;">Vista Previa</label>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+                  <button id="brandProductBtnPreviewBuy" type="button" style="padding:8px 16px;border:none;border-radius:6px;background:#2563a0;color:#fff;font-weight:600;font-size:12px;cursor:pointer;text-transform:uppercase;">Comprar Ahora</button>
+                  <button id="brandProductBtnPreviewAdd" type="button" style="padding:8px 16px;border:none;border-radius:6px;background:#007bff;color:#fff;font-weight:600;font-size:12px;cursor:pointer;">Agregar</button>
+                  <button id="brandProductBtnPreviewViewMore" type="button" style="padding:8px 16px;border:none;border-radius:6px;background:#6c757d;color:#fff;font-weight:600;font-size:12px;cursor:pointer;">Ver Más</button>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <button id="brandProductQtyPreviewMinus" type="button" style="width:30px;height:30px;border:2px solid #1e88e5;background:#fff;color:#1e88e5;border-radius:50%;font-size:16px;font-weight:700;cursor:pointer;">−</button>
+                    <span style="padding:0 8px;font-weight:600;">1</span>
+                    <button id="brandProductQtyPreviewPlus" type="button" style="width:30px;height:30px;border:2px solid #1e88e5;background:#fff;color:#1e88e5;border-radius:50%;font-size:16px;font-weight:700;cursor:pointer;">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tarjetas de Productos -->
+            <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
+              <h4 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+                <span>🃏</span> Tarjetas de Productos
+              </h4>
+              <p style="margin:0 0 16px 0;color:#666;font-size:13px;">Colores para las tarjetas de productos en oficina virtual y home de clientes</p>
+
+              <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;">
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Fondo de Tarjeta</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductCardBg" value="#ffffff" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductCardBgHex" value="#ffffff" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Borde de Tarjeta</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductCardBorder" value="#e8e8e8" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductCardBorderHex" value="#e8e8e8" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Título del Producto</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductCardTitle" value="#1e293b" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductCardTitleHex" value="#1e293b" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Color del Precio</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductCardPrice" value="#007bff" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductCardPriceHex" value="#007bff" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Descripción</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductCardDesc" value="#64748b" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductCardDescHex" value="#64748b" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#333;">Sombra (hover)</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="color" id="brandProductCardShadow" value="#000000" style="width:50px;height:40px;border:none;border-radius:6px;cursor:pointer;">
+                    <input type="text" id="brandProductCardShadowHex" value="#000000" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;">
+                  </div>
+                  <small style="color:#666;font-size:11px;">Transparencia aplicada automáticamente</small>
+                </div>
+              </div>
+
+              <!-- Vista previa de tarjeta -->
+              <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e9ecef;">
+                <label style="display:block;margin-bottom:10px;font-weight:600;font-size:13px;color:#333;">Vista Previa de Tarjeta</label>
+                <div id="brandProductCardPreview" style="width:200px;background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+                  <div style="height:80px;background:#f0f0f0;border-radius:8px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;color:#999;">Imagen</div>
+                  <div id="brandProductCardPreviewTitle" style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:4px;">Nombre Producto</div>
+                  <div id="brandProductCardPreviewDesc" style="font-size:12px;color:#64748b;margin-bottom:8px;">Descripción breve</div>
+                  <div id="brandProductCardPreviewPrice" style="font-size:15px;font-weight:600;color:#007bff;">$45.000</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
         <!-- Paletas Predefinidas -->
         <div style="margin-top:24px;background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e9ecef;">
           <h3 style="margin:0 0 20px 0;font-size:18px;color:#333;display:flex;align-items:center;gap:10px;">
@@ -9162,6 +9419,32 @@
         activationAlert: 'Debes realizar una compra mínima de 50 puntos para activar tu código y comenzar a recibir bonos y pagos.',
         progressTitle: '¡Tu camino a Corona!',
         progressSubtitle: 'Continúa acumulando puntos para alcanzar mayores beneficios'
+      },
+      virtualOfficeColors: {
+        primary: '#4a90e2',
+        secondary: '#667eea',
+        accent: '#007bff',
+        navBackground: '#4a90e2',
+        btnNormal: '#007bff',
+        btnHover: '#0056b3',
+        btnText: '#ffffff',
+        btnLogout: '#667eea'
+      },
+      productButtons: {
+        buyNormal: '#2563a0',
+        buyHover: '#3573b0',
+        add: '#007bff',
+        viewMore: '#6c757d',
+        text: '#ffffff',
+        qtyBorder: '#1e88e5'
+      },
+      productCards: {
+        background: '#ffffff',
+        border: '#e8e8e8',
+        titleColor: '#1e293b',
+        priceColor: '#007bff',
+        descColor: '#64748b',
+        shadowColor: '#000000'
       }
     };
 
@@ -9496,6 +9779,71 @@
         document.getElementById('brandVirtualOfficeProgressSubtitle').value = settings.virtualOfficeTexts.progressSubtitle || '';
       }
 
+      // Virtual office colors
+      if (settings.virtualOfficeColors) {
+        const voColorFields = {
+          'VOColorPrimary': 'primary',
+          'VOColorSecondary': 'secondary',
+          'VOColorAccent': 'accent',
+          'VONavBackground': 'navBackground',
+          'VOBtnNormal': 'btnNormal',
+          'VOBtnHover': 'btnHover',
+          'VOBtnText': 'btnText',
+          'VOBtnLogout': 'btnLogout'
+        };
+        Object.entries(voColorFields).forEach(([inputId, settingKey]) => {
+          const colorInput = document.getElementById(`brand${inputId}`);
+          const hexInput = document.getElementById(`brand${inputId}Hex`);
+          if (colorInput && settings.virtualOfficeColors[settingKey]) {
+            colorInput.value = settings.virtualOfficeColors[settingKey];
+            if (hexInput) hexInput.value = settings.virtualOfficeColors[settingKey];
+          }
+        });
+        updateVOPreview();
+      }
+
+      // Product buttons
+      if (settings.productButtons) {
+        const productBtnFields = {
+          'ProductBtnBuy': 'buyNormal',
+          'ProductBtnBuyHover': 'buyHover',
+          'ProductBtnAdd': 'add',
+          'ProductBtnViewMore': 'viewMore',
+          'ProductBtnText': 'text',
+          'ProductQtyBorder': 'qtyBorder'
+        };
+        Object.entries(productBtnFields).forEach(([inputId, settingKey]) => {
+          const colorInput = document.getElementById(`brand${inputId}`);
+          const hexInput = document.getElementById(`brand${inputId}Hex`);
+          if (colorInput && settings.productButtons[settingKey]) {
+            colorInput.value = settings.productButtons[settingKey];
+            if (hexInput) hexInput.value = settings.productButtons[settingKey];
+          }
+        });
+        updateProductBtnPreview();
+      }
+
+      // Product cards
+      if (settings.productCards) {
+        const productCardFields = {
+          'ProductCardBg': 'background',
+          'ProductCardBorder': 'border',
+          'ProductCardTitle': 'titleColor',
+          'ProductCardPrice': 'priceColor',
+          'ProductCardDesc': 'descColor',
+          'ProductCardShadow': 'shadowColor'
+        };
+        Object.entries(productCardFields).forEach(([inputId, settingKey]) => {
+          const colorInput = document.getElementById(`brand${inputId}`);
+          const hexInput = document.getElementById(`brand${inputId}Hex`);
+          if (colorInput && settings.productCards[settingKey]) {
+            colorInput.value = settings.productCards[settingKey];
+            if (hexInput) hexInput.value = settings.productCards[settingKey];
+          }
+        });
+        updateProductCardPreview();
+      }
+
       // Last updated
       if (settings.metadata && settings.metadata.lastUpdated) {
         const lastUpdatedEl = document.getElementById('brandingLastUpdated');
@@ -9558,6 +9906,35 @@
           activationAlert: document.getElementById('brandVirtualOfficeActivationAlert').value.trim(),
           progressTitle: document.getElementById('brandVirtualOfficeProgressTitle').value.trim(),
           progressSubtitle: document.getElementById('brandVirtualOfficeProgressSubtitle').value.trim()
+        },
+        // Configuración visual de la Oficina Virtual
+        virtualOfficeColors: {
+          primary: document.getElementById('brandVOColorPrimaryHex')?.value || '#4a90e2',
+          secondary: document.getElementById('brandVOColorSecondaryHex')?.value || '#667eea',
+          accent: document.getElementById('brandVOColorAccentHex')?.value || '#007bff',
+          navBackground: document.getElementById('brandVONavBackgroundHex')?.value || '#4a90e2',
+          btnNormal: document.getElementById('brandVOBtnNormalHex')?.value || '#007bff',
+          btnHover: document.getElementById('brandVOBtnHoverHex')?.value || '#0056b3',
+          btnText: document.getElementById('brandVOBtnTextHex')?.value || '#ffffff',
+          btnLogout: document.getElementById('brandVOBtnLogoutHex')?.value || '#667eea'
+        },
+        // Configuración de botones de productos
+        productButtons: {
+          buyNormal: document.getElementById('brandProductBtnBuyHex')?.value || '#2563a0',
+          buyHover: document.getElementById('brandProductBtnBuyHoverHex')?.value || '#3573b0',
+          add: document.getElementById('brandProductBtnAddHex')?.value || '#007bff',
+          viewMore: document.getElementById('brandProductBtnViewMoreHex')?.value || '#6c757d',
+          text: document.getElementById('brandProductBtnTextHex')?.value || '#ffffff',
+          qtyBorder: document.getElementById('brandProductQtyBorderHex')?.value || '#1e88e5'
+        },
+        // Configuración de tarjetas de productos
+        productCards: {
+          background: document.getElementById('brandProductCardBgHex')?.value || '#ffffff',
+          border: document.getElementById('brandProductCardBorderHex')?.value || '#e8e8e8',
+          titleColor: document.getElementById('brandProductCardTitleHex')?.value || '#1e293b',
+          priceColor: document.getElementById('brandProductCardPriceHex')?.value || '#007bff',
+          descColor: document.getElementById('brandProductCardDescHex')?.value || '#64748b',
+          shadowColor: document.getElementById('brandProductCardShadowHex')?.value || '#000000'
         }
       };
     }
@@ -9683,6 +10060,99 @@
       }
     }
 
+    // Update Virtual Office navigation preview
+    function updateVOPreview() {
+      const navBg = document.getElementById('brandVONavBackgroundHex')?.value || '#4a90e2';
+      const navPreview = document.getElementById('brandVONavPreview');
+      if (navPreview) {
+        navPreview.style.background = navBg;
+      }
+
+      const btnNormal = document.getElementById('brandVOBtnNormalHex')?.value || '#007bff';
+      const btnText = document.getElementById('brandVOBtnTextHex')?.value || '#ffffff';
+      const btnLogout = document.getElementById('brandVOBtnLogoutHex')?.value || '#667eea';
+      const btnSecondary = document.getElementById('brandVOColorSecondaryHex')?.value || '#764ba2';
+
+      const normalPreview = document.getElementById('brandVOBtnPreviewNormal');
+      if (normalPreview) {
+        normalPreview.style.background = btnNormal;
+        normalPreview.style.color = btnText;
+      }
+
+      const logoutPreview = document.getElementById('brandVOBtnPreviewLogout');
+      if (logoutPreview) {
+        logoutPreview.style.background = `linear-gradient(135deg, ${btnLogout} 0%, ${btnSecondary} 100%)`;
+      }
+    }
+
+    // Update Product buttons preview
+    function updateProductBtnPreview() {
+      const buyNormal = document.getElementById('brandProductBtnBuyHex')?.value || '#2563a0';
+      const addBtn = document.getElementById('brandProductBtnAddHex')?.value || '#007bff';
+      const viewMore = document.getElementById('brandProductBtnViewMoreHex')?.value || '#6c757d';
+      const btnText = document.getElementById('brandProductBtnTextHex')?.value || '#ffffff';
+      const qtyBorder = document.getElementById('brandProductQtyBorderHex')?.value || '#1e88e5';
+
+      const buyPreview = document.getElementById('brandProductBtnPreviewBuy');
+      if (buyPreview) {
+        buyPreview.style.background = buyNormal;
+        buyPreview.style.color = btnText;
+      }
+
+      const addPreview = document.getElementById('brandProductBtnPreviewAdd');
+      if (addPreview) {
+        addPreview.style.background = addBtn;
+        addPreview.style.color = btnText;
+      }
+
+      const viewPreview = document.getElementById('brandProductBtnPreviewViewMore');
+      if (viewPreview) {
+        viewPreview.style.background = viewMore;
+        viewPreview.style.color = btnText;
+      }
+
+      const qtyMinus = document.getElementById('brandProductQtyPreviewMinus');
+      const qtyPlus = document.getElementById('brandProductQtyPreviewPlus');
+      if (qtyMinus) {
+        qtyMinus.style.borderColor = qtyBorder;
+        qtyMinus.style.color = qtyBorder;
+      }
+      if (qtyPlus) {
+        qtyPlus.style.borderColor = qtyBorder;
+        qtyPlus.style.color = qtyBorder;
+      }
+    }
+
+    // Update Product card preview
+    function updateProductCardPreview() {
+      const cardBg = document.getElementById('brandProductCardBgHex')?.value || '#ffffff';
+      const cardBorder = document.getElementById('brandProductCardBorderHex')?.value || '#e8e8e8';
+      const titleColor = document.getElementById('brandProductCardTitleHex')?.value || '#1e293b';
+      const priceColor = document.getElementById('brandProductCardPriceHex')?.value || '#007bff';
+      const descColor = document.getElementById('brandProductCardDescHex')?.value || '#64748b';
+
+      const cardPreview = document.getElementById('brandProductCardPreview');
+      if (cardPreview) {
+        cardPreview.style.background = cardBg;
+        cardPreview.style.borderColor = cardBorder;
+      }
+
+      const titlePreview = document.getElementById('brandProductCardPreviewTitle');
+      if (titlePreview) {
+        titlePreview.style.color = titleColor;
+      }
+
+      const descPreview = document.getElementById('brandProductCardPreviewDesc');
+      if (descPreview) {
+        descPreview.style.color = descColor;
+      }
+
+      const pricePreview = document.getElementById('brandProductCardPreviewPrice');
+      if (pricePreview) {
+        pricePreview.style.color = priceColor;
+      }
+    }
+
     // Sync color input with hex input
     function syncColorInputs(colorId, hexId) {
       const colorInput = document.getElementById(colorId);
@@ -9749,6 +10219,64 @@
       document.getElementById('brandLogoUrl')?.addEventListener('input', function() {
         document.getElementById('brandLogoPreview').src = this.value || '/images/logo.webp';
         markBrandingAsChanged();
+      });
+
+      // Sync color inputs for new Visual Configuration sections
+      // Virtual Office colors
+      const voColorFields = ['VOColorPrimary', 'VOColorSecondary', 'VOColorAccent', 'VONavBackground', 'VOBtnNormal', 'VOBtnHover', 'VOBtnText', 'VOBtnLogout'];
+      voColorFields.forEach(field => {
+        const colorInput = document.getElementById(`brand${field}`);
+        const hexInput = document.getElementById(`brand${field}Hex`);
+        if (colorInput && hexInput) {
+          colorInput.addEventListener('input', () => {
+            hexInput.value = colorInput.value;
+            updateVOPreview();
+          });
+          hexInput.addEventListener('input', () => {
+            if (/^#[0-9A-Fa-f]{6}$/.test(hexInput.value)) {
+              colorInput.value = hexInput.value;
+              updateVOPreview();
+            }
+          });
+        }
+      });
+
+      // Product button colors
+      const productBtnFields = ['ProductBtnBuy', 'ProductBtnBuyHover', 'ProductBtnAdd', 'ProductBtnViewMore', 'ProductBtnText', 'ProductQtyBorder'];
+      productBtnFields.forEach(field => {
+        const colorInput = document.getElementById(`brand${field}`);
+        const hexInput = document.getElementById(`brand${field}Hex`);
+        if (colorInput && hexInput) {
+          colorInput.addEventListener('input', () => {
+            hexInput.value = colorInput.value;
+            updateProductBtnPreview();
+          });
+          hexInput.addEventListener('input', () => {
+            if (/^#[0-9A-Fa-f]{6}$/.test(hexInput.value)) {
+              colorInput.value = hexInput.value;
+              updateProductBtnPreview();
+            }
+          });
+        }
+      });
+
+      // Product card colors
+      const productCardFields = ['ProductCardBg', 'ProductCardBorder', 'ProductCardTitle', 'ProductCardPrice', 'ProductCardDesc', 'ProductCardShadow'];
+      productCardFields.forEach(field => {
+        const colorInput = document.getElementById(`brand${field}`);
+        const hexInput = document.getElementById(`brand${field}Hex`);
+        if (colorInput && hexInput) {
+          colorInput.addEventListener('input', () => {
+            hexInput.value = colorInput.value;
+            updateProductCardPreview();
+          });
+          hexInput.addEventListener('input', () => {
+            if (/^#[0-9A-Fa-f]{6}$/.test(hexInput.value)) {
+              colorInput.value = hexInput.value;
+              updateProductCardPreview();
+            }
+          });
+        }
       });
 
       // Palette buttons
