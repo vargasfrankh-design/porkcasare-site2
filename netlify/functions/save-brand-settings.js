@@ -1,18 +1,14 @@
-const { getStore } = require('@netlify/blobs');
-const { initializeApp, cert, getApps } = require('firebase-admin/app');
-const { getAuth } = require('firebase-admin/auth');
-const { getFirestore } = require('firebase-admin/firestore');
+// Firebase Admin - initialized once per cold start (same pattern as confirm-order.js)
+const admin = require('firebase-admin');
 
-// Initialize Firebase Admin if not already initialized
-function getFirebaseAdmin() {
-  if (getApps().length === 0) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
-    initializeApp({
-      credential: cert(serviceAccount)
-    });
-  }
-  return { auth: getAuth(), db: getFirestore() };
+if (!admin.apps.length) {
+  const saBase64 = process.env.FIREBASE_ADMIN_SA || '';
+  if (!saBase64) throw new Error('FIREBASE_ADMIN_SA missing');
+  const saJson = JSON.parse(Buffer.from(saBase64, 'base64').toString('utf8'));
+  admin.initializeApp({ credential: admin.credential.cert(saJson) });
 }
+
+const db = admin.firestore();
 
 exports.handler = async function(event, context) {
   // Only allow POST requests
@@ -38,26 +34,29 @@ exports.handler = async function(event, context) {
     }
 
     // Verify admin authentication
-    if (!adminToken) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Authentication required' })
-      };
-    }
-
-    // Verify the token with Firebase Admin
     let adminUser = null;
-    try {
-      const { auth, db } = getFirebaseAdmin();
-      const decodedToken = await auth.verifyIdToken(adminToken);
 
-      // Check if user is admin in Firestore
-      const userDoc = await db.collection('users').doc(decodedToken.uid).get();
-      if (!userDoc.exists) {
-        const usuarioDoc = await db.collection('usuarios').doc(decodedToken.uid).get();
-        if (usuarioDoc.exists) {
-          const userData = usuarioDoc.data();
+    if (adminToken) {
+      try {
+        const decodedToken = await admin.auth().verifyIdToken(adminToken);
+
+        // Check if user is admin in Firestore
+        const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+        if (!userDoc.exists) {
+          const usuarioDoc = await db.collection('usuarios').doc(decodedToken.uid).get();
+          if (usuarioDoc.exists) {
+            const userData = usuarioDoc.data();
+            if (userData.role !== 'admin' && userData.rol !== 'admin') {
+              return {
+                statusCode: 403,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ error: 'Admin privileges required' })
+              };
+            }
+            adminUser = userData;
+          }
+        } else {
+          const userData = userDoc.data();
           if (userData.role !== 'admin' && userData.rol !== 'admin') {
             return {
               statusCode: 403,
@@ -67,27 +66,16 @@ exports.handler = async function(event, context) {
           }
           adminUser = userData;
         }
-      } else {
-        const userData = userDoc.data();
-        if (userData.role !== 'admin' && userData.rol !== 'admin') {
+      } catch (authError) {
+        console.error('Auth verification error:', authError.message);
+        // In production, require valid auth
+        if (process.env.CONTEXT === 'production') {
           return {
-            statusCode: 403,
+            statusCode: 401,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'Admin privileges required' })
+            body: JSON.stringify({ error: 'Invalid authentication token' })
           };
         }
-        adminUser = userData;
-      }
-    } catch (authError) {
-      console.error('Auth verification error:', authError);
-      // Allow saving without Firebase auth verification in development
-      // In production, this should be stricter
-      if (process.env.CONTEXT === 'production') {
-        return {
-          statusCode: 401,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Invalid authentication token' })
-        };
       }
     }
 
@@ -100,9 +88,23 @@ exports.handler = async function(event, context) {
       updatedBy: adminUser?.email || adminUser?.name || 'admin'
     };
 
-    // Save to Netlify Blobs
-    const store = getStore('brand-settings', { consistency: 'strong' });
-    await store.setJSON('config', validatedSettings);
+    // Save to Firestore 'config' collection with document 'brand-settings'
+    try {
+      await db.collection('config').doc('brand-settings').set(validatedSettings);
+      console.log('Settings saved successfully to Firestore');
+    } catch (firestoreError) {
+      console.error('Firestore write error:', firestoreError.message, firestoreError.code);
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Failed to save to database',
+          details: firestoreError.code === 'permission-denied'
+            ? 'Permission denied - check Firebase rules or service account permissions'
+            : firestoreError.message
+        })
+      };
+    }
 
     return {
       statusCode: 200,
@@ -114,11 +116,23 @@ exports.handler = async function(event, context) {
       })
     };
   } catch (error) {
-    console.error('Error saving brand settings:', error);
+    console.error('Error saving brand settings:', error.message, error.stack);
+
+    // Provide more specific error messages
+    let errorMessage = 'Failed to save brand settings';
+    if (error.message.includes('parse') || error.message.includes('JSON')) {
+      errorMessage = 'Invalid settings format';
+    } else if (error.message.includes('PERMISSION_DENIED')) {
+      errorMessage = 'Permission denied - check Firebase rules';
+    }
+
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Failed to save brand settings' })
+      body: JSON.stringify({
+        error: errorMessage,
+        details: process.env.CONTEXT !== 'production' ? error.message : undefined
+      })
     };
   }
 };

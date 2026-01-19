@@ -1,4 +1,14 @@
-const { getStore } = require('@netlify/blobs');
+// Firebase Admin - initialized once per cold start (same pattern as confirm-order.js)
+const admin = require('firebase-admin');
+
+if (!admin.apps.length) {
+  const saBase64 = process.env.FIREBASE_ADMIN_SA || '';
+  if (!saBase64) throw new Error('FIREBASE_ADMIN_SA missing');
+  const saJson = JSON.parse(Buffer.from(saBase64, 'base64').toString('utf8'));
+  admin.initializeApp({ credential: admin.credential.cert(saJson) });
+}
+
+const db = admin.firestore();
 
 exports.handler = async function(event, context) {
   // Only allow GET requests
@@ -10,28 +20,35 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    const store = getStore('brand-settings', { consistency: 'strong' });
-    const settings = await store.get('config', { type: 'json' });
+    // Read from Firestore 'config' collection
+    try {
+      const doc = await db.collection('config').doc('brand-settings').get();
 
-    // Return default settings if no custom settings exist
-    if (!settings) {
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=60'
-        },
-        body: JSON.stringify(getDefaultSettings())
-      };
+      if (doc.exists) {
+        console.log('Brand settings retrieved from Firestore');
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=60'
+          },
+          body: JSON.stringify(doc.data())
+        };
+      }
+      console.log('Brand settings document does not exist, returning defaults');
+    } catch (firestoreError) {
+      console.error('Firestore read error:', firestoreError.message, firestoreError.code);
+      // Fall through to return defaults
     }
 
+    // Return default settings if no custom settings exist
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=60'
       },
-      body: JSON.stringify(settings)
+      body: JSON.stringify(getDefaultSettings())
     };
   } catch (error) {
     console.error('Error getting brand settings:', error);
