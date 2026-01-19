@@ -41,6 +41,32 @@
     fonts: {
       headings: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       body: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    },
+    virtualOfficeColors: {
+      primary: '#4a90e2',
+      secondary: '#667eea',
+      accent: '#007bff',
+      navBackground: '#4a90e2',
+      btnNormal: '#007bff',
+      btnHover: '#0056b3',
+      btnText: '#ffffff',
+      btnLogout: '#667eea'
+    },
+    productButtons: {
+      buyNormal: '#2563a0',
+      buyHover: '#3573b0',
+      add: '#007bff',
+      viewMore: '#6c757d',
+      text: '#ffffff',
+      qtyBorder: '#1e88e5'
+    },
+    productCards: {
+      background: '#ffffff',
+      border: '#e8e8e8',
+      titleColor: '#1e293b',
+      priceColor: '#007bff',
+      descColor: '#64748b',
+      shadowColor: '#000000'
     }
   };
 
@@ -112,6 +138,90 @@
       root.style.setProperty(
         '--brand-gradient',
         `linear-gradient(135deg, ${colors.gradientStart} 0%, ${colors.gradientEnd} 100%)`
+      );
+    }
+  }
+
+  // Apply virtual office colors
+  function applyVirtualOfficeColors(voColors) {
+    if (!voColors) return;
+
+    const root = document.documentElement;
+
+    const voColorMap = {
+      primary: '--vo-primary',
+      secondary: '--vo-secondary',
+      accent: '--vo-accent',
+      navBackground: '--vo-nav-background',
+      btnNormal: '--vo-btn-normal',
+      btnHover: '--vo-btn-hover',
+      btnText: '--vo-btn-text',
+      btnLogout: '--vo-btn-logout'
+    };
+
+    Object.entries(voColors).forEach(([key, value]) => {
+      if (voColorMap[key] && value) {
+        root.style.setProperty(voColorMap[key], value);
+      }
+    });
+
+    // Create logout gradient
+    if (voColors.btnLogout && voColors.secondary) {
+      root.style.setProperty(
+        '--vo-btn-logout-gradient',
+        `linear-gradient(135deg, ${voColors.btnLogout} 0%, ${voColors.secondary} 100%)`
+      );
+    }
+  }
+
+  // Apply product button colors
+  function applyProductButtons(productButtons) {
+    if (!productButtons) return;
+
+    const root = document.documentElement;
+
+    const btnColorMap = {
+      buyNormal: '--product-btn-buy',
+      buyHover: '--product-btn-buy-hover',
+      add: '--product-btn-add',
+      viewMore: '--product-btn-view-more',
+      text: '--product-btn-text',
+      qtyBorder: '--product-qty-border'
+    };
+
+    Object.entries(productButtons).forEach(([key, value]) => {
+      if (btnColorMap[key] && value) {
+        root.style.setProperty(btnColorMap[key], value);
+      }
+    });
+  }
+
+  // Apply product card colors
+  function applyProductCards(productCards) {
+    if (!productCards) return;
+
+    const root = document.documentElement;
+
+    const cardColorMap = {
+      background: '--product-card-bg',
+      border: '--product-card-border',
+      titleColor: '--product-card-title',
+      priceColor: '--product-card-price',
+      descColor: '--product-card-desc',
+      shadowColor: '--product-card-shadow'
+    };
+
+    Object.entries(productCards).forEach(([key, value]) => {
+      if (cardColorMap[key] && value) {
+        root.style.setProperty(cardColorMap[key], value);
+      }
+    });
+
+    // Create shadow with opacity
+    if (productCards.shadowColor) {
+      root.style.setProperty(
+        '--product-card-shadow-hover',
+        `0 6px 20px ${productCards.shadowColor}1f`
       );
     }
   }
@@ -194,6 +304,11 @@
     applyFonts(settings.fonts);
     applyTexts(settings);
     applyPageTitle(settings);
+
+    // Apply new visual configuration settings
+    applyVirtualOfficeColors(settings.virtualOfficeColors);
+    applyProductButtons(settings.productButtons);
+    applyProductCards(settings.productCards);
 
     // Dispatch custom event for components that need to react to brand loading
     window.dispatchEvent(new CustomEvent('brandSettingsLoaded', { detail: settings }));

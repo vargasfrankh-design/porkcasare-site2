@@ -145,6 +145,38 @@ function getDefaultSettings() {
       loadingSubtitle: 'Estamos preparando tu espacio. Esto no debería tardar mucho.'
     },
 
+    // Colores de la oficina virtual
+    virtualOfficeColors: {
+      primary: '#4a90e2',
+      secondary: '#667eea',
+      accent: '#007bff',
+      navBackground: '#4a90e2',
+      btnNormal: '#007bff',
+      btnHover: '#0056b3',
+      btnText: '#ffffff',
+      btnLogout: '#667eea'
+    },
+
+    // Botones de productos
+    productButtons: {
+      buyNormal: '#2563a0',
+      buyHover: '#3573b0',
+      add: '#007bff',
+      viewMore: '#6c757d',
+      text: '#ffffff',
+      qtyBorder: '#1e88e5'
+    },
+
+    // Tarjetas de productos
+    productCards: {
+      background: '#ffffff',
+      border: '#e8e8e8',
+      titleColor: '#1e293b',
+      priceColor: '#007bff',
+      descColor: '#64748b',
+      shadowColor: '#000000'
+    },
+
     // Metadatos
     metadata: {
       lastUpdated: null,

@@ -185,6 +185,42 @@ function validateSettings(settings) {
     }
   });
 
+  // Validate virtualOfficeColors
+  if (settings.virtualOfficeColors) {
+    validated.virtualOfficeColors = {};
+    const voColorKeys = ['primary', 'secondary', 'accent', 'navBackground', 'btnNormal', 'btnHover', 'btnText', 'btnLogout'];
+
+    voColorKeys.forEach(key => {
+      if (settings.virtualOfficeColors[key] && isValidColor(settings.virtualOfficeColors[key])) {
+        validated.virtualOfficeColors[key] = settings.virtualOfficeColors[key];
+      }
+    });
+  }
+
+  // Validate productButtons
+  if (settings.productButtons) {
+    validated.productButtons = {};
+    const productBtnKeys = ['buyNormal', 'buyHover', 'add', 'viewMore', 'text', 'qtyBorder'];
+
+    productBtnKeys.forEach(key => {
+      if (settings.productButtons[key] && isValidColor(settings.productButtons[key])) {
+        validated.productButtons[key] = settings.productButtons[key];
+      }
+    });
+  }
+
+  // Validate productCards
+  if (settings.productCards) {
+    validated.productCards = {};
+    const productCardKeys = ['background', 'border', 'titleColor', 'priceColor', 'descColor', 'shadowColor'];
+
+    productCardKeys.forEach(key => {
+      if (settings.productCards[key] && isValidColor(settings.productCards[key])) {
+        validated.productCards[key] = settings.productCards[key];
+      }
+    });
+  }
+
   return validated;
 }
 
