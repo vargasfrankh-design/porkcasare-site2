@@ -973,6 +973,114 @@
 </script>
 
 
+<!-- MercadoPago Payment Return Handler -->
+<script type="module">
+import { handlePaymentReturn, getPaymentParams } from '/src/mercadopago-client.js';
+import { auth, db } from '/src/firebase-config.js';
+import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
+
+// Handle MercadoPago payment return
+(async function() {
+  const params = getPaymentParams();
+  if (!params) return;
+
+  // Get pending orders from localStorage
+  const pendingOrdersStr = localStorage.getItem('porkcasare_pending_orders');
+  let pendingOrders = null;
+
+  try {
+    if (pendingOrdersStr) {
+      pendingOrders = JSON.parse(pendingOrdersStr);
+    }
+  } catch (e) {
+    console.error('Error parsing pending orders:', e);
+  }
+
+  // Handle the payment return
+  await handlePaymentReturn({
+    onSuccess: async (payment) => {
+      // Update orders to paid status if we have pending orders
+      if (pendingOrders && pendingOrders.orderIds && pendingOrders.orderIds.length > 0) {
+        try {
+          for (const orderId of pendingOrders.orderIds) {
+            await updateDoc(doc(db, 'orders', orderId), {
+              status: 'pending_delivery',
+              paymentStatus: 'approved',
+              paymentId: payment.id || params.collectionId,
+              paymentDate: new Date().toISOString()
+            });
+          }
+          localStorage.removeItem('porkcasare_pending_orders');
+        } catch (err) {
+          console.error('Error updating orders after payment:', err);
+        }
+      }
+
+      // Show success notification
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Pago exitoso',
+          html: `Tu pago ha sido procesado correctamente.<br><br>
+                 <small>ID de pago: ${payment.id || params.collectionId}</small>`,
+          confirmButtonText: 'Continuar',
+          confirmButtonColor: '#28a745'
+        });
+      } else {
+        alert('Pago exitoso. Tu pedido ha sido procesado.');
+      }
+    },
+    onPending: async (payment) => {
+      // Show pending notification
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'info',
+          title: 'Pago pendiente',
+          html: `Tu pago está siendo procesado.<br>
+                 Te notificaremos cuando se confirme.<br><br>
+                 <small>ID: ${payment.id || params.collectionId || 'N/A'}</small>`,
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#3085d6'
+        });
+      } else {
+        alert('Tu pago está pendiente de confirmación.');
+      }
+    },
+    onFailure: async (error) => {
+      // Update orders back to pending_payment status
+      if (pendingOrders && pendingOrders.orderIds) {
+        try {
+          for (const orderId of pendingOrders.orderIds) {
+            await updateDoc(doc(db, 'orders', orderId), {
+              paymentStatus: 'failed',
+              paymentAttemptDate: new Date().toISOString()
+            });
+          }
+        } catch (err) {
+          console.error('Error updating orders after failed payment:', err);
+        }
+      }
+
+      // Show failure notification
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'error',
+          title: 'Pago no completado',
+          html: `El pago no se pudo completar.<br>
+                 Puedes intentar nuevamente desde tu historial de pedidos.<br><br>
+                 <small>${error.message || 'Error desconocido'}</small>`,
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#dc3545'
+        });
+      } else {
+        alert('El pago no se pudo completar. Puedes intentar nuevamente.');
+      }
+    },
+    clearParams: true
+  });
+})();
+</script>
+
 <script>
 /* Loading overlay control — versión robusta: busca el elemento dinámicamente + fallback forzoso */
 (function () {

@@ -10,6 +10,7 @@ publishOrigin = "config"
 functions = "netlify/functions"
 
   [build.environment]
+  NODE_VERSION = "20"
 
   [build.processing]
 
@@ -24,5 +25,6 @@ functions = "netlify/functions"
   [build.services]
 
 [functions]
+node_bundler = "esbuild"
 
   [functions."*"]
