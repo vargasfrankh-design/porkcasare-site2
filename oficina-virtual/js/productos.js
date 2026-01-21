@@ -45,6 +45,7 @@ import {
   increment
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { initializeCartUI, cart } from "./cart.js";
+import { createPayment, handlePaymentReturn, formatCurrency } from "/src/mercadopago-client.js";
 
 const POINT_VALUE = 2800;
 const POINTS_PER_PACKAGE = 10;
@@ -997,7 +998,7 @@ function renderProductPagination(totalPages) {
 // --- Modal grande para que el cliente edite y confirme sus datos ---
 // Incluye opción de 'A domicilio' o 'Recoger en oficina'
 // Con cálculo dinámico de costo de envío basado en UE (Unidades de Envío)
-function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
+function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0, paymentMethod = 'efectivo_transferencia') {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.style.position = 'fixed';
@@ -1113,6 +1114,8 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
     const fApellido = createField('lastName', 'Apellido', initial.lastName || initial.apellido || '', 'Tu apellido');
     const fEmail = createField('email', 'Correo electrónico', initial.email || '', 'tucorreo@ejemplo.com');
     const fTelefono = createField('phone', 'Teléfono', initial.phone || initial.telefono || '', '+57 300 0000000');
+    const cedulaLabel = paymentMethod === 'mercadopago' ? 'Cédula de Ciudadanía (requerido para MercadoPago)' : 'Cédula de Ciudadanía (opcional)';
+    const fIdentificacion = createField('identification', cedulaLabel, initial.identification || initial.cedula || '', 'Número de cédula');
     const fDireccion = createField('address', 'Dirección', initial.address || initial.direccion || '', 'Calle, número, barrio');
     const fCiudad = createField('city', 'Ciudad', initial.city || '', 'Ciudad');
 
@@ -1120,6 +1123,7 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
     form.appendChild(fApellido.wrapper);
     form.appendChild(fEmail.wrapper);
     form.appendChild(fTelefono.wrapper);
+    form.appendChild(fIdentificacion.wrapper);
     form.appendChild(fDireccion.wrapper);
     form.appendChild(fCiudad.wrapper);
 
@@ -1154,7 +1158,7 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
     pickupInfo.style.color = '#111827';
     pickupInfo.innerHTML = `
       <strong>Recoger en oficina:</strong> Puedes recoger tu pedido en nuestra oficina principal.
-      <br>Dirección: Carrera 14 #21 04, Ciudad Yopal.
+      <br>Dirección: Calle 24a 11 68, Ciudad Yopal.
       <br>Horario: Lun-Sab 7:00 - 17:00.
     `;
     pickupInfo.style.display = 'none';
@@ -1422,6 +1426,7 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
         lastName: fApellido.input.value.trim(),
         email: fEmail.input.value.trim(),
         phone: fTelefono.input.value.trim(),
+        identification: fIdentificacion.input.value.trim(),
         address: fDireccion.input.value.trim(),
         city: city,
         notes: ta.value.trim(),
@@ -1441,6 +1446,7 @@ function showCustomerFormModal(initial = {}, subtotal = 0, totalUE = 0) {
       if (!payload.firstName) { alert('Por favor ingresa tu nombre.'); fNombre.input.focus(); return; }
       if (!payload.email || !/\S+@\S+\.\S+/.test(payload.email)) { alert('Por favor ingresa un correo válido.'); fEmail.input.focus(); return; }
       if (!payload.phone) { alert('Por favor ingresa un teléfono de contacto.'); fTelefono.input.focus(); return; }
+      if (paymentMethod === 'mercadopago' && !payload.identification) { alert('Por favor ingresa tu número de cédula (requerido para pago con MercadoPago).'); fIdentificacion.input.focus(); return; }
       if (deliveryMethod === 'home' && !payload.address) { alert('Por favor ingresa la dirección de entrega.'); fDireccion.input.focus(); return; }
       if (deliveryMethod === 'home' && !payload.city) { alert('Por favor ingresa la ciudad.'); fCiudad.input.focus(); return; }
 
@@ -1506,8 +1512,13 @@ async function onBuyClick(e) {
     console.warn("No se pudo leer perfil del usuario para prefill:", err);
   }
 
-  // ---------- Modal pequeño (Aceptar = Efectivo/Transferencia). Solo visual, NO DB ----------
-  await new Promise((resolve) => {
+  // ---------- Modal pequeño: selección de método de pago ----------
+  const unitPricePreview = getDisplayPrice(prod) + variantPriceDiff;
+  const totalPricePreview = unitPricePreview * quantity;
+  const productPointsPreview = getDisplayPoints(prod);
+  const totalPointsPreview = productPointsPreview * quantity;
+
+  const selectedPaymentMethod = await new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.setAttribute('id','payment-modal-overlay');
     overlay.style.position = 'fixed';
@@ -1531,39 +1542,94 @@ async function onBuyClick(e) {
 
     const h = document.createElement('h3');
     h.textContent = 'Confirmar compra';
-    h.style.margin = '0 0 8px 0';
-    h.style.fontSize = '18px';
-    h.style.fontWeight = '700';
+    h.style.margin = '0 0 12px 0';
+    h.style.fontSize = '22px';
+    h.style.color = '#212529';
     box.appendChild(h);
 
-    const p = document.createElement('p');
-    p.innerHTML = 'Método de pago: <strong>Efectivo o Transferencia</strong>';
-    p.style.margin = '0 0 18px 0';
-    p.style.fontSize = '14px';
-    p.style.color = '#333';
-    box.appendChild(p);
+    const productInfo = document.createElement('p');
+    productInfo.textContent = `${prod.nombre} x${quantity}`;
+    productInfo.style.margin = '0 0 16px 0';
+    productInfo.style.fontSize = '15px';
+    productInfo.style.color = '#6c757d';
+    box.appendChild(productInfo);
 
-    const btn = document.createElement('button');
-    btn.textContent = 'Aceptar';
-    btn.style.padding = '10px 18px';
-    btn.style.border = 'none';
-    btn.style.borderRadius = '10px';
-    btn.style.cursor = 'pointer';
-    btn.style.fontWeight = '600';
-    btn.style.boxShadow = '0 6px 16px rgba(0,0,0,0.12)';
-    btn.style.background = 'linear-gradient(90deg,#34D399,#10B981)';
-    btn.style.color = 'white';
-    btn.addEventListener('mouseenter', ()=> btn.style.transform='translateY(-1px)');
-    btn.addEventListener('mouseleave', ()=> btn.style.transform='translateY(0)');
-    btn.addEventListener('click', () => {
-      document.body.removeChild(overlay);
-      resolve();
+    const totalDiv = document.createElement('div');
+    totalDiv.style.cssText = 'background:#f8f9fa;padding:16px;border-radius:8px;margin-bottom:20px;';
+    totalDiv.innerHTML = `
+      <div style="font-size:14px;color:#666;margin-bottom:4px;">Total a pagar</div>
+      <div style="font-size:24px;font-weight:700;color:#333;">$${totalPricePreview.toLocaleString()}</div>
+      <div style="font-size:14px;color:#28a745;margin-top:4px;">${totalPointsPreview} puntos</div>
+    `;
+    box.appendChild(totalDiv);
+
+    const paymentMethodDiv = document.createElement('div');
+    paymentMethodDiv.style.cssText = 'margin-bottom:20px;text-align:left;';
+    paymentMethodDiv.innerHTML = `
+      <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">Método de pago:</label>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:center;padding:12px;border:2px solid #009ee3;border-radius:8px;cursor:pointer;background:#f0f9ff;transition:all 0.2s;">
+          <input type="radio" name="paymentMethodSingle" value="mercadopago" checked style="margin-right:10px;accent-color:#009ee3;">
+          <div>
+            <span style="font-weight:600;color:#009ee3;">💳 MercadoPago</span>
+            <span style="display:block;font-size:12px;color:#666;margin-top:2px;">Tarjeta, PSE, Nequi, Efecty y más</span>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;padding:12px;border:2px solid #ddd;border-radius:8px;cursor:pointer;transition:all 0.2s;">
+          <input type="radio" name="paymentMethodSingle" value="efectivo_transferencia" style="margin-right:10px;">
+          <div>
+            <span style="font-weight:600;color:#333;">💵 Efectivo o Transferencia</span>
+            <span style="display:block;font-size:12px;color:#666;margin-top:2px;">Recogida en bodega/oficina · Nequi/Daviplata 3125929316</span>
+          </div>
+        </label>
+      </div>
+    `;
+    box.appendChild(paymentMethodDiv);
+
+    // Style radio buttons on selection
+    const radios = paymentMethodDiv.querySelectorAll('input[type="radio"]');
+    radios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        paymentMethodDiv.querySelectorAll('label').forEach(label => {
+          label.style.borderColor = '#ddd';
+          label.style.background = 'white';
+        });
+        if (radio.checked) {
+          const label = radio.closest('label');
+          label.style.borderColor = radio.value === 'mercadopago' ? '#009ee3' : '#28a745';
+          label.style.background = radio.value === 'mercadopago' ? '#f0f9ff' : '#f0fff4';
+        }
+      });
     });
 
-    box.appendChild(btn);
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Continuar';
+    confirmBtn.className = 'btn btn-primary';
+    confirmBtn.style.cssText = 'width:100%;padding:12px;font-size:16px;font-weight:600;background:#667eea;border:none;border-radius:8px;color:white;cursor:pointer;';
+    confirmBtn.addEventListener('click', () => {
+      const selectedMethod = paymentMethodDiv.querySelector('input[name="paymentMethodSingle"]:checked').value;
+      document.body.removeChild(overlay);
+      resolve(selectedMethod);
+    });
+    box.appendChild(confirmBtn);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancelar';
+    cancelBtn.style.cssText = 'width:100%;padding:10px;font-size:14px;margin-top:10px;background:transparent;border:1px solid #ddd;border-radius:8px;color:#666;cursor:pointer;';
+    cancelBtn.addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve(null);
+    });
+    box.appendChild(cancelBtn);
+
     overlay.appendChild(box);
     document.body.appendChild(overlay);
   });
+
+  // If user cancelled, exit
+  if (selectedPaymentMethod === null) {
+    return;
+  }
 
   // ---------- Modal grande: pedir/editar datos del cliente (devuelve payload o null) ----------
   // Calculate subtotal for shipping display
@@ -1573,7 +1639,7 @@ async function onBuyClick(e) {
   // Calculate total UE (Shipping Units) for this product
   const totalUE = getProductUE(prod, quantity);
 
-  const customerData = await showCustomerFormModal(initialBuyerProfile, subtotal, totalUE);
+  const customerData = await showCustomerFormModal(initialBuyerProfile, subtotal, totalUE, selectedPaymentMethod);
   if (!customerData) {
     // usuario canceló en modal grande -> NO guardamos nada
     return;
@@ -1622,7 +1688,7 @@ async function onBuyClick(e) {
       createdAt: new Date().toISOString(),
       isInitial: prod.id === "paquete-inicio",
       initialBonusPaid: false,
-      paymentMethod: "efectivo_transferencia",
+      paymentMethod: selectedPaymentMethod,
       // Variant information
       selectedVariant: selectedVariant || null,
       variantPriceDiff: variantPriceDiff || 0,
@@ -1674,9 +1740,147 @@ async function onBuyClick(e) {
       console.error("Error en post-procesamiento de la orden:", err);
     }
 
-    // Éxito: redirigir a página de éxito (puedes ajustar la ruta)
-    alert("✅ Pedido creado correctamente.");
-    window.location.href = `/oficina-virtual/index.html?orderId=${encodeURIComponent(orderRef.id)}`;
+    // Handle payment based on selected method
+    if (selectedPaymentMethod === 'mercadopago') {
+      // Build items array for MercadoPago
+      const mpItems = [{
+        id: prod.id,
+        title: selectedVariant ? `${prod.nombre} - ${selectedVariant}` : prod.nombre,
+        description: prod.descripcion || '',
+        quantity: quantity,
+        unit_price: unitPrice
+      }];
+
+      // Add shipping cost as a separate item if applicable
+      if (shippingCost > 0) {
+        mpItems.push({
+          id: 'shipping',
+          title: 'Costo de envío',
+          description: `Envío a ${customerData.city || 'domicilio'}`,
+          quantity: 1,
+          unit_price: shippingCost
+        });
+      }
+
+      try {
+        // Show loading indicator
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.95);z-index:10001;';
+        loadingOverlay.innerHTML = `
+          <div style="text-align:center;">
+            <div style="width:50px;height:50px;border:4px solid #e0e0e0;border-top:4px solid #009ee3;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px;"></div>
+            <p style="font-size:18px;color:#333;margin:0;">Redirigiendo a MercadoPago...</p>
+            <p style="font-size:14px;color:#666;margin-top:8px;">Por favor espera</p>
+          </div>
+          <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+        `;
+        document.body.appendChild(loadingOverlay);
+
+        // Create MercadoPago preference
+        const paymentResult = await createPayment({
+          uid: buyerUid,
+          items: mpItems,
+          type: 'compra_producto',
+          description: `PorKCasare - ${prod.nombre}${selectedVariant ? ` - ${selectedVariant}` : ''} (x${quantity})`,
+          payer: {
+            name: customerData.firstName,
+            surname: customerData.lastName,
+            email: customerData.email,
+            phone: {
+              area_code: '57',
+              number: customerData.phone
+            },
+            identification: {
+              type: 'CC', // Cédula de Ciudadanía (Colombia)
+              number: customerData.identification
+            }
+          }
+        });
+
+        if (paymentResult && paymentResult.init_point) {
+          // Store order ID in localStorage to update after payment
+          localStorage.setItem('porkcasare_pending_orders', JSON.stringify({
+            orderIds: [orderRef.id],
+            preferenceId: paymentResult.preference_id,
+            timestamp: Date.now()
+          }));
+
+          // Redirect to MercadoPago checkout
+          window.location.href = paymentResult.init_point;
+        } else {
+          document.body.removeChild(loadingOverlay);
+          throw new Error('No se pudo crear la preferencia de pago');
+        }
+      } catch (mpError) {
+        console.error("Error creando preferencia de MercadoPago:", mpError);
+        alert(`❌ Error al procesar el pago con MercadoPago: ${mpError.message}\n\nEl pedido se ha creado como pendiente de pago. Puedes intentar pagar desde tu historial de pedidos.`);
+        window.location.href = `/oficina-virtual/index.html`;
+      }
+    } else {
+      // Cash/transfer payment - show detailed success message with payment info
+      const deliveryInfo = customerData.deliveryMethod === 'pickup'
+        ? '🏢 <strong>Recogida en bodega/oficina:</strong><br>Calle 24a 11 68, Ciudad Yopal<br>Horario: Lun-Sab 7:00 - 17:00'
+        : '🚚 <strong>Envío a domicilio:</strong><br>Te contactaremos para coordinar la entrega';
+
+      const paymentInfoHtml = `
+        <div style="text-align:left;margin-top:15px;">
+          <h4 style="margin:0 0 10px 0;color:#28a745;">✅ Pedido creado correctamente</h4>
+
+          <div style="background:#f8f9fa;padding:12px;border-radius:8px;margin-bottom:12px;">
+            <p style="margin:0 0 8px 0;font-weight:600;color:#333;">💳 Cuentas autorizadas para transferencia:</p>
+            <p style="margin:0;color:#666;">
+              <strong>Nequi:</strong> 3125929316<br>
+              <strong>Daviplata:</strong> 3125929316
+            </p>
+          </div>
+
+          <div style="background:#e8f5e9;padding:12px;border-radius:8px;margin-bottom:12px;">
+            ${deliveryInfo}
+          </div>
+
+          <p style="margin:0;font-size:13px;color:#666;">
+            📱 Una vez realices el pago, envía el comprobante por WhatsApp al <strong>3125929316</strong> indicando tu usuario o código.
+          </p>
+        </div>
+      `;
+
+      // Use SweetAlert2 if available, otherwise fallback to custom modal
+      if (typeof Swal !== 'undefined') {
+        await Swal.fire({
+          title: '¡Pedido Creado!',
+          html: paymentInfoHtml,
+          icon: 'success',
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#28a745',
+          allowOutsideClick: false
+        });
+      } else {
+        // Fallback: show custom modal
+        const modalOverlay = document.createElement('div');
+        modalOverlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:10002;';
+        const modalBox = document.createElement('div');
+        modalBox.style.cssText = 'max-width:450px;width:90%;background:white;border-radius:12px;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,0.3);';
+        modalBox.innerHTML = `
+          <div style="text-align:center;margin-bottom:15px;">
+            <div style="font-size:48px;">✅</div>
+            <h3 style="margin:10px 0 0 0;color:#333;">¡Pedido Creado!</h3>
+          </div>
+          ${paymentInfoHtml}
+          <button id="closePaymentInfoModal" style="width:100%;margin-top:15px;padding:12px;background:#28a745;color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">Entendido</button>
+        `;
+        modalOverlay.appendChild(modalBox);
+        document.body.appendChild(modalOverlay);
+
+        await new Promise(resolve => {
+          modalBox.querySelector('#closePaymentInfoModal').addEventListener('click', () => {
+            document.body.removeChild(modalOverlay);
+            resolve();
+          });
+        });
+      }
+
+      window.location.href = `/oficina-virtual/index.html?orderId=${encodeURIComponent(orderRef.id)}`;
+    }
     return;
   } catch (err) {
     console.error("Error creando la orden:", err);
@@ -1757,8 +1961,8 @@ window.proceedToCheckout = async function() {
   const cartTotalUE = calculateTotalUE(cartItems);
   console.log(`Cart total UE: ${cartTotalUE}`);
 
-  // Show payment confirmation modal (visual only)
-  await new Promise((resolve) => {
+  // Show payment method selection modal
+  const selectedPaymentMethod = await new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.setAttribute('id','payment-modal-overlay');
     overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:9999;backdrop-filter:blur(2px);';
@@ -1782,27 +1986,76 @@ window.proceedToCheckout = async function() {
       <div style="font-size:14px;color:#28a745;margin-top:4px;">${totalPoints} puntos</div>
     `;
 
-    const paymentInfo = document.createElement('p');
-    paymentInfo.textContent = 'Pago por Efectivo o Transferencia';
-    paymentInfo.style.cssText = 'margin:0 0 20px 0;font-size:14px;color:#495057;';
+    const paymentMethodDiv = document.createElement('div');
+    paymentMethodDiv.style.cssText = 'margin-bottom:20px;text-align:left;';
+    paymentMethodDiv.innerHTML = `
+      <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">Método de pago:</label>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:center;padding:12px;border:2px solid #009ee3;border-radius:8px;cursor:pointer;background:#f0f9ff;transition:all 0.2s;">
+          <input type="radio" name="paymentMethod" value="mercadopago" checked style="margin-right:10px;accent-color:#009ee3;">
+          <div>
+            <span style="font-weight:600;color:#009ee3;">💳 MercadoPago</span>
+            <span style="display:block;font-size:12px;color:#666;margin-top:2px;">Tarjeta, PSE, Nequi, Efecty y más</span>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;padding:12px;border:2px solid #ddd;border-radius:8px;cursor:pointer;transition:all 0.2s;">
+          <input type="radio" name="paymentMethod" value="efectivo_transferencia" style="margin-right:10px;">
+          <div>
+            <span style="font-weight:600;color:#333;">💵 Efectivo o Transferencia</span>
+            <span style="display:block;font-size:12px;color:#666;margin-top:2px;">Recogida en bodega/oficina · Nequi/Daviplata 3125929316</span>
+          </div>
+        </label>
+      </div>
+    `;
+
+    // Style radio buttons on selection
+    const radios = paymentMethodDiv.querySelectorAll('input[type="radio"]');
+    radios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        paymentMethodDiv.querySelectorAll('label').forEach(label => {
+          label.style.borderColor = '#ddd';
+          label.style.background = 'white';
+        });
+        if (radio.checked) {
+          const label = radio.closest('label');
+          label.style.borderColor = radio.value === 'mercadopago' ? '#009ee3' : '#28a745';
+          label.style.background = radio.value === 'mercadopago' ? '#f0f9ff' : '#f0fff4';
+        }
+      });
+    });
 
     const confirmBtn = document.createElement('button');
-    confirmBtn.textContent = 'Aceptar';
+    confirmBtn.textContent = 'Continuar';
     confirmBtn.className = 'btn btn-primary';
-    confirmBtn.style.cssText = 'width:100%;padding:12px;font-size:16px;font-weight:600;';
+    confirmBtn.style.cssText = 'width:100%;padding:12px;font-size:16px;font-weight:600;background:#667eea;border:none;border-radius:8px;color:white;cursor:pointer;';
     confirmBtn.addEventListener('click', () => {
+      const selectedMethod = paymentMethodDiv.querySelector('input[name="paymentMethod"]:checked').value;
       document.body.removeChild(overlay);
-      resolve();
+      resolve(selectedMethod);
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancelar';
+    cancelBtn.style.cssText = 'width:100%;padding:10px;font-size:14px;margin-top:10px;background:transparent;border:1px solid #ddd;border-radius:8px;color:#666;cursor:pointer;';
+    cancelBtn.addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve(null);
     });
 
     box.appendChild(h);
     box.appendChild(p);
     box.appendChild(totalDiv);
-    box.appendChild(paymentInfo);
+    box.appendChild(paymentMethodDiv);
     box.appendChild(confirmBtn);
+    box.appendChild(cancelBtn);
     overlay.appendChild(box);
     document.body.appendChild(overlay);
   });
+
+  // If user cancelled, exit
+  if (selectedPaymentMethod === null) {
+    return;
+  }
 
   // Show customer info form modal
   await new Promise((resolve, reject) => {
@@ -1837,9 +2090,15 @@ window.proceedToCheckout = async function() {
         <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Email</label>
         <input type="email" name="email" required value="${initialBuyerProfile.email || ''}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
       </div>
-      <div style="margin-bottom:16px;">
-        <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Teléfono</label>
-        <input type="tel" name="phone" required value="${initialBuyerProfile.celular || ''}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div>
+          <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Teléfono</label>
+          <input type="tel" name="phone" required value="${initialBuyerProfile.celular || ''}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Cédula de Ciudadanía ${selectedPaymentMethod === 'mercadopago' ? '<span style="font-size:11px;color:#ea580c;">(requerido para MercadoPago)</span>' : '<span style="font-size:11px;color:#666;">(opcional)</span>'}</label>
+          <input type="text" name="identification" ${selectedPaymentMethod === 'mercadopago' ? 'required' : ''} value="${initialBuyerProfile.cedula || ''}" placeholder="Número de cédula" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+        </div>
       </div>
       <div style="margin-bottom:16px;">
         <label style="display:block;margin-bottom:10px;font-weight:500;color:#333;">Método de Entrega</label>
@@ -1864,7 +2123,7 @@ window.proceedToCheckout = async function() {
       </div>
       <div id="pickupInfoSection" style="display:none;margin-bottom:16px;padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #86efac;">
         <strong style="color:#166534;">📍 Recoger en oficina:</strong><br>
-        <span style="color:#166534;">Dirección: Carrera 14 #21 04, Ciudad Yopal.</span><br>
+        <span style="color:#166534;">Dirección: Calle 24a 11 68, Ciudad Yopal.</span><br>
         <span style="color:#166534;">Horario: Lun-Sab 7:00 - 17:00.</span>
       </div>
       <div id="promoCodeSection" style="margin-bottom:16px;padding:16px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:10px;">
@@ -2058,6 +2317,7 @@ window.proceedToCheckout = async function() {
         lastName: formData.get('lastName'),
         email: formData.get('email'),
         phone: formData.get('phone'),
+        identification: formData.get('identification'),
         deliveryMethod: deliveryMethod,
         address: formData.get('address'),
         city: city,
@@ -2103,6 +2363,9 @@ window.proceedToCheckout = async function() {
         const orderShippingCost = isFirstOrder ? shippingCost : 0;
         const grandTotal = itemTotalPrice + orderShippingCost;
 
+        // Determine payment status based on selected method
+        const orderStatus = selectedPaymentMethod === 'mercadopago' ? 'pending_payment' : 'pending_delivery';
+
         const orderObj = {
           productId: prod.id,
           productName: prod.nombre,
@@ -2126,11 +2389,11 @@ window.proceedToCheckout = async function() {
           direccion: customerData.deliveryMethod === 'pickup' ? null : (customerData.address || null),
           telefono: customerData.phone || null,
           observaciones: customerData.notes || '',
-          status: "pending_delivery",
+          status: orderStatus,
           createdAt: new Date().toISOString(),
           isInitial: prod.id === "paquete-inicio",
           initialBonusPaid: false,
-          paymentMethod: "efectivo_transferencia",
+          paymentMethod: selectedPaymentMethod,
           fromCart: true,
           // Promotional code data (only on first order)
           promoCode: isFirstOrder ? (customerData.promoCode || null) : null,
@@ -2180,9 +2443,147 @@ window.proceedToCheckout = async function() {
       const cartModal = document.getElementById('cartModal');
       if (cartModal) cartModal.remove();
 
-      // Success message
-      alert(`✅ ${orderIds.length} pedido${orderIds.length !== 1 ? 's' : ''} creado${orderIds.length !== 1 ? 's' : ''} correctamente.`);
-      window.location.href = `/oficina-virtual/index.html`;
+      // Handle MercadoPago payment
+      if (selectedPaymentMethod === 'mercadopago') {
+        // Build items array for MercadoPago
+        const mpItems = cartItems.map(item => ({
+          id: item.product.id,
+          title: item.product.nombre,
+          description: item.product.descripcion || '',
+          quantity: item.quantity,
+          unit_price: getDisplayPrice(item.product)
+        }));
+
+        // Add shipping cost as a separate item if applicable
+        if (shippingCost > 0) {
+          mpItems.push({
+            id: 'shipping',
+            title: 'Costo de envío',
+            description: `Envío a ${customerData.city || 'domicilio'}`,
+            quantity: 1,
+            unit_price: shippingCost
+          });
+        }
+
+        try {
+          // Show loading indicator
+          const loadingOverlay = document.createElement('div');
+          loadingOverlay.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.95);z-index:10001;';
+          loadingOverlay.innerHTML = `
+            <div style="text-align:center;">
+              <div style="width:50px;height:50px;border:4px solid #e0e0e0;border-top:4px solid #009ee3;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px;"></div>
+              <p style="font-size:18px;color:#333;margin:0;">Redirigiendo a MercadoPago...</p>
+              <p style="font-size:14px;color:#666;margin-top:8px;">Por favor espera</p>
+            </div>
+            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+          `;
+          document.body.appendChild(loadingOverlay);
+
+          // Create MercadoPago preference
+          const paymentResult = await createPayment({
+            uid: buyerUid,
+            items: mpItems,
+            type: 'compra_carrito',
+            description: `PorKCasare - Compra de ${cartItems.length} producto${cartItems.length !== 1 ? 's' : ''}`,
+            payer: {
+              name: customerData.firstName,
+              surname: customerData.lastName,
+              email: customerData.email,
+              phone: {
+                area_code: '57',
+                number: customerData.phone
+              },
+              identification: {
+                type: 'CC', // Cédula de Ciudadanía (Colombia)
+                number: customerData.identification
+              }
+            }
+          });
+
+          if (paymentResult && paymentResult.init_point) {
+            // Store order IDs in localStorage to update after payment
+            localStorage.setItem('porkcasare_pending_orders', JSON.stringify({
+              orderIds,
+              preferenceId: paymentResult.preference_id,
+              timestamp: Date.now()
+            }));
+
+            // Redirect to MercadoPago checkout
+            window.location.href = paymentResult.init_point;
+          } else {
+            document.body.removeChild(loadingOverlay);
+            throw new Error('No se pudo crear la preferencia de pago');
+          }
+        } catch (mpError) {
+          console.error("Error creando preferencia de MercadoPago:", mpError);
+          alert(`❌ Error al procesar el pago con MercadoPago: ${mpError.message}\n\nLos pedidos se han creado como pendientes de pago. Puedes intentar pagar desde tu historial de pedidos.`);
+          window.location.href = `/oficina-virtual/index.html`;
+        }
+      } else {
+        // Cash/transfer payment - show detailed success message with payment info
+        const deliveryInfo = customerData.deliveryMethod === 'pickup'
+          ? '🏢 <strong>Recogida en bodega/oficina:</strong><br>Calle 24a 11 68, Ciudad Yopal<br>Horario: Lun-Sab 7:00 - 17:00'
+          : '🚚 <strong>Envío a domicilio:</strong><br>Te contactaremos para coordinar la entrega';
+
+        const paymentInfoHtml = `
+          <div style="text-align:left;margin-top:15px;">
+            <h4 style="margin:0 0 10px 0;color:#28a745;">✅ ${orderIds.length} pedido${orderIds.length !== 1 ? 's' : ''} creado${orderIds.length !== 1 ? 's' : ''} correctamente</h4>
+
+            <div style="background:#f8f9fa;padding:12px;border-radius:8px;margin-bottom:12px;">
+              <p style="margin:0 0 8px 0;font-weight:600;color:#333;">💳 Cuentas autorizadas para transferencia:</p>
+              <p style="margin:0;color:#666;">
+                <strong>Nequi:</strong> 3125929316<br>
+                <strong>Daviplata:</strong> 3125929316
+              </p>
+            </div>
+
+            <div style="background:#e8f5e9;padding:12px;border-radius:8px;margin-bottom:12px;">
+              ${deliveryInfo}
+            </div>
+
+            <p style="margin:0;font-size:13px;color:#666;">
+              📱 Una vez realices el pago, envía el comprobante por WhatsApp al <strong>3125929316</strong> indicando tu usuario o código.
+            </p>
+          </div>
+        `;
+
+        // Use SweetAlert2 if available, otherwise fallback to custom modal
+        if (typeof Swal !== 'undefined') {
+          await Swal.fire({
+            title: '¡Pedido Creado!',
+            html: paymentInfoHtml,
+            icon: 'success',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#28a745',
+            allowOutsideClick: false
+          });
+        } else {
+          // Fallback: show custom modal
+          const modalOverlay = document.createElement('div');
+          modalOverlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:10002;';
+          const modalBox = document.createElement('div');
+          modalBox.style.cssText = 'max-width:450px;width:90%;background:white;border-radius:12px;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,0.3);';
+          modalBox.innerHTML = `
+            <div style="text-align:center;margin-bottom:15px;">
+              <div style="font-size:48px;">✅</div>
+              <h3 style="margin:10px 0 0 0;color:#333;">¡Pedido Creado!</h3>
+            </div>
+            ${paymentInfoHtml}
+            <button id="closePaymentInfoModal" style="width:100%;margin-top:15px;padding:12px;background:#28a745;color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">Entendido</button>
+          `;
+          modalOverlay.appendChild(modalBox);
+          document.body.appendChild(modalOverlay);
+
+          await new Promise(resolve => {
+            modalBox.querySelector('#closePaymentInfoModal').addEventListener('click', () => {
+              document.body.removeChild(modalOverlay);
+              resolve();
+            });
+          });
+        }
+
+        window.location.href = `/oficina-virtual/index.html`;
+      }
     } catch (err) {
       console.error("Error creando órdenes:", err);
       alert("Ocurrió un error al crear las órdenes. Intenta de nuevo.");

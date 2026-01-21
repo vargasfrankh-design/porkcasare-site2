@@ -2,6 +2,7 @@ import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, collection, getDocs, query, where, orderBy, limit, startAfter } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
+import { redirectToPayment, handlePaymentReturn, getStatusMessage, formatCurrency } from './mercadopago-client.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -146,33 +147,40 @@ onAuthStateChanged(auth, async user=>{
 document.getElementById('btnRecompra').addEventListener('click', async ()=>{
   const user = getAuth().currentUser;
   if(!user) return alert('Inicia sesión');
-  const resp = await fetch('/.netlify/functions/create-preference', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ uid: user.uid, amount: REBUY_AMOUNT, type: 'recompra' })
-  });
-  const data = await resp.json();
-  if(data && data.init_point){
-    window.location = data.init_point;
-  } else {
-    alert('Error creando preferencia');
-    console.error(data);
+
+  try {
+    await redirectToPayment({
+      uid: user.uid,
+      amount: REBUY_AMOUNT,
+      type: 'recompra',
+      description: 'Recompra de puntos PorKCasare'
+    });
+  } catch (error) {
+    alert('Error creando preferencia de pago');
+    console.error(error);
   }
 });
 
-// detect MP return with collection_id and call get-payment function
+// Handle MercadoPago payment return
 (async function handleReturn(){
-  const params = new URLSearchParams(window.location.search);
-  if(params.has('collection_id')){
-    const collection_id = params.get('collection_id');
-    const resp = await fetch('/.netlify/functions/get-payment', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ collection_id })
-    });
-    const result = await resp.json();
-    console.log('MP verify result', result);
-    alert('Pago procesado (ver consola y Firestore).');
-    window.location = 'distribuidor.html';
-  }
+  await handlePaymentReturn({
+    onSuccess: (payment) => {
+      console.log('Pago aprobado:', payment);
+      const amount = payment.amount ? formatCurrency(payment.amount) : '';
+      alert(`Pago aprobado${amount ? ` por ${amount}` : ''}. Tus puntos han sido acreditados.`);
+      // Reload to show updated points
+      window.location.href = 'distribuidor.html';
+    },
+    onPending: (payment) => {
+      console.log('Pago pendiente:', payment);
+      alert('Tu pago está siendo procesado. Te notificaremos cuando sea aprobado.');
+      window.location.href = 'distribuidor.html';
+    },
+    onFailure: (payment) => {
+      console.log('Pago fallido:', payment);
+      const message = payment.statusDetail || getStatusMessage(payment.status) || 'Pago no completado';
+      alert(`${message}. Por favor intenta de nuevo.`);
+    },
+    clearParams: true
+  });
 })();
