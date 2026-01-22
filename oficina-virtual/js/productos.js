@@ -51,6 +51,20 @@ const POINT_VALUE = 2800;
 const POINTS_PER_PACKAGE = 10;
 const POINTS_PER_KG = 10 / 3;
 
+// MercadoPago payment gateway fee configuration
+// This percentage is added to the total when the customer selects MercadoPago as payment method
+// The fee ensures the merchant receives 100% of the product value
+const MERCADOPAGO_FEE_PERCENTAGE = 5.8; // 5.8% - easily modifiable for future adjustments
+
+/**
+ * Calculate MercadoPago payment gateway fee
+ * @param {number} amount - The base amount to calculate the fee for
+ * @returns {number} The fee amount (rounded to nearest integer)
+ */
+function calculateMercadoPagoFee(amount) {
+  return Math.round(amount * (MERCADOPAGO_FEE_PERCENTAGE / 100));
+}
+
 // Shipping cost constants (legacy fallbacks)
 const SHIPPING_COST_YOPAL = 5000;      // $5,000 COP for Yopal (legacy)
 const SHIPPING_COST_OTHER = 16000;     // $16,000 COP for other cities (legacy)
@@ -1961,6 +1975,9 @@ window.proceedToCheckout = async function() {
   const cartTotalUE = calculateTotalUE(cartItems);
   console.log(`Cart total UE: ${cartTotalUE}`);
 
+  // Calculate MercadoPago fee for display
+  const mercadoPagoFee = calculateMercadoPagoFee(totalPrice);
+
   // Show payment method selection modal
   const selectedPaymentMethod = await new Promise((resolve) => {
     const overlay = document.createElement('div');
@@ -1979,12 +1996,40 @@ window.proceedToCheckout = async function() {
     p.style.cssText = 'margin:0 0 16px 0;font-size:15px;color:#6c757d;';
 
     const totalDiv = document.createElement('div');
+    totalDiv.setAttribute('id', 'payment-summary-div');
     totalDiv.style.cssText = 'background:#f8f9fa;padding:16px;border-radius:8px;margin-bottom:20px;';
-    totalDiv.innerHTML = `
-      <div style="font-size:14px;color:#666;margin-bottom:4px;">Total a pagar</div>
-      <div style="font-size:24px;font-weight:700;color:#333;">$${totalPrice.toLocaleString()}</div>
-      <div style="font-size:14px;color:#28a745;margin-top:4px;">${totalPoints} puntos</div>
-    `;
+
+    // Function to update the total display based on payment method
+    const updateTotalDisplay = (paymentMethod) => {
+      if (paymentMethod === 'mercadopago') {
+        const totalWithFee = totalPrice + mercadoPagoFee;
+        totalDiv.innerHTML = `
+          <div style="font-size:14px;color:#666;margin-bottom:8px;">Resumen de compra</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:14px;color:#555;">Subtotal productos:</span>
+            <span style="font-size:14px;font-weight:600;color:#333;">$${totalPrice.toLocaleString()}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:6px 8px;background:#fff3cd;border-radius:4px;">
+            <span style="font-size:13px;color:#856404;">Logística pasarela de pago (Mercado Pago):</span>
+            <span style="font-size:13px;font-weight:600;color:#856404;">+$${mercadoPagoFee.toLocaleString()}</span>
+          </div>
+          <div style="border-top:1px solid #dee2e6;padding-top:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:14px;font-weight:600;color:#333;">Total a pagar:</span>
+            <span style="font-size:22px;font-weight:700;color:#333;">$${totalWithFee.toLocaleString()}</span>
+          </div>
+          <div style="font-size:14px;color:#28a745;margin-top:4px;text-align:right;">${totalPoints} puntos</div>
+        `;
+      } else {
+        totalDiv.innerHTML = `
+          <div style="font-size:14px;color:#666;margin-bottom:4px;">Total a pagar</div>
+          <div style="font-size:24px;font-weight:700;color:#333;">$${totalPrice.toLocaleString()}</div>
+          <div style="font-size:14px;color:#28a745;margin-top:4px;">${totalPoints} puntos</div>
+        `;
+      }
+    };
+
+    // Initialize with MercadoPago selected (default)
+    updateTotalDisplay('mercadopago');
 
     const paymentMethodDiv = document.createElement('div');
     paymentMethodDiv.style.cssText = 'margin-bottom:20px;text-align:left;';
@@ -2008,7 +2053,7 @@ window.proceedToCheckout = async function() {
       </div>
     `;
 
-    // Style radio buttons on selection
+    // Style radio buttons on selection and update total display
     const radios = paymentMethodDiv.querySelectorAll('input[type="radio"]');
     radios.forEach(radio => {
       radio.addEventListener('change', () => {
@@ -2020,6 +2065,8 @@ window.proceedToCheckout = async function() {
           const label = radio.closest('label');
           label.style.borderColor = radio.value === 'mercadopago' ? '#009ee3' : '#28a745';
           label.style.background = radio.value === 'mercadopago' ? '#f0f9ff' : '#f0fff4';
+          // Update total display based on selected payment method
+          updateTotalDisplay(radio.value);
         }
       });
     });
@@ -2143,10 +2190,14 @@ window.proceedToCheckout = async function() {
           <span style="color:#166534;">🚚 ${getShippingMessage('')}:</span>
           <span id="shippingCostValue" style="font-weight:600;color:#ea580c;">$${calculateShippingCostByUE(cartTotalUE, '', 'home').toLocaleString()}</span>
         </div>
+        <div id="mercadoPagoFeeLine" style="display:${selectedPaymentMethod === 'mercadopago' ? 'flex' : 'none'};justify-content:space-between;align-items:center;margin-bottom:8px;padding:6px 8px;background:#fff3cd;border-radius:4px;">
+          <span style="font-size:13px;color:#856404;">💳 Logística pasarela de pago (Mercado Pago):</span>
+          <span id="mercadoPagoFeeValue" style="font-size:13px;font-weight:600;color:#856404;">+$${mercadoPagoFee.toLocaleString()}</span>
+        </div>
         <p id="shippingHint" style="font-size:12px;color:#9ca3af;margin:4px 0 8px 0;">ℹ️ El costo de envío se calcula automáticamente según la ciudad de destino</p>
         <div style="border-top:1px solid #86efac;padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
           <span style="font-weight:700;font-size:16px;color:#166534;">💰 TOTAL A PAGAR:</span>
-          <span id="grandTotalValue" style="font-weight:700;font-size:18px;color:#166534;">$${(totalPrice + calculateShippingCostByUE(cartTotalUE, '', 'home')).toLocaleString()}</span>
+          <span id="grandTotalValue" style="font-weight:700;font-size:18px;color:#166534;">$${(totalPrice + calculateShippingCostByUE(cartTotalUE, '', 'home') + (selectedPaymentMethod === 'mercadopago' ? mercadoPagoFee : 0)).toLocaleString()}</span>
         </div>
       </div>
       <div style="margin-bottom:20px;">
@@ -2175,6 +2226,10 @@ window.proceedToCheckout = async function() {
       const shippingCostValue = form.querySelector('#shippingCostValue');
       const shippingHint = form.querySelector('#shippingHint');
       const grandTotalValue = form.querySelector('#grandTotalValue');
+      const mercadoPagoFeeLine = form.querySelector('#mercadoPagoFeeLine');
+
+      // Calculate MercadoPago fee for grand total
+      const mpFee = selectedPaymentMethod === 'mercadopago' ? mercadoPagoFee : 0;
 
       if (deliveryMethod === 'pickup') {
         addressField.style.display = 'none';
@@ -2185,7 +2240,8 @@ window.proceedToCheckout = async function() {
         promoCodeSection.style.display = 'none';
         shippingCostLine.innerHTML = '<span style="color:#166534;">🏢 Recoger en oficina:</span><span style="font-weight:600;color:#16a34a;">GRATIS</span>';
         shippingHint.style.display = 'none';
-        grandTotalValue.textContent = '$' + totalPrice.toLocaleString();
+        // Include MercadoPago fee in total for pickup
+        grandTotalValue.textContent = '$' + (totalPrice + mpFee).toLocaleString();
       } else {
         addressField.style.display = 'block';
         cityField.style.display = 'block';
@@ -2208,7 +2264,9 @@ window.proceedToCheckout = async function() {
       // Use UE-based shipping calculation
       const baseShippingCost = calculateShippingCostByUE(cartTotalUE, city, deliveryMethod);
       const shippingCost = cartAppliedPromoCode ? 0 : baseShippingCost;
-      const grandTotal = totalPrice + shippingCost;
+      // Include MercadoPago fee if that payment method is selected
+      const mpFee = selectedPaymentMethod === 'mercadopago' ? mercadoPagoFee : 0;
+      const grandTotal = totalPrice + shippingCost + mpFee;
 
       const shippingCostValue = form.querySelector('#shippingCostValue');
       const grandTotalValue = form.querySelector('#grandTotalValue');
@@ -2346,6 +2404,8 @@ window.proceedToCheckout = async function() {
     try {
       const orderIds = [];
       const shippingCost = customerData.shippingCost || 0;
+      // Calculate MercadoPago fee for order records (only applies if MercadoPago selected)
+      const orderMpFee = selectedPaymentMethod === 'mercadopago' ? mercadoPagoFee : 0;
       let isFirstOrder = true;
 
       for (const item of cartItems) {
@@ -2359,9 +2419,10 @@ window.proceedToCheckout = async function() {
         // Calculate UE for this item
         const itemUE = getProductUE(prod, quantity);
 
-        // Only add shipping cost to the first order
+        // Only add shipping cost and MercadoPago fee to the first order
         const orderShippingCost = isFirstOrder ? shippingCost : 0;
-        const grandTotal = itemTotalPrice + orderShippingCost;
+        const orderPaymentGatewayFee = isFirstOrder ? orderMpFee : 0;
+        const grandTotal = itemTotalPrice + orderShippingCost + orderPaymentGatewayFee;
 
         // Determine payment status based on selected method
         const orderStatus = selectedPaymentMethod === 'mercadopago' ? 'pending_payment' : 'pending_delivery';
@@ -2399,7 +2460,11 @@ window.proceedToCheckout = async function() {
           promoCode: isFirstOrder ? (customerData.promoCode || null) : null,
           promoCodeApplied: isFirstOrder ? (customerData.promoCodeApplied || false) : false,
           baseShippingCost: isFirstOrder ? (customerData.baseShippingCost || orderShippingCost) : 0,
-          shippingDiscount: isFirstOrder && customerData.promoCodeApplied ? (customerData.baseShippingCost || 0) : 0
+          shippingDiscount: isFirstOrder && customerData.promoCodeApplied ? (customerData.baseShippingCost || 0) : 0,
+          // MercadoPago payment gateway fee data (only on first order)
+          paymentGatewayFee: orderPaymentGatewayFee,
+          paymentGatewayFeePercentage: isFirstOrder && selectedPaymentMethod === 'mercadopago' ? MERCADOPAGO_FEE_PERCENTAGE : 0,
+          paymentGatewayFeeName: isFirstOrder && selectedPaymentMethod === 'mercadopago' ? 'Logística pasarela de pago (Mercado Pago)' : null
         };
 
         if (customerData.deliveryMethod === 'pickup') {
@@ -2422,6 +2487,7 @@ window.proceedToCheckout = async function() {
               amount: grandTotal,
               subtotal: itemTotalPrice,
               shippingCost: orderShippingCost,
+              paymentGatewayFee: orderPaymentGatewayFee,
               points: totalPoints,
               quantity: quantity,
               orderId: orderRef.id,
@@ -2462,6 +2528,18 @@ window.proceedToCheckout = async function() {
             description: `Envío a ${customerData.city || 'domicilio'}`,
             quantity: 1,
             unit_price: shippingCost
+          });
+        }
+
+        // Add MercadoPago payment gateway fee as a separate line item
+        // This ensures the merchant receives 100% of the product value
+        if (mercadoPagoFee > 0) {
+          mpItems.push({
+            id: 'mp_fee',
+            title: 'Logística pasarela de pago (Mercado Pago)',
+            description: `Comisión del ${MERCADOPAGO_FEE_PERCENTAGE}% por uso de pasarela de pago`,
+            quantity: 1,
+            unit_price: mercadoPagoFee
           });
         }
 
