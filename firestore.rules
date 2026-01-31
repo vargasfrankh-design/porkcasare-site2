@@ -158,6 +158,15 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ========== Activity Logs Collection (Admin Activity Feed) ==========
+    match /activity_logs/{logId} {
+      // Only admins can read activity logs
+      allow read: if isAdmin();
+
+      // Only server-side functions should write (no client writes)
+      allow create, update, delete: if false;
+    }
+
     // ========== Denegar todo lo demás ==========
     match /{document=**} {
       allow read, write: if false;

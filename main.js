@@ -1,7 +1,7 @@
 // main.js
 import { auth, db } from "./src/firebase-config.js";
 import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { setDoc, doc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { setDoc, doc, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 // ---------- Función utilitaria: Debounce ----------
 function debounce(fn, delay = 500) {
@@ -183,6 +183,51 @@ if (form) {
         balance: 0,
         walletBalance: 0
       });
+
+      // Log user registration activity
+      try {
+        const typeLabels = {
+          'distribuidor': 'Distribuidor',
+          'cliente': 'Cliente',
+          'restaurante': 'Restaurante',
+          'administrador': 'Administrador'
+        };
+        const fullName = `${nombre} ${apellido}`.trim();
+
+        await addDoc(collection(db, "activity_logs"), {
+          type: 'user_registration',
+          title: `Nuevo ${typeLabels[tipoRegistro] || tipoRegistro}: ${usuario}`,
+          description: `Registro de nuevo usuario: ${fullName} (${usuario})`,
+          user: {
+            id: uid,
+            name: usuario,
+            type: tipoRegistro
+          },
+          product: null,
+          orderId: null,
+          financial: {
+            totalPoints: 0,
+            totalValue: 0,
+            pointValue: 2800
+          },
+          beneficiaries: [],
+          beneficiariesCount: 0,
+          metadata: {
+            fullName,
+            email,
+            sponsorCode: patrocinador || null,
+            ciudad,
+            provincia,
+            pais
+          },
+          processedBy: null,
+          timestamp: serverTimestamp(),
+          createdAt: new Date().toISOString()
+        });
+      } catch (logErr) {
+        console.warn('Error logging registration activity:', logErr);
+        // Don't block registration if activity logging fails
+      }
 
       // Ocultar loading (mantener botón deshabilitado hasta redirección)
       if (loadingOverlay) loadingOverlay.classList.remove('active');

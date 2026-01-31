@@ -610,6 +610,343 @@
     @keyframes blink {
       50% { opacity: 0.5; }
     }
+
+    /* === ENHANCED ACTIVITY LOG STYLES === */
+    .activity-container {
+      background: var(--bg-white);
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .activity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .activity-header h2 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+
+    .activity-refresh-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      background: var(--primary-blue);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .activity-list {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .activity-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .activity-item:hover {
+      background: #f8f9fa;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .activity-type-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .activity-type-badge.sale {
+      background: rgba(0, 135, 90, 0.1);
+      color: var(--success-green);
+    }
+
+    .activity-type-badge.order_approved {
+      background: rgba(38, 132, 255, 0.1);
+      color: var(--accent-blue);
+    }
+
+    .activity-type-badge.order_rejected {
+      background: rgba(222, 53, 11, 0.1);
+      color: var(--danger-red);
+    }
+
+    .activity-type-badge.user_registration {
+      background: rgba(102, 126, 234, 0.1);
+      color: #667eea;
+    }
+
+    .activity-timestamp {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .activity-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .activity-user {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .activity-financial {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .activity-stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .activity-stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      letter-spacing: 0.5px;
+    }
+
+    .activity-stat-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .activity-stat-value.positive {
+      color: var(--success-green);
+    }
+
+    .activity-beneficiaries-summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .activity-beneficiaries-count {
+      background: var(--bg-light);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+
+    .activity-expand-icon {
+      margin-left: auto;
+      color: var(--text-secondary);
+      transition: transform 0.2s;
+    }
+
+    .activity-item.expanded .activity-expand-icon {
+      transform: rotate(180deg);
+    }
+
+    .activity-details {
+      display: none;
+      padding: 16px 20px 20px;
+      background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .activity-item.expanded + .activity-details {
+      display: block;
+    }
+
+    /* Expanded detail section styles */
+    .activity-detail-section {
+      margin-bottom: 16px;
+    }
+
+    .activity-detail-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .activity-detail-section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .activity-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .activity-detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .activity-detail-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      letter-spacing: 0.3px;
+    }
+
+    .activity-detail-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .activity-detail-value.highlight-blue {
+      color: var(--primary-blue);
+    }
+
+    .activity-detail-value.highlight-green {
+      color: var(--success-green);
+    }
+
+    .no-beneficiaries-message {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .no-beneficiaries-message-icon {
+      font-size: 16px;
+    }
+
+    .click-to-expand-hint {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-color);
+      cursor: pointer;
+    }
+
+    .click-to-expand-hint:hover {
+      color: var(--primary-blue);
+    }
+
+    .beneficiary-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .beneficiary-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: white;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .beneficiary-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .beneficiary-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .beneficiary-level {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-blue);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .beneficiary-name {
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .beneficiary-earnings {
+      text-align: right;
+    }
+
+    .beneficiary-points {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-blue);
+    }
+
+    .beneficiary-amount {
+      font-size: 12px;
+      color: var(--success-green);
+      font-weight: 500;
+    }
+
+    .activity-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    .activity-empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
   </style>
 </head>
 <body>
@@ -699,7 +1036,22 @@
       </div>
       
       <h2>Actividad Reciente</h2>
-      <table>
+      <div class="activity-container">
+        <div class="activity-header">
+          <span style="font-size:13px;color:var(--text-secondary);">Últimas acciones del sistema</span>
+          <button class="activity-refresh-btn" onclick="loadRecentActivity()">Actualizar</button>
+        </div>
+        <div class="activity-list" id="recentActivityList">
+          <!-- Activity items will be populated by JavaScript -->
+          <div class="activity-empty">
+            <div class="activity-empty-icon">📊</div>
+            <div>Cargando actividad reciente...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legacy table for backward compatibility (hidden) -->
+      <table style="display:none;">
         <thead>
           <tr>
             <th>Producto</th>
@@ -2862,6 +3214,14 @@
             <p id="payoutReportSponsor" style="margin:4px 0 0 0;font-size:15px;font-weight:600;color:#333;">--</p>
           </div>
         </div>
+        <!-- Estado del Distribuidor en el Mes -->
+        <div id="payoutReportStatusContainer" style="margin-top:16px;padding:16px;border-radius:10px;display:flex;align-items:center;gap:12px;">
+          <span id="payoutReportStatusIcon" style="font-size:24px;">⏳</span>
+          <div>
+            <span style="font-size:12px;color:#6c757d;">Estado del Distribuidor en el Mes Actual</span>
+            <p id="payoutReportStatus" style="margin:4px 0 0 0;font-size:16px;font-weight:700;">Calculando...</p>
+          </div>
+        </div>
       </div>
 
       <!-- Resumen de Ventas y Comisiones -->
@@ -3077,8 +3437,371 @@
         loadProducts(),
         loadCategories(),
         loadShippingRates(),
-        loadEducationContent()
+        loadEducationContent(),
+        loadRecentActivity()
       ]);
+    }
+
+    // Enhanced Recent Activity Loader
+    async function loadRecentActivity() {
+      const activityList = document.getElementById('recentActivityList');
+      if (!activityList) return;
+
+      activityList.innerHTML = `
+        <div class="activity-empty">
+          <div class="activity-empty-icon">⏳</div>
+          <div>Cargando actividad reciente...</div>
+        </div>
+      `;
+
+      try {
+        // Load from activity_logs collection, ordered by timestamp descending
+        const activitySnap = await getDocs(
+          query(
+            collection(db, "activity_logs"),
+            orderBy("timestamp", "desc"),
+            limit(20)
+          )
+        );
+
+        if (activitySnap.empty) {
+          // Fallback to orders if no activity logs exist yet
+          await loadRecentActivityFromOrders();
+          return;
+        }
+
+        const activities = activitySnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderActivityList(activities);
+
+      } catch (err) {
+        console.error('Error loading recent activity:', err);
+        // Fallback to orders-based activity
+        await loadRecentActivityFromOrders();
+      }
+    }
+
+    // Fallback: Load activity from orders collection
+    async function loadRecentActivityFromOrders() {
+      const activityList = document.getElementById('recentActivityList');
+      if (!activityList) return;
+
+      try {
+        const ordersSnap = await getDocs(
+          query(
+            collection(db, "orders"),
+            orderBy("createdAt", "desc"),
+            limit(20)
+          )
+        );
+
+        if (ordersSnap.empty) {
+          activityList.innerHTML = `
+            <div class="activity-empty">
+              <div class="activity-empty-icon">📭</div>
+              <div>No hay actividad reciente</div>
+            </div>
+          `;
+          return;
+        }
+
+        // Convert orders to activity format
+        const activities = ordersSnap.docs.map(d => {
+          const order = d.data();
+          return {
+            id: d.id,
+            type: order.status === 'confirmed' ? 'sale' : (order.status === 'rejected' ? 'order_rejected' : 'order_pending'),
+            title: `${order.status === 'confirmed' ? 'Venta' : (order.status === 'rejected' ? 'Rechazado' : 'Pendiente')}: ${order.productName || 'Producto'}`,
+            user: {
+              id: order.buyerUid,
+              name: order.buyerUsername || 'Usuario',
+              type: order.buyerType || 'distribuidor'
+            },
+            product: {
+              name: order.productName || 'Producto',
+              id: order.productId
+            },
+            orderId: d.id,
+            financial: {
+              totalPoints: order.totalPoints || order.points || 0,
+              totalValue: order.totalPrice || order.price || 0,
+              pointValue: 2800
+            },
+            beneficiaries: [],
+            beneficiariesCount: 0,
+            createdAt: order.createdAt ? (order.createdAt.toDate ? order.createdAt.toDate().toISOString() : order.createdAt) : new Date().toISOString(),
+            metadata: {
+              quantity: order.quantity || 1,
+              status: order.status
+            }
+          };
+        });
+
+        renderActivityList(activities);
+
+      } catch (err) {
+        console.error('Error loading activity from orders:', err);
+        activityList.innerHTML = `
+          <div class="activity-empty">
+            <div class="activity-empty-icon">⚠️</div>
+            <div>Error cargando actividad</div>
+          </div>
+        `;
+      }
+    }
+
+    // Render the activity list
+    function renderActivityList(activities) {
+      const activityList = document.getElementById('recentActivityList');
+      if (!activityList) return;
+
+      if (activities.length === 0) {
+        activityList.innerHTML = `
+          <div class="activity-empty">
+            <div class="activity-empty-icon">📭</div>
+            <div>No hay actividad reciente</div>
+          </div>
+        `;
+        return;
+      }
+
+      activityList.innerHTML = activities.map((activity, index) => {
+        const typeLabels = {
+          'sale': 'Venta',
+          'order_approved': 'Aprobado',
+          'order_rejected': 'Rechazado',
+          'order_pending': 'Pendiente',
+          'user_registration': 'Registro',
+          'payout_request': 'Cobro',
+          'payout_approved': 'Cobro Aprobado',
+          'monthly_activation': 'Activación'
+        };
+
+        const typeLabel = typeLabels[activity.type] || activity.type;
+        const timestamp = activity.createdAt || activity.timestamp;
+        const dateStr = timestamp ? formatActivityDate(timestamp) : 'Fecha no disponible';
+        const fullDateStr = timestamp ? formatActivityFullDate(timestamp) : 'Fecha no disponible';
+        const userName = activity.user?.name || 'Usuario desconocido';
+        const userType = activity.user?.type || '';
+        const userId = activity.user?.id || '';
+        const totalPoints = activity.financial?.totalPoints || 0;
+        const totalValue = activity.financial?.totalValue || 0;
+        const productName = activity.product?.name || activity.title?.replace(/^(Venta|Pendiente|Rechazado|Aprobado):\s*/, '') || 'N/A';
+        const beneficiariesCount = activity.beneficiariesCount || activity.beneficiaries?.length || 0;
+
+        // Map user type to role display name
+        const roleLabels = {
+          'distribuidor': 'Distribuidor',
+          'distributor': 'Distribuidor',
+          'cliente': 'Cliente',
+          'client': 'Cliente',
+          'restaurante': 'Restaurante',
+          'restaurant': 'Restaurante'
+        };
+        const userRole = roleLabels[userType?.toLowerCase()] || userType || 'No especificado';
+
+        // Build the detailed expanded view HTML
+        let detailsHtml = `
+          <div class="activity-details" id="activity-details-${index}">
+            <!-- Base event information -->
+            <div class="activity-detail-section">
+              <div class="activity-detail-section-title">Información del Evento</div>
+              <div class="activity-detail-grid">
+                <div class="activity-detail-item">
+                  <span class="activity-detail-label">Tipo de Actividad</span>
+                  <span class="activity-detail-value">${typeLabel}</span>
+                </div>
+                <div class="activity-detail-item">
+                  <span class="activity-detail-label">Producto</span>
+                  <span class="activity-detail-value">${productName}</span>
+                </div>
+                <div class="activity-detail-item">
+                  <span class="activity-detail-label">Usuario</span>
+                  <span class="activity-detail-value">${userName}</span>
+                </div>
+                <div class="activity-detail-item">
+                  <span class="activity-detail-label">Rol del Usuario</span>
+                  <span class="activity-detail-value">${userRole}</span>
+                </div>
+                <div class="activity-detail-item">
+                  <span class="activity-detail-label">Fecha y Hora</span>
+                  <span class="activity-detail-value">${fullDateStr}</span>
+                </div>
+                ${userId ? `
+                <div class="activity-detail-item">
+                  <span class="activity-detail-label">ID Usuario</span>
+                  <span class="activity-detail-value" style="font-size:11px;word-break:break-all;">${userId}</span>
+                </div>
+                ` : ''}
+                <div class="activity-detail-item">
+                  <span class="activity-detail-label">Valor Total</span>
+                  <span class="activity-detail-value highlight-green">$${totalValue.toLocaleString('es-CO')}</span>
+                </div>
+                <div class="activity-detail-item">
+                  <span class="activity-detail-label">Puntos Generados</span>
+                  <span class="activity-detail-value highlight-blue">${totalPoints} pts</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Beneficiaries section -->
+            <div class="activity-detail-section">
+              <div class="activity-detail-section-title">Beneficios Multinivel (5 Niveles Ascendentes)</div>
+              ${beneficiariesCount > 0 ? `
+                <ul class="beneficiary-list">
+                  ${activity.beneficiaries.map(b => `
+                    <li class="beneficiary-item">
+                      <div class="beneficiary-info">
+                        <div class="beneficiary-level">${b.level}</div>
+                        <div class="beneficiary-name">
+                          <strong>${b.userName || 'N/A'}</strong>
+                          ${b.userId ? `<br><span style="font-size:10px;color:var(--text-secondary);">ID: ${b.userId.substring(0,12)}...</span>` : ''}
+                        </div>
+                      </div>
+                      <div class="beneficiary-earnings">
+                        <div class="beneficiary-points">${(b.points || 0).toFixed(2)} pts</div>
+                        <div class="beneficiary-amount">$${(b.amount || 0).toLocaleString('es-CO')}</div>
+                      </div>
+                    </li>
+                  `).join('')}
+                </ul>
+              ` : `
+                <div class="no-beneficiaries-message">
+                  <span class="no-beneficiaries-message-icon">ℹ️</span>
+                  <span>No aplica beneficios multinivel para esta actividad</span>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+
+        return `
+          <div class="activity-item has-details" onclick="toggleActivityDetails(${index})" id="activity-item-${index}">
+            <div class="activity-item-header">
+              <span class="activity-type-badge ${activity.type}">${typeLabel}</span>
+              <span class="activity-timestamp">${dateStr}</span>
+            </div>
+            <div class="activity-title">${activity.title || productName || 'Actividad'}</div>
+            <div class="activity-user">
+              <strong>${userName}</strong>
+              ${userType ? `<span style="color: var(--text-secondary);"> · ${userRole}</span>` : ''}
+            </div>
+            <div class="activity-financial">
+              <div class="activity-stat">
+                <span class="activity-stat-label">Puntos</span>
+                <span class="activity-stat-value">${totalPoints}</span>
+              </div>
+              <div class="activity-stat">
+                <span class="activity-stat-label">Valor</span>
+                <span class="activity-stat-value positive">$${totalValue.toLocaleString('es-CO')}</span>
+              </div>
+            </div>
+            <div class="click-to-expand-hint">
+              ${beneficiariesCount > 0 ? `
+                <span class="activity-beneficiaries-count">${beneficiariesCount} beneficiarios</span>
+                <span>Ver detalle completo</span>
+              ` : `
+                <span>Ver detalle del evento</span>
+              `}
+              <span class="activity-expand-icon">▼</span>
+            </div>
+          </div>
+          ${detailsHtml}
+        `;
+      }).join('');
+    }
+
+    // Toggle activity details expansion
+    function toggleActivityDetails(index) {
+      const item = document.getElementById(`activity-item-${index}`);
+      const details = document.getElementById(`activity-details-${index}`);
+
+      if (!item || !details) return;
+
+      const isExpanded = item.classList.contains('expanded');
+
+      // Close all other expanded items
+      document.querySelectorAll('.activity-item.expanded').forEach(el => {
+        el.classList.remove('expanded');
+      });
+      document.querySelectorAll('.activity-details').forEach(el => {
+        el.style.display = 'none';
+      });
+
+      // Toggle current item
+      if (!isExpanded) {
+        item.classList.add('expanded');
+        details.style.display = 'block';
+        // Smooth scroll to show expanded details
+        setTimeout(() => {
+          details.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+      }
+    }
+    // Expose toggleActivityDetails to global scope for onclick handlers
+    window.toggleActivityDetails = toggleActivityDetails;
+
+    // Format activity date (relative time)
+    function formatActivityDate(timestamp) {
+      try {
+        let date;
+        if (timestamp && timestamp.toDate) {
+          date = timestamp.toDate();
+        } else if (timestamp && timestamp.seconds) {
+          date = new Date(timestamp.seconds * 1000);
+        } else if (typeof timestamp === 'string') {
+          date = new Date(timestamp);
+        } else {
+          return 'Fecha no disponible';
+        }
+
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Hace un momento';
+        if (diffMins < 60) return `Hace ${diffMins} min`;
+        if (diffHours < 24) return `Hace ${diffHours}h`;
+        if (diffDays < 7) return `Hace ${diffDays} días`;
+
+        return date.toLocaleDateString('es-CO', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (e) {
+        return 'Fecha no disponible';
+      }
+    }
+
+    // Format activity full date (absolute date and time)
+    function formatActivityFullDate(timestamp) {
+      try {
+        let date;
+        if (timestamp && timestamp.toDate) {
+          date = timestamp.toDate();
+        } else if (timestamp && timestamp.seconds) {
+          date = new Date(timestamp.seconds * 1000);
+        } else if (typeof timestamp === 'string') {
+          date = new Date(timestamp);
+        } else {
+          return 'Fecha no disponible';
+        }
+
+        return date.toLocaleDateString('es-CO', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      } catch (e) {
+        return 'Fecha no disponible';
+      }
     }
 
     let allProducts = [];
@@ -4265,6 +4988,24 @@
         document.getElementById('payoutReportUsername').textContent = userData.usuario || 'N/A';
         document.getElementById('payoutReportUserId').textContent = userId;
         document.getElementById('payoutReportSponsor').textContent = userData.patrocinador || 'Sin patrocinador';
+
+        // Calcular estado del distribuidor (activo/inactivo) usando la lógica existente
+        const monthlyPersonalPoints = getMonthlyPersonalPointsAdmin(userData);
+        const isDistributorActive = monthlyPersonalPoints >= MONTHLY_ACTIVATION_POINTS_THRESHOLD;
+        const statusContainer = document.getElementById('payoutReportStatusContainer');
+        const statusIcon = document.getElementById('payoutReportStatusIcon');
+        const statusText = document.getElementById('payoutReportStatus');
+
+        if (isDistributorActive) {
+          statusContainer.style.background = 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
+          statusIcon.textContent = '✅';
+          statusText.innerHTML = `<span style="color:#047857;">ACTIVO</span> <span style="font-size:13px;font-weight:500;color:#065f46;">(${monthlyPersonalPoints.toFixed(2)} / ${MONTHLY_ACTIVATION_POINTS_THRESHOLD} puntos personales este mes)</span>`;
+        } else {
+          statusContainer.style.background = 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)';
+          statusIcon.textContent = '⚠️';
+          const pointsNeeded = (MONTHLY_ACTIVATION_POINTS_THRESHOLD - monthlyPersonalPoints).toFixed(2);
+          statusText.innerHTML = `<span style="color:#dc2626;">INACTIVO</span> <span style="font-size:13px;font-weight:500;color:#991b1b;">(${monthlyPersonalPoints.toFixed(2)} / ${MONTHLY_ACTIVATION_POINTS_THRESHOLD} puntos personales - necesita ${pointsNeeded} pts más)</span>`;
+        }
 
         // Resumen de actividad
         const personalPoints = Number(userData.personalPoints || userData.puntos || 0);
