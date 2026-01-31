@@ -71,6 +71,23 @@ const QUICK_START_DIRECT_POINTS = 21;
 const QUICK_START_UPPER_LEVELS_POINTS = 1;
 const QUICK_START_THRESHOLD = 50;
 
+// Activity logging helper
+async function logActivityToFirestore(activityData) {
+  try {
+    const logEntry = {
+      ...activityData,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: new Date().toISOString()
+    };
+    const docRef = await db.collection('activity_logs').add(logEntry);
+    console.log(`📝 Activity logged: ${docRef.id}`);
+    return docRef.id;
+  } catch (e) {
+    console.warn('⚠️ Failed to log activity:', e.message);
+    return null;
+  }
+}
+
 // HELPERS
 // Cache de sponsors para evitar lecturas repetidas durante la misma ejecución
 const sponsorCache = new Map();
@@ -359,24 +376,25 @@ exports.handler = async (event) => {
       console.log(`   - shouldPayQuickStartBonus: ${shouldPayQuickStartBonus}`);
 
       let quickStartBonusPaid = false;  // Flag to track if bonus was actually paid
+      let quickStartBeneficiaries = [];  // Track beneficiaries for activity log
 
       if (shouldPayQuickStartBonus && sponsorData && sponsorData.data) {
         console.log(`💰 Pagando Quick Start Bonus (sistema de 25 puntos) a patrocinador directo: ${directSponsorCode}`);
         try {
           console.log(`✓ Patrocinador directo: ${sponsorData.data.usuario || 'N/A'} (ID: ${sponsorData.id})`);
-          
+
           // Calcular paquetes de 50 puntos
           const numberOfPackages = Math.floor(points / 50);
-          
+
           // Patrocinador directo recibe 21 puntos por cada paquete de 50
           const bonusPoints = numberOfPackages * QUICK_START_DIRECT_POINTS;
           const bonusAmount = bonusPoints * POINT_VALUE;
-          
+
           console.log(`💰 Bono calculado: ${bonusPoints} puntos = ${bonusAmount} COP (${numberOfPackages} paquetes × 21 puntos)`);
-          
+
           const sponsorRef = db.collection('usuarios').doc(sponsorData.id);
           const now = Date.now();
-          
+
           await sponsorRef.update({
             balance: admin.firestore.FieldValue.increment(bonusAmount),
             groupPoints: admin.firestore.FieldValue.increment(bonusPoints),
@@ -393,34 +411,44 @@ exports.handler = async (event) => {
             })
           });
 
+          // Track beneficiary for activity log
+          quickStartBeneficiaries.push({
+            level: 1,
+            userId: sponsorData.id,
+            userName: sponsorData.data.usuario || sponsorData.data.nombre || 'N/A',
+            points: bonusPoints,
+            amount: bonusAmount,
+            commissionType: 'quick_start_bonus'
+          });
+
           console.log(`✅ Bono Inicio Rápido pagado: ${directSponsorCode} recibió ${bonusAmount} COP (${bonusPoints} puntos) por primera compra de ${buyerUsername} (${points} puntos)`);
-          
+
           // Ahora distribuir 1 punto a cada uno de los 4 niveles superiores al patrocinador
           console.log(`🔼 Distribuyendo a 4 niveles superiores del patrocinador: 1 punto por nivel por cada paquete`);
-          
+
           let currentSponsorCode = (sponsorData.data && sponsorData.data.patrocinador) || null;
-          
+
           for (let level = 0; level < MAX_LEVELS_QUICK_START; level++) {
             if (!currentSponsorCode) {
               console.log(`⏹️ Detenido en nivel superior ${level + 1}: no hay más patrocinadores`);
               break;
             }
-            
+
             const upperSponsor = await findUserByUsername(currentSponsorCode);
             if (!upperSponsor) {
               console.warn(`⚠️ Nivel superior ${level + 1}: No se encontró usuario ${currentSponsorCode}`);
               break;
             }
-            
+
             const upperSponsorRef = db.collection('usuarios').doc(upperSponsor.id);
-            
+
             const upperLevelPoints = numberOfPackages * QUICK_START_UPPER_LEVELS_POINTS;
             const upperLevelAmount = upperLevelPoints * POINT_VALUE;
-            
+
             console.log(`📊 Nivel superior ${level + 1} (${upperSponsor.data.usuario}): Agregando ${upperLevelPoints} puntos grupales (${numberOfPackages} paquetes × 1 punto)`);
-            
+
             const now = Date.now();
-            
+
             await upperSponsorRef.update({
               groupPoints: admin.firestore.FieldValue.increment(upperLevelPoints),
               balance: admin.firestore.FieldValue.increment(upperLevelAmount),
@@ -436,14 +464,24 @@ exports.handler = async (event) => {
                 fromUser: buyerUsername
               })
             });
-            
+
+            // Track beneficiary for activity log
+            quickStartBeneficiaries.push({
+              level: level + 2, // +2 because level 1 is direct sponsor
+              userId: upperSponsor.id,
+              userName: upperSponsor.data.usuario || upperSponsor.data.nombre || 'N/A',
+              points: upperLevelPoints,
+              amount: upperLevelAmount,
+              commissionType: 'quick_start_upper_level'
+            });
+
             currentSponsorCode = upperSponsor.data.patrocinador || null;
             console.log(`  ↑ Subiendo al siguiente nivel: ${currentSponsorCode || '(fin de línea)'}`);
           }
-          
+
           console.log(`✅ Distribución de Quick Start Bonus completada: 25 puntos × ${numberOfPackages} paquetes = ${25 * numberOfPackages} puntos totales distribuidos`);
           quickStartBonusPaid = true;  // Mark that bonus was successfully paid
-          
+
         } catch (e) {
           console.error('❌ Error pagando bono de inicio rápido:', e);
           console.error('  Error name:', e.name);
@@ -470,13 +508,46 @@ exports.handler = async (event) => {
       
       if (quickStartBonusPaid) {
         console.log(`ℹ️ Quick Start Bonus pagado exitosamente - omitiendo distribución normal de puntos grupales`);
-        
+
+        // Log activity with full beneficiary details
+        const productName = order.productName || order.product || order.nombre || order.productoNombre || 'Producto';
+        const orderAmount = order.totalPrice || order.price || order.amount || order.total || order.precio || 0;
+
+        await logActivityToFirestore({
+          type: 'sale',
+          title: `Venta: ${productName}`,
+          description: `Venta realizada con Bono Inicio Rápido`,
+          user: {
+            id: buyerUid,
+            name: buyerUsername,
+            type: buyerType || 'distribuidor'
+          },
+          product: {
+            name: productName,
+            id: order.productId || null
+          },
+          orderId,
+          financial: {
+            totalPoints: points,
+            totalValue: orderAmount,
+            pointValue: POINT_VALUE
+          },
+          beneficiaries: quickStartBeneficiaries,
+          beneficiariesCount: quickStartBeneficiaries.length,
+          metadata: {
+            quantity: quantity,
+            commissionType: 'quick_start_bonus',
+            isFirstPurchase: true
+          },
+          processedBy: adminUid
+        });
+
         // Mark order as having group points distributed
         await orderRef.update({
           groupPointsDistributed: true,
           groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp()
         });
-        
+
         return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada y pagos procesados (Quick Start Bonus)' }) };
       }
       
@@ -619,6 +690,45 @@ exports.handler = async (event) => {
 
         console.log(`✅ Comisión pagada a patrocinador directo ${directSponsorCode}: ${priceDifference} COP (${commissionPoints.toFixed(2)} puntos)`);
 
+        // Log activity with beneficiary details
+        await logActivityToFirestore({
+          type: 'sale',
+          title: `Venta: ${productData.nombre || 'Producto'}`,
+          description: `Venta de cliente con comisión por diferencia de precio`,
+          user: {
+            id: buyerUid,
+            name: buyerUsername,
+            type: 'cliente'
+          },
+          product: {
+            name: productData.nombre || 'Producto',
+            id: productId
+          },
+          orderId,
+          financial: {
+            totalPoints: points,
+            totalValue: precioCliente * quantity,
+            pointValue: POINT_VALUE
+          },
+          beneficiaries: [{
+            level: 1,
+            userId: sponsor.id,
+            userName: sponsor.data.usuario || sponsor.data.nombre || directSponsorCode,
+            points: commissionPoints,
+            amount: priceDifference,
+            commissionType: 'client_price_difference'
+          }],
+          beneficiariesCount: 1,
+          metadata: {
+            quantity,
+            commissionType: 'client_price_difference',
+            precioCliente,
+            precioDistribuidor,
+            priceDifference
+          },
+          processedBy: adminUid
+        });
+
         await orderRef.update({
           groupPointsDistributed: true,
           groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -635,6 +745,7 @@ exports.handler = async (event) => {
         const totalPoints = points;
         const commissionPerUpline = totalPoints * RESTAURANT_COMMISSION_RATE;
         const commissionAmountPerUpline = Math.round(commissionPerUpline * POINT_VALUE);
+        const restaurantBeneficiaries = [];  // Track beneficiaries for activity log
 
         console.log(`📊 Restaurante - Puntos totales: ${totalPoints}`);
         console.log(`   Comisión por upline (5%): ${commissionPerUpline.toFixed(2)} puntos = ${commissionAmountPerUpline} COP`);
@@ -684,6 +795,16 @@ exports.handler = async (event) => {
             })
           });
 
+          // Track beneficiary for activity log
+          restaurantBeneficiaries.push({
+            level: level + 1,
+            userId: sponsor.id,
+            userName: sponsor.data.usuario || sponsor.data.nombre || currentSponsorCode,
+            points: commissionPerUpline,
+            amount: commissionAmountPerUpline,
+            commissionType: 'restaurant_commission'
+          });
+
           console.log(`✅ Nivel ${level + 1} (${sponsor.data.usuario}): ${commissionAmountPerUpline} COP (${commissionPerUpline.toFixed(2)} puntos)`);
 
           distributedCount++;
@@ -691,6 +812,39 @@ exports.handler = async (event) => {
         }
 
         console.log(`✅ Comisión de restaurante distribuida a ${distributedCount} uplines`);
+
+        // Log activity with full beneficiary details
+        const productName = order.productName || order.product || order.nombre || order.productoNombre || 'Producto';
+        const orderAmount = order.totalPrice || order.price || order.amount || order.total || order.precio || 0;
+
+        await logActivityToFirestore({
+          type: 'sale',
+          title: `Venta: ${productName}`,
+          description: `Venta de restaurante con comisión 5% por upline`,
+          user: {
+            id: buyerUid,
+            name: buyerUsername,
+            type: 'restaurante'
+          },
+          product: {
+            name: productName,
+            id: order.productId || null
+          },
+          orderId,
+          financial: {
+            totalPoints: points,
+            totalValue: orderAmount,
+            pointValue: POINT_VALUE
+          },
+          beneficiaries: restaurantBeneficiaries,
+          beneficiariesCount: restaurantBeneficiaries.length,
+          metadata: {
+            quantity,
+            commissionType: 'restaurant_commission',
+            commissionRate: '5%'
+          },
+          processedBy: adminUid
+        });
 
         await orderRef.update({
           groupPointsDistributed: true,
@@ -707,7 +861,8 @@ exports.handler = async (event) => {
       const totalPointValue = points * POINT_VALUE; // e.g., 2.5 × 2800 = 7000
       const commissionPerUpline = totalPointValue * COMMISSION_RATE; // e.g., 7000 × 0.10 = 700
       const pointsPerUpline = commissionPerUpline / POINT_VALUE; // Convert back to points for tracking
-      
+      const distributorBeneficiaries = [];  // Track beneficiaries for activity log
+
       console.log(`🌐 Iniciando distribución de comisiones:`);
       console.log(`   - Puntos del producto: ${points}`);
       console.log(`   - Valor total: ${totalPointValue.toLocaleString('es-CO')} COP`);
@@ -717,9 +872,9 @@ exports.handler = async (event) => {
         // Nueva lógica de distribución:
         // - El comprador recibe los puntos completos en personalPoints y groupPoints (ya se hizo en la transacción)
         // - Cada uno de los 5 uplines recibe el 10% del valor total (puntos × 2800)
-        
+
         let currentSponsorCode = directSponsorCode;
-        
+
         // Validate sponsor code exists before starting distribution
         if (!currentSponsorCode) {
           console.warn(`⚠️ No se puede distribuir puntos grupales: patrocinador directo no encontrado`);
@@ -732,7 +887,7 @@ exports.handler = async (event) => {
           });
           return { statusCode: 200, body: JSON.stringify({ message: 'Orden confirmada (sin patrocinador para distribución)' }) };
         }
-        
+
         console.log(`🔼 Comenzando desde patrocinador directo: ${directSponsorCode}`);
 
         // Recorrer 5 niveles hacia arriba y dar comisión del 10% a cada sponsor
@@ -752,7 +907,7 @@ exports.handler = async (event) => {
           // Todos los uplines reciben la misma comisión: 10% del valor total
           const groupPointsToAdd = Math.round(pointsPerUpline * 100) / 100;
           const groupPointsAmount = Math.round(commissionPerUpline);
-          
+
           console.log(`📊 Nivel ${level + 1} (${sponsor.data.usuario}): Agregando ${groupPointsToAdd.toFixed(4)} puntos grupales = ${groupPointsAmount.toFixed(0)} COP (10% de ${totalPointValue.toFixed(0)} COP)`);
 
           const now = Date.now();
@@ -772,18 +927,61 @@ exports.handler = async (event) => {
             })
           });
 
+          // Track beneficiary for activity log
+          distributorBeneficiaries.push({
+            level: level + 1,
+            userId: sponsor.id,
+            userName: sponsor.data.usuario || sponsor.data.nombre || currentSponsorCode,
+            points: groupPointsToAdd,
+            amount: groupPointsAmount,
+            commissionType: 'group_points'
+          });
+
           // climb to next upline
           const nextSponsor = sponsor.data.patrocinador || null;
           console.log(`  ↑ Subiendo al siguiente nivel: ${nextSponsor || '(fin de línea)'}`);
           currentSponsorCode = nextSponsor;
         }
-        
+
+        // Log activity with full beneficiary details
+        const productName = order.productName || order.product || order.nombre || order.productoNombre || 'Producto';
+        const orderAmount = order.totalPrice || order.price || order.amount || order.total || order.precio || 0;
+
+        await logActivityToFirestore({
+          type: 'sale',
+          title: `Venta: ${productName}`,
+          description: `Venta de distribuidor con comisión 10% por nivel`,
+          user: {
+            id: buyerUid,
+            name: buyerUsername,
+            type: buyerType || 'distribuidor'
+          },
+          product: {
+            name: productName,
+            id: order.productId || null
+          },
+          orderId,
+          financial: {
+            totalPoints: points,
+            totalValue: orderAmount,
+            pointValue: POINT_VALUE
+          },
+          beneficiaries: distributorBeneficiaries,
+          beneficiariesCount: distributorBeneficiaries.length,
+          metadata: {
+            quantity,
+            commissionType: 'group_points',
+            commissionRate: '10%'
+          },
+          processedBy: adminUid
+        });
+
         // Mark order as having group points distributed
         await orderRef.update({
           groupPointsDistributed: true,
           groupPointsDistributedAt: admin.firestore.FieldValue.serverTimestamp()
         });
-        
+
         console.log(`✅ Distribución de comisiones completada`);
       } catch (e) {
         console.error('❌ Error durante la distribución de comisiones:', e);
