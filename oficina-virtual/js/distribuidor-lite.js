@@ -557,6 +557,26 @@ if (historyWrap) {
         teamEl.textContent = String(Math.round(groupPointsValue * 100) / 100);
       }
 
+      // --- Botón de documentación (dinámico) ---
+      const btnDocumentation = document.getElementById("btnDocumentation");
+      const btnDocText = document.getElementById("btnDocText");
+      if (btnDocumentation && btnDocText) {
+        // Verificar si el usuario tiene documentación subida
+        const hasDocumentation = userData.documentacionSubida === true ||
+                                 userData.hasDocumentation === true ||
+                                 (userData.documentos && Object.keys(userData.documentos).length > 0);
+
+        if (hasDocumentation) {
+          btnDocText.textContent = "Ver documentación";
+          btnDocumentation.classList.add("docs-uploaded");
+          btnDocumentation.title = "Ver tu documentación";
+        } else {
+          btnDocText.textContent = "Subir documentación";
+          btnDocumentation.classList.remove("docs-uploaded");
+          btnDocumentation.title = "Subir tu documentación";
+        }
+      }
+
       // ----------------------------------------------
       // Ejemplo de asignación de bono inicial que usaba lectura y escritura no atómica:
       // Reemplazado por uso de increment() para evitar condiciones de carrera.
