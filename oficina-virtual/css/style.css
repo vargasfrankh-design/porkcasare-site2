@@ -497,8 +497,9 @@ body {
 .mini-avatar-badge {
   position: absolute;
   right: -18px;
-  top: 50%;
-  transform: translateY(-50%);
+  /* Centered vertically: container is 110px image + 4px border each side = 118px total */
+  /* Badge is 48px, so top = (118 - 48) / 2 = 35px */
+  top: 35px;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -517,17 +518,18 @@ body {
 }
 
 .mini-avatar-badge:hover {
-  transform: translateY(-50%) scale(1.08);
+  transform: scale(1.08);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.20),
               0 3px 8px rgba(0, 0, 0, 0.14);
   border-color: #d1d5db;
 }
 
 .mini-avatar-img {
-  width: 120%;
-  height: 120%;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  transform: scale(1.35);
 }
 
 /* WhatsApp button para profile photo - OCULTO (movido a nueva ubicación) */
@@ -1553,6 +1555,133 @@ body {
   box-shadow: 0 6px 16px rgba(255, 215, 0, 0.4);
 }
 
+/* Pin image for Plata tier */
+.tier-pin-img {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1.35);
+  clip-path: circle(50% at center);
+}
+
+.tier-emoji {
+  display: inline;
+}
+
+/* When Plata tier is achieved, show pin and hide emoji */
+.tier-marker[data-tier="plata"].achieved .tier-pin-img {
+  display: block;
+  animation: achievementPulse 2s ease-in-out infinite;
+}
+
+.tier-marker[data-tier="plata"].achieved .tier-emoji {
+  display: none;
+}
+
+.tier-marker[data-tier="plata"].achieved .tier-icon {
+  position: relative;
+  overflow: visible;
+  background: linear-gradient(135deg, #c0c0c0, #e8e8e8, #c0c0c0);
+}
+
+/* Achievement pulse animation */
+@keyframes achievementPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1.35);
+    filter: brightness(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.4);
+    filter: brightness(1.15);
+  }
+}
+
+/* Sparkle/flame effect around achieved Plata tier */
+.tier-marker[data-tier="plata"].achieved .tier-icon::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(255, 215, 0, 0.7),
+    transparent,
+    rgba(255, 255, 255, 0.9),
+    transparent,
+    rgba(255, 215, 0, 0.7),
+    transparent
+  );
+  animation: sparkRotate 3s linear infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.tier-marker[data-tier="plata"].achieved .tier-icon::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 40%, rgba(255, 215, 0, 0.3) 60%, rgba(255, 215, 0, 0.1) 80%, transparent 100%);
+  animation: glowPulse 1.5s ease-in-out infinite;
+  z-index: -2;
+  pointer-events: none;
+}
+
+@keyframes sparkRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Premium gold color and enhanced typography for achieved tier progress values */
+.tier-marker[data-tier="plata"].achieved .tier-points {
+  color: #ffd700;
+  font-weight: 800;
+  font-size: 14px;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 0 20px rgba(255, 215, 0, 0.3);
+  background: linear-gradient(180deg, #fff5cc 0%, #ffd700 50%, #cc9900 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tier-marker[data-tier="plata"].achieved .tier-pts {
+  color: #ffd700;
+  font-weight: 700;
+  font-size: 13px;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 0 20px rgba(255, 215, 0, 0.3);
+  background: linear-gradient(180deg, #fff5cc 0%, #ffd700 50%, #cc9900 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .tier-name {
   color: #fff;
   font-weight: 600;
@@ -1590,6 +1719,26 @@ body {
 .current-tier-info strong {
   color: #ffd700;
   font-weight: 700;
+}
+
+/* Premium gold styling for 'Rango actual' when user is Plata or higher */
+.current-tier-info.rank-premium #currentTierLabel {
+  font-weight: 600;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5), 0 0 16px rgba(255, 215, 0, 0.25);
+  background: linear-gradient(180deg, #fff5cc 0%, #ffd700 50%, #cc9900 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.current-tier-info.rank-premium #currentTierName {
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 0 20px rgba(255, 215, 0, 0.3);
+  background: linear-gradient(180deg, #fff5cc 0%, #ffd700 50%, #cc9900 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 @media (max-width: 768px) {
@@ -1635,6 +1784,30 @@ body {
     flex-direction: column;
     align-items: flex-start;
     font-size: 13px;
+  }
+
+  /* Responsive pin image adjustments */
+  .tier-marker[data-tier="plata"].achieved .tier-icon::before {
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+  }
+
+  .tier-marker[data-tier="plata"].achieved .tier-icon::after {
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+  }
+
+  /* Responsive typography for achieved Plata tier */
+  .tier-marker[data-tier="plata"].achieved .tier-points {
+    font-size: 11px;
+  }
+
+  .tier-marker[data-tier="plata"].achieved .tier-pts {
+    font-size: 10px;
   }
 }
 
