@@ -242,13 +242,52 @@
   <div class="container">
     <div class="card">
       <div class="foto-perfil">
-        <div class="avatar-wrapper">
+        <!-- Contenedor para foto de perfil (rango Plata+) con mini-avatar -->
+        <div class="profile-photo-wrapper" id="profilePhotoWrapper" style="display:none;">
+          <div class="profile-photo-container" id="profilePhotoContainer">
+            <img id="profilePhoto" src="" alt="Foto de perfil" class="profile-photo-main">
+            <div class="mini-avatar-badge" id="miniAvatarBadge">
+              <img id="miniAvatar" src="../images/avatars/avatar1.png" alt="Avatar" class="mini-avatar-img">
+            </div>
+            <a href="https://wa.me/573125929316" target="_blank" rel="noopener noreferrer" class="whatsapp-docs-btn profile-photo-whatsapp" title="Enviar documentos por WhatsApp">
+              📄
+            </a>
+            <!-- Menú contextual para foto de perfil -->
+            <div class="profile-context-menu" id="photoContextMenu">
+              <button class="profile-menu-item" id="menuChangePhoto">
+                <span class="menu-icon">📷</span>
+                <span>Cambiar foto</span>
+              </button>
+              <div class="profile-menu-divider"></div>
+              <button class="profile-menu-item danger" id="menuRemovePhoto">
+                <span class="menu-icon">🗑️</span>
+                <span>Quitar foto</span>
+              </button>
+            </div>
+          </div>
+          <input type="file" id="profilePhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
+        </div>
+
+        <!-- Contenedor original del avatar (usuarios sin rango Plata) -->
+        <div class="avatar-wrapper" id="avatarWrapper">
           <img id="profileImg" src="../images/avatars/avatar1.png" alt="Avatar actual">
           <a href="https://wa.me/573125929316" target="_blank" rel="noopener noreferrer" class="whatsapp-docs-btn" title="Enviar documentos por WhatsApp">
             📄
           </a>
+          <!-- Menú contextual para avatar -->
+          <div class="profile-context-menu" id="avatarContextMenu">
+            <button class="profile-menu-item" id="menuChangeAvatar">
+              <span class="menu-icon">🎭</span>
+              <span>Cambiar avatar</span>
+            </button>
+            <button class="profile-menu-item" id="menuUploadPhoto" style="display:none;">
+              <span class="menu-icon">📷</span>
+              <span>Subir mi foto</span>
+            </button>
+          </div>
         </div>
-        <div class="avatar-options" id="avatarOptions">
+
+        <div class="avatar-options" id="avatarOptions" style="display:none;">
           <p>Selecciona tu avatar:</p>
           <div class="avatar-grid">
             <img src="../images/avatars/avatar1.png" data-avatar="avatar1.png" alt="Avatar 1" />
@@ -262,9 +301,6 @@
             <img src="../images/avatars/avatar9.png" data-avatar="avatar9.png" alt="Avatar 9" />
           </div>
         </div>
-        <button id="changeAvatarBtn" class="btn small" style="display:none; margin-top:10px;">
-          Cambiar avatar
-        </button>
       </div>
 
       <h1>Bienvenido a tu oficina virtual</h1>

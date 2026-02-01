@@ -139,10 +139,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const changeAvatarBtn = document.getElementById("changeAvatarBtn");
       const avatarGrid = document.getElementById("avatarGrid");
       const avatarImgs = document.querySelectorAll(".avatar-img");
+      const avatarOptions = document.getElementById("avatarOptions");
+      const avatarGridFromOptions = avatarOptions?.querySelector(".avatar-grid");
 
       const avatarFromDB = userData.fotoURL;
-      if (avatarImgs && avatarImgs.length) {
-        avatarImgs.forEach(imgEl => {
+
+      // Usar elementos tanto del grid principal como del avatar-options
+      const allAvatarImgs = avatarOptions
+        ? avatarOptions.querySelectorAll(".avatar-grid img")
+        : avatarImgs;
+
+      if (allAvatarImgs && allAvatarImgs.length) {
+        allAvatarImgs.forEach(imgEl => {
           imgEl.addEventListener("click", async () => {
             // prevenir doble-clicks múltiples
             imgEl.disabled = true;
@@ -151,10 +159,21 @@ document.addEventListener("DOMContentLoaded", () => {
               // solo escribir si cambió realmente
               if (userData.fotoURL !== selectedAvatar) {
                 await updateDoc(docRef, { fotoURL: selectedAvatar });
+                userData.fotoURL = selectedAvatar; // actualizar local
               }
               if (profileImg) profileImg.src = resolveAvatarPath(selectedAvatar);
+
+              // Solo actualizar mini-avatar si el usuario NO tiene rango Plata o superior
+              // (si tiene rango, el mini-avatar debe seguir mostrando la imagen del rango)
+              const miniAvatarEl = document.getElementById("miniAvatar");
+              const userTotalComisiones = Number(userData.totalComisionesCobradas ?? 0);
+              const userHasSilverOrAbove = userTotalComisiones >= 1400000;
+              if (miniAvatarEl && !userHasSilverOrAbove) {
+                miniAvatarEl.src = resolveAvatarPath(selectedAvatar);
+              }
+
               if (avatarGrid) avatarGrid.style.display = "none";
-              if (changeAvatarBtn) changeAvatarBtn.style.display = "inline-block";
+              if (avatarOptions) avatarOptions.style.display = "none";
               alert("✅ Avatar actualizado correctamente.");
 } catch (err) {
               console.error("❌ Error guardando avatar:", err);
@@ -166,16 +185,244 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      if (changeAvatarBtn) {
-        if (avatarFromDB) {
-          if (avatarGrid) avatarGrid.style.display = "none";
-          changeAvatarBtn.style.display = "inline-block";
-        } else {
-          changeAvatarBtn.style.display = "none";
+      // --- Foto de Perfil (Rango Plata+) ---
+      // Umbrales de comisiones para rangos
+      const RANK_THRESHOLDS = [
+        { name: 'corona', threshold: 28000000 },
+        { name: 'diamante', threshold: 14000000 },
+        { name: 'stars', threshold: 8400000 },
+        { name: 'oro', threshold: 4200000 },
+        { name: 'plata', threshold: 1400000 }
+      ];
+
+      const SILVER_RANK_THRESHOLD = 1400000;
+      const totalComisiones = Number(userData.totalComisionesCobradas ?? 0);
+      const hasProfilePhoto = userData.profilePhotoBase64 && userData.profilePhotoBase64.length > 0;
+      const isSilverOrAbove = totalComisiones >= SILVER_RANK_THRESHOLD;
+
+      // Determinar el rango actual del usuario
+      function getUserRank(commissions) {
+        for (const rank of RANK_THRESHOLDS) {
+          if (commissions >= rank.threshold) {
+            return rank.name;
+          }
         }
-        changeAvatarBtn.addEventListener("click", () => {
-          if (avatarGrid) avatarGrid.style.display = "grid";
-          changeAvatarBtn.style.display = "none";
+        return null; // No tiene rango Plata o superior
+      }
+
+      const currentUserRank = getUserRank(totalComisiones);
+
+      // Elementos del DOM para foto de perfil
+      const profilePhotoWrapper = document.getElementById("profilePhotoWrapper");
+      const avatarWrapper = document.getElementById("avatarWrapper");
+      const profilePhotoEl = document.getElementById("profilePhoto");
+      const miniAvatarEl = document.getElementById("miniAvatar");
+      const profilePhotoInput = document.getElementById("profilePhotoInput");
+
+      // Elementos del menú contextual
+      const photoContextMenu = document.getElementById("photoContextMenu");
+      const avatarContextMenu = document.getElementById("avatarContextMenu");
+      const profilePhotoContainer = document.getElementById("profilePhotoContainer");
+      const miniAvatarBadge = document.getElementById("miniAvatarBadge");
+      const menuChangePhoto = document.getElementById("menuChangePhoto");
+      const menuRemovePhoto = document.getElementById("menuRemovePhoto");
+      const menuChangeAvatar = document.getElementById("menuChangeAvatar");
+      const menuUploadPhoto = document.getElementById("menuUploadPhoto");
+
+      // Función para cerrar todos los menús contextuales
+      function closeAllContextMenus() {
+        if (photoContextMenu) photoContextMenu.classList.remove("show");
+        if (avatarContextMenu) avatarContextMenu.classList.remove("show");
+      }
+
+      // Cerrar menús al hacer clic fuera
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".profile-photo-container") && !e.target.closest(".avatar-wrapper")) {
+          closeAllContextMenus();
+        }
+      });
+
+      // Función para obtener la ruta de la imagen del rango
+      function getRankImagePath(rankName) {
+        if (!rankName) return null;
+        return `/images/rango/${rankName}.png`;
+      }
+
+      // Función para mostrar la foto de perfil con imagen del rango (en lugar de mini-avatar)
+      function showProfilePhotoMode(photoBase64, avatarPath) {
+        if (profilePhotoWrapper) profilePhotoWrapper.style.display = "block";
+        if (avatarWrapper) avatarWrapper.style.display = "none";
+        if (profilePhotoEl) profilePhotoEl.src = photoBase64;
+
+        // Mostrar imagen del rango en lugar del mini-avatar si el usuario tiene rango Plata o superior
+        if (miniAvatarEl && currentUserRank) {
+          const rankImagePath = getRankImagePath(currentUserRank);
+          miniAvatarEl.src = rankImagePath;
+          miniAvatarEl.alt = `Rango ${currentUserRank}`;
+          miniAvatarEl.title = `Rango: ${currentUserRank.charAt(0).toUpperCase() + currentUserRank.slice(1)}`;
+        } else if (miniAvatarEl) {
+          miniAvatarEl.src = resolveAvatarPath(avatarPath);
+        }
+      }
+
+      // Función para mostrar el modo avatar normal
+      function showAvatarMode() {
+        if (profilePhotoWrapper) profilePhotoWrapper.style.display = "none";
+        if (avatarWrapper) avatarWrapper.style.display = "block";
+      }
+
+      // Configurar vista según rango y si tiene foto
+      if (isSilverOrAbove) {
+        if (hasProfilePhoto) {
+          // Mostrar foto de perfil con imagen del rango
+          showProfilePhotoMode(userData.profilePhotoBase64, userData.fotoURL);
+        } else {
+          // Mostrar avatar normal pero con opción de subir foto
+          showAvatarMode();
+          if (menuUploadPhoto) menuUploadPhoto.style.display = "flex";
+        }
+      } else {
+        // Usuario sin rango Plata: solo avatar normal
+        showAvatarMode();
+        if (menuUploadPhoto) menuUploadPhoto.style.display = "none";
+      }
+
+      // Evento: clic en la foto de perfil para mostrar menú
+      if (profilePhotoContainer) {
+        profilePhotoContainer.addEventListener("click", (e) => {
+          // No abrir menú si se hizo clic en el botón de WhatsApp o en el mini-avatar
+          if (e.target.closest(".whatsapp-docs-btn") || e.target.closest(".mini-avatar-badge")) {
+            return;
+          }
+          e.stopPropagation();
+          closeAllContextMenus();
+          if (photoContextMenu) photoContextMenu.classList.toggle("show");
+        });
+      }
+
+      // Evento: clic en el avatar para mostrar menú
+      if (avatarWrapper) {
+        avatarWrapper.addEventListener("click", (e) => {
+          // No abrir menú si se hizo clic en el botón de WhatsApp
+          if (e.target.closest(".whatsapp-docs-btn")) {
+            return;
+          }
+          e.stopPropagation();
+          closeAllContextMenus();
+          if (avatarContextMenu) avatarContextMenu.classList.toggle("show");
+        });
+      }
+
+      // Evento: clic en mini-avatar para cambiar avatar
+      if (miniAvatarBadge) {
+        miniAvatarBadge.addEventListener("click", (e) => {
+          e.stopPropagation();
+          closeAllContextMenus();
+          if (avatarOptions) {
+            avatarOptions.style.display = avatarOptions.style.display === "none" ? "block" : "none";
+          }
+        });
+      }
+
+      // Evento: cambiar foto desde menú
+      if (menuChangePhoto) {
+        menuChangePhoto.addEventListener("click", (e) => {
+          e.stopPropagation();
+          closeAllContextMenus();
+          if (profilePhotoInput) profilePhotoInput.click();
+        });
+      }
+
+      // Evento: quitar foto desde menú
+      if (menuRemovePhoto) {
+        menuRemovePhoto.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          closeAllContextMenus();
+          if (!confirm("¿Estás seguro de que deseas quitar tu foto de perfil?")) return;
+
+          try {
+            await updateDoc(docRef, { profilePhotoBase64: "" });
+            showAvatarMode();
+            if (menuUploadPhoto) menuUploadPhoto.style.display = "flex";
+            alert("✅ Foto de perfil eliminada.");
+          } catch (err) {
+            console.error("❌ Error eliminando foto:", err);
+            alert("Error al eliminar la foto de perfil.");
+          }
+        });
+      }
+
+      // Evento: cambiar avatar desde menú
+      if (menuChangeAvatar) {
+        menuChangeAvatar.addEventListener("click", (e) => {
+          e.stopPropagation();
+          closeAllContextMenus();
+          if (avatarOptions) {
+            avatarOptions.style.display = avatarOptions.style.display === "none" ? "block" : "none";
+          }
+        });
+      }
+
+      // Evento: subir foto desde menú (solo usuarios Plata+)
+      if (menuUploadPhoto) {
+        menuUploadPhoto.addEventListener("click", (e) => {
+          e.stopPropagation();
+          closeAllContextMenus();
+          if (profilePhotoInput) profilePhotoInput.click();
+        });
+      }
+
+      // Evento: procesar archivo seleccionado
+      if (profilePhotoInput) {
+        profilePhotoInput.addEventListener("change", async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+
+          // Validar tipo de archivo
+          const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+          if (!allowedTypes.includes(file.type)) {
+            alert("Solo se permiten archivos JPG, PNG o WebP.");
+            return;
+          }
+
+          // Validar tamaño (máximo 1MB para Firestore)
+          const MAX_SIZE = 1 * 1024 * 1024; // 1MB
+          if (file.size > MAX_SIZE) {
+            alert("La imagen es demasiado grande. El tamaño máximo es 1MB.");
+            return;
+          }
+
+          // Mostrar indicador de carga
+          const loadingMsg = "Subiendo foto...";
+          let loadingAlert = null;
+          if (typeof Swal !== 'undefined') {
+            loadingAlert = Swal.fire({
+              title: loadingMsg,
+              allowOutsideClick: false,
+              didOpen: () => Swal.showLoading()
+            });
+          }
+
+          try {
+            // Redimensionar y convertir a Base64
+            const base64 = await resizeAndConvertToBase64(file, 400, 400, 0.85);
+
+            // Guardar en Firestore
+            await updateDoc(docRef, { profilePhotoBase64: base64 });
+
+            // Actualizar la vista
+            showProfilePhotoMode(base64, userData.fotoURL);
+
+            if (loadingAlert) Swal.close();
+            alert("✅ Foto de perfil actualizada correctamente.");
+          } catch (err) {
+            console.error("❌ Error subiendo foto:", err);
+            if (loadingAlert) Swal.close();
+            alert("Error al subir la foto de perfil. Inténtalo de nuevo.");
+          } finally {
+            // Limpiar input
+            profilePhotoInput.value = "";
+          }
         });
       }
 
@@ -391,6 +638,51 @@ function escapeHtml(str = "") {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+// Función para redimensionar imagen y convertirla a Base64
+// Retorna una Promise con el string Base64
+function resizeAndConvertToBase64(file, maxWidth = 400, maxHeight = 400, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const img = new Image();
+
+      img.onload = () => {
+        // Calcular nuevas dimensiones manteniendo aspecto
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+
+        // Crear canvas y dibujar imagen redimensionada
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convertir a Base64 (JPEG para mejor compresión)
+        const base64 = canvas.toDataURL("image/jpeg", quality);
+        resolve(base64);
+      };
+
+      img.onerror = () => reject(new Error("Error al cargar la imagen"));
+      img.src = e.target.result;
+    };
+
+    reader.onerror = () => reject(new Error("Error al leer el archivo"));
+    reader.readAsDataURL(file);
+  });
 }
 
 // Umbral de puntos personales para activación mensual
