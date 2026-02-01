@@ -246,12 +246,10 @@
         <div class="profile-photo-wrapper" id="profilePhotoWrapper" style="display:none;">
           <div class="profile-photo-container" id="profilePhotoContainer">
             <img id="profilePhoto" src="" alt="Foto de perfil" class="profile-photo-main">
+            <!-- Badge del rango superpuesto -->
             <div class="mini-avatar-badge" id="miniAvatarBadge">
               <img id="miniAvatar" src="../images/avatars/avatar1.png" alt="Avatar" class="mini-avatar-img">
             </div>
-            <a href="https://wa.me/573125929316" target="_blank" rel="noopener noreferrer" class="whatsapp-docs-btn profile-photo-whatsapp" title="Enviar documentos por WhatsApp">
-              📄
-            </a>
             <!-- Menú contextual para foto de perfil -->
             <div class="profile-context-menu" id="photoContextMenu">
               <button class="profile-menu-item" id="menuChangePhoto">
@@ -271,9 +269,6 @@
         <!-- Contenedor original del avatar (usuarios sin rango Plata) -->
         <div class="avatar-wrapper" id="avatarWrapper">
           <img id="profileImg" src="../images/avatars/avatar1.png" alt="Avatar actual">
-          <a href="https://wa.me/573125929316" target="_blank" rel="noopener noreferrer" class="whatsapp-docs-btn" title="Enviar documentos por WhatsApp">
-            📄
-          </a>
           <!-- Menú contextual para avatar -->
           <div class="profile-context-menu" id="avatarContextMenu">
             <button class="profile-menu-item" id="menuChangeAvatar">
@@ -310,6 +305,14 @@
         <p><strong>Código:</strong> <span id="code">Cargando...</span></p>
         <p><strong>Puntos personales:</strong> <span id="points">0</span></p>
         <p><strong>Puntos grupales:</strong> <span id="teamPoints">0</span></p>
+
+        <!-- Botón de documentación (dinámico) -->
+        <div class="documentation-btn-container" id="documentationContainer" style="margin: 16px 0;">
+          <a href="https://wa.me/573125929316" target="_blank" rel="noopener noreferrer" class="btn-documentation" id="btnDocumentation" title="Gestionar documentación">
+            <span class="btn-doc-icon">📄</span>
+            <span class="btn-doc-text" id="btnDocText">Subir documentación</span>
+          </a>
+        </div>
 
         <!-- Bloque de comisiones -->
 <div class="comisiones">
