@@ -499,6 +499,11 @@
                   <span class="category-emoji">📚</span>
                   <span class="category-name">PEC</span>
                 </button>
+                <!-- Retos Button - Highlighted -->
+                <button class="retos-btn-standalone" id="btnRetosConsumo">
+                  <span class="retos-emoji">🎮</span>
+                  <span class="retos-name">Retos</span>
+                </button>
               </div>
             </div>
 
@@ -513,6 +518,123 @@
               <option value="abarrotes">Abarrotes</option>
               <option value="pec">PEC</option>
             </select>
+
+            <!-- Retos Section - Game Cards -->
+            <div id="retosSection" class="retos-section" style="display: none;">
+              <div class="retos-header">
+                <h3>🎮 Retos - Juega y Gana</h3>
+                <p>Participa en nuestros juegos para ganar puntos extra y recompensas</p>
+                <button class="btn-back-products" id="btnBackToProducts">
+                  <span>←</span> Volver a Productos
+                </button>
+              </div>
+
+              <div class="games-grid" id="gamesGrid">
+                <!-- Game Card - Memory (Available) -->
+                <div class="game-product-card" data-game="memory" data-status="available">
+                  <div class="game-thumbnail">
+                    <div class="game-thumbnail-placeholder memory">
+                      <span class="game-icon">🧠</span>
+                    </div>
+                    <span class="game-badge available">Disponible</span>
+                  </div>
+                  <h4 class="game-title">Juego de Memoria</h4>
+                  <p class="game-description">Encuentra las parejas de cartas iguales en el menor tiempo posible. ¡Mejora tu memoria y gana recompensas!</p>
+                  <div class="game-meta">
+                    <div class="game-price">
+                      <span class="price-label">Precio:</span>
+                      <span class="price-value free">Gratis</span>
+                    </div>
+                    <div class="game-points">
+                      <span class="points-icon">⭐</span>
+                      <span class="points-value">20 puntos</span>
+                    </div>
+                  </div>
+                  <button class="btn-game-play" onclick="window.location.href='/juego-memory/'">
+                    <span class="btn-icon">▶️</span>
+                    Jugar ahora
+                  </button>
+                </div>
+
+                <!-- Game Card - Trivia (Coming Soon) -->
+                <div class="game-product-card coming-soon" data-game="trivia" data-status="coming-soon">
+                  <div class="game-thumbnail">
+                    <div class="game-thumbnail-placeholder trivia">
+                      <span class="game-icon">❓</span>
+                    </div>
+                    <span class="game-badge coming-soon">Próximamente</span>
+                  </div>
+                  <h4 class="game-title">Trivia PorkCasare</h4>
+                  <p class="game-description">Responde preguntas sobre productos y nutrición. Demuestra tu conocimiento y gana grandes premios.</p>
+                  <div class="game-meta">
+                    <div class="game-price">
+                      <span class="price-label">Precio:</span>
+                      <span class="price-value free">Gratis</span>
+                    </div>
+                    <div class="game-points">
+                      <span class="points-icon">⭐</span>
+                      <span class="points-value">20 puntos</span>
+                    </div>
+                  </div>
+                  <button class="btn-game-play disabled" disabled>
+                    <span class="btn-icon">🔔</span>
+                    Próximamente
+                  </button>
+                </div>
+
+                <!-- Game Card - Puzzle (Coming Soon) -->
+                <div class="game-product-card coming-soon" data-game="puzzle" data-status="coming-soon">
+                  <div class="game-thumbnail">
+                    <div class="game-thumbnail-placeholder puzzle">
+                      <span class="game-icon">🧩</span>
+                    </div>
+                    <span class="game-badge coming-soon">Próximamente</span>
+                  </div>
+                  <h4 class="game-title">Rompecabezas</h4>
+                  <p class="game-description">Arma rompecabezas de imágenes de productos. Cada nivel completado te acerca a mayores recompensas.</p>
+                  <div class="game-meta">
+                    <div class="game-price">
+                      <span class="price-label">Precio:</span>
+                      <span class="price-value free">Gratis</span>
+                    </div>
+                    <div class="game-points">
+                      <span class="points-icon">⭐</span>
+                      <span class="points-value">20 puntos</span>
+                    </div>
+                  </div>
+                  <button class="btn-game-play disabled" disabled>
+                    <span class="btn-icon">🔔</span>
+                    Próximamente
+                  </button>
+                </div>
+
+                <!-- Game Card - Slot Machine (Coming Soon) -->
+                <div class="game-product-card coming-soon" data-game="slots" data-status="coming-soon">
+                  <div class="game-thumbnail">
+                    <div class="game-thumbnail-placeholder slots">
+                      <span class="game-icon">🎰</span>
+                    </div>
+                    <span class="game-badge coming-soon">Próximamente</span>
+                  </div>
+                  <h4 class="game-title">Rueda de la Fortuna</h4>
+                  <p class="game-description">Gira la rueda y prueba tu suerte. Multiplica tus puntos con combinaciones ganadoras.</p>
+                  <div class="game-meta">
+                    <div class="game-price">
+                      <span class="price-label">Precio:</span>
+                      <span class="price-value free">Gratis</span>
+                    </div>
+                    <div class="game-points">
+                      <span class="points-icon">⭐</span>
+                      <span class="points-value">20 puntos</span>
+                    </div>
+                  </div>
+                  <button class="btn-game-play disabled" disabled>
+                    <span class="btn-icon">🔔</span>
+                    Próximamente
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <div id="productGrid" class="product-grid"></div>
           </div>
@@ -1208,5 +1330,85 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
 
 })();
 </script>
+<!-- Retos Section Toggle -->
+<script>
+(function() {
+  function initRetosSection() {
+    const btnRetos = document.getElementById('btnRetosConsumo');
+    const btnBackToProducts = document.getElementById('btnBackToProducts');
+    const retosSection = document.getElementById('retosSection');
+    const productGrid = document.getElementById('productGrid');
+    const historySection = document.querySelector('#tab-consumo .history-section:not(.consumo-section)');
+    const categoryFilters = document.querySelector('.category-filters-container');
+    const productsTitle = document.querySelector('.consumo-section h2');
+
+    if (!btnRetos || !retosSection || !productGrid) return;
+
+    function showRetos() {
+      // Hide products and show retos
+      productGrid.style.display = 'none';
+      if (historySection) historySection.style.display = 'none';
+      if (productsTitle) productsTitle.style.display = 'none';
+      retosSection.style.display = 'block';
+
+      // Update button state
+      btnRetos.classList.add('active');
+
+      // Remove active state from category filters
+      document.querySelectorAll('.category-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+    }
+
+    function showProducts() {
+      // Show products and hide retos
+      productGrid.style.display = '';
+      if (historySection) historySection.style.display = '';
+      if (productsTitle) productsTitle.style.display = '';
+      retosSection.style.display = 'none';
+
+      // Update button state
+      btnRetos.classList.remove('active');
+
+      // Re-activate "Todas" category
+      const todasBtn = document.querySelector('.category-filter-btn[data-category="todas"]');
+      if (todasBtn) todasBtn.classList.add('active');
+    }
+
+    // Event listeners
+    btnRetos.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (retosSection.style.display === 'none' || retosSection.style.display === '') {
+        showRetos();
+      } else {
+        showProducts();
+      }
+    });
+
+    if (btnBackToProducts) {
+      btnBackToProducts.addEventListener('click', function(e) {
+        e.preventDefault();
+        showProducts();
+      });
+    }
+
+    // When clicking a category filter, go back to products
+    document.querySelectorAll('.category-filter-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        if (retosSection.style.display === 'block') {
+          showProducts();
+        }
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRetosSection);
+  } else {
+    initRetosSection();
+  }
+})();
+</script>
+
 </body>
 </html>

@@ -61,14 +61,18 @@ document.getElementById("distribuidorLogin").addEventListener("submit", async (e
       console.log("Role 'distribuidor' asignado correctamente");
     }
 
+    // Check if there's a redirect parameter in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectTo = urlParams.get('redirect') || '/oficina-virtual/index.html';
+
     Swal.fire({
       icon: 'success',
       title: '¡Bienvenido!',
-      text: 'Redirigiendo a la oficina virtual...',
+      text: 'Redirigiendo...',
       showConfirmButton: false,
       timer: 2000
     }).then(() => {
-      window.location.href = "/oficina-virtual/index.html";
+      window.location.href = redirectTo;
     });
 
   } catch (error) {
