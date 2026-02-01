@@ -167,6 +167,51 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ========== Game Income Logs Collection ==========
+    match /game_income_logs/{logId} {
+      // Only admins can read game income logs
+      allow read: if isAdmin();
+
+      // Only server-side functions should write (no client writes)
+      allow create, update, delete: if false;
+    }
+
+    // ========== Game Purchases Collection ==========
+    match /game_purchases/{purchaseId} {
+      // Users can read their own purchases, admins can read all
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+
+      // Only server-side functions should write
+      allow create, update, delete: if false;
+    }
+
+    // ========== Game Achievements Collection ==========
+    match /game_achievements/{achievementId} {
+      // Users can read their own achievements, admins can read all
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+
+      // Only server-side functions should write
+      allow create, update, delete: if false;
+    }
+
+    // ========== Game Orders Collection ==========
+    match /game_orders/{orderId} {
+      // Users can read their own orders, admins can read all
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+
+      // Only server-side functions should write
+      allow create, update, delete: if false;
+    }
+
+    // ========== Game Payments Collection ==========
+    match /game_payments/{paymentId} {
+      // Users can read their own payments, admins can read all
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+
+      // Only server-side functions should write
+      allow create, update, delete: if false;
+    }
+
     // ========== Denegar todo lo demás ==========
     match /{document=**} {
       allow read, write: if false;

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PorkCasare Memory - Juego de Parejas</title>
+  <link rel="stylesheet" href="css/game.css" />
+  <script src="/js/brand-loader.js"></script>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="game-loading-overlay" class="loading-overlay">
+    <div class="loader-card">
+      <div class="loader-spinner"><div class="dot"></div></div>
+      <div class="loader-text">
+        <div class="title">Cargando juego...</div>
+        <div class="subtitle">Preparando tu experiencia de Memory</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="game-nav">
+    <div class="nav-brand">
+      <a href="/oficina-virtual/" class="back-btn" title="Volver a la oficina virtual">
+        <span class="back-icon">←</span>
+      </a>
+      <img data-brand-logo src="/images/logo.webp" alt="Logo" class="nav-logo" />
+      <h2>PorkCasare Memory</h2>
+    </div>
+    <div class="nav-stats">
+      <div class="stat-item">
+        <span class="stat-icon">🪙</span>
+        <span class="stat-value" id="navCoins">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">❤️</span>
+        <span class="stat-value" id="navLives">5</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">⭐</span>
+        <span class="stat-value" id="navLevel">1</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Game Container -->
+  <main class="game-container">
+    <!-- Game Header with Stats -->
+    <header class="game-header">
+      <div class="header-section">
+        <div class="player-info">
+          <img id="playerAvatar" src="/images/avatars/avatar1.png" alt="Avatar" class="player-avatar" />
+          <div class="player-details">
+            <span class="player-name" id="playerName">Jugador</span>
+            <span class="player-rank" id="playerRank">Novato</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-section game-stats">
+        <div class="game-stat">
+          <span class="stat-label">Nivel</span>
+          <span class="stat-value" id="currentLevel">1</span>
+        </div>
+        <div class="game-stat">
+          <span class="stat-label">Puntaje</span>
+          <span class="stat-value" id="currentScore">0</span>
+        </div>
+        <div class="game-stat">
+          <span class="stat-label">Movimientos</span>
+          <span class="stat-value" id="currentMoves">0</span>
+        </div>
+        <div class="game-stat timer">
+          <span class="stat-label">Tiempo</span>
+          <span class="stat-value" id="gameTimer">00:00</span>
+        </div>
+      </div>
+
+      <div class="header-section lives-section">
+        <div class="lives-container" id="livesContainer">
+          <span class="heart">❤️</span>
+          <span class="heart">❤️</span>
+          <span class="heart">❤️</span>
+          <span class="heart">❤️</span>
+          <span class="heart">❤️</span>
+        </div>
+        <button class="btn-lives" id="btnBuyLives" title="Comprar vidas">
+          <span>+</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Game Board -->
+    <section class="game-board-wrapper">
+      <div class="game-board" id="gameBoard">
+        <!-- Cards will be generated dynamically -->
+      </div>
+    </section>
+
+    <!-- Game Controls -->
+    <footer class="game-controls">
+      <button class="btn-game btn-primary" id="btnStartGame">
+        <span class="btn-icon">▶️</span>
+        <span>Iniciar Juego</span>
+      </button>
+      <button class="btn-game btn-secondary" id="btnPauseGame" disabled>
+        <span class="btn-icon">⏸️</span>
+        <span>Pausar</span>
+      </button>
+      <button class="btn-game btn-hint" id="btnHint" disabled>
+        <span class="btn-icon">💡</span>
+        <span>Pista (10🪙)</span>
+      </button>
+    </footer>
+  </main>
+
+  <!-- Level Selection Modal -->
+  <div class="modal" id="levelSelectModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Seleccionar Nivel</h2>
+        <button class="modal-close" id="closeLevelModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="levels-grid" id="levelsGrid">
+          <!-- Levels will be generated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Modal -->
+  <div class="modal" id="gameOverModal">
+    <div class="modal-content game-over-content">
+      <div class="modal-header">
+        <h2 id="gameOverTitle">Fin del Juego</h2>
+      </div>
+      <div class="modal-body">
+        <div class="game-over-stats">
+          <div class="go-stat">
+            <span class="go-label">Puntaje Final</span>
+            <span class="go-value" id="finalScore">0</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">Movimientos</span>
+            <span class="go-value" id="finalMoves">0</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">Tiempo</span>
+            <span class="go-value" id="finalTime">00:00</span>
+          </div>
+          <div class="go-stat highlight">
+            <span class="go-label">Monedas Ganadas</span>
+            <span class="go-value" id="coinsEarned">0 🪙</span>
+          </div>
+        </div>
+        <div class="stars-earned" id="starsEarned">
+          <span class="star empty">⭐</span>
+          <span class="star empty">⭐</span>
+          <span class="star empty">⭐</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-game btn-secondary" id="btnBackToMenu">Menú</button>
+        <button class="btn-game btn-primary" id="btnNextLevel">Siguiente Nivel</button>
+        <button class="btn-game btn-retry" id="btnRetryLevel">Reintentar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shop Modal -->
+  <div class="modal" id="shopModal">
+    <div class="modal-content shop-content">
+      <div class="modal-header">
+        <h2>🛒 Tienda del Juego</h2>
+        <button class="modal-close" id="closeShopModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="shop-balance">
+          <span>Tu saldo:</span>
+          <span class="balance-value" id="shopBalance">0 🪙</span>
+        </div>
+        <div class="shop-tabs">
+          <button class="shop-tab active" data-tab="lives">❤️ Vidas</button>
+          <button class="shop-tab" data-tab="hints">💡 Pistas</button>
+          <button class="shop-tab" data-tab="boosts">🚀 Potenciadores</button>
+        </div>
+        <div class="shop-items" id="shopItems">
+          <!-- Shop items will be generated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause Modal -->
+  <div class="modal" id="pauseModal">
+    <div class="modal-content pause-content">
+      <div class="modal-header">
+        <h2>⏸️ Juego Pausado</h2>
+      </div>
+      <div class="modal-body">
+        <p>Tu progreso está guardado. ¿Qué deseas hacer?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-game btn-secondary" id="btnExitGame">Salir</button>
+        <button class="btn-game btn-primary" id="btnResumeGame">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script type="module" src="js/game-engine.js"></script>
+  <script type="module" src="js/game-ui.js"></script>
+  <script type="module" src="js/game-firebase.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
