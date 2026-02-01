@@ -102,6 +102,17 @@ function updateProgressBar(commissions, personalPoints) {
     currentTierName.textContent = tier.name;
   }
 
+  // Apply premium styling to "Rango actual" when user is Plata or higher
+  const currentTierInfo = document.querySelector('.current-tier-info');
+  if (currentTierInfo) {
+    const isPlataPlusRank = tier.key && tier.key !== 'master';
+    if (isPlataPlusRank) {
+      currentTierInfo.classList.add('rank-premium');
+    } else {
+      currentTierInfo.classList.remove('rank-premium');
+    }
+  }
+
   if (pointsToNextValue) {
     if (nextTier) {
       const commissionsNeeded = nextTier.commission - totalCommissions;
