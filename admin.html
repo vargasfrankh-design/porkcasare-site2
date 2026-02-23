@@ -510,6 +510,74 @@
       max-width: 100%;
     }
 
+    /* === QUICK START AREA === */
+    .quick-start-area {
+      padding: 0;
+    }
+    .quick-start-loading {
+      padding: 16px 20px;
+      text-align: center;
+      color: #6c757d;
+      font-size: 13px;
+      font-style: italic;
+      border-top: 1px solid #f1f3f4;
+    }
+    .quick-start-btn-container {
+      padding: 16px 20px;
+      border-top: 2px solid #e9ecef;
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+      text-align: center;
+    }
+    .quick-start-btn-container .qs-info {
+      font-size: 13px;
+      color: #495057;
+      margin-bottom: 10px;
+    }
+    .quick-start-btn-container .qs-info strong {
+      color: #0d6efd;
+    }
+    .btn-quick-start {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(13,110,253,0.25);
+    }
+    .btn-quick-start:hover {
+      background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+      box-shadow: 0 4px 12px rgba(13,110,253,0.35);
+      transform: translateY(-1px);
+    }
+    .btn-quick-start:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .quick-start-info-msg {
+      padding: 12px 20px;
+      border-top: 1px solid #f1f3f4;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .quick-start-info-msg.already-paid {
+      background: #fff3cd;
+      color: #664d03;
+    }
+    .quick-start-info-msg.already-master {
+      background: #cfe2ff;
+      color: #084298;
+    }
+
     /* === LOGIN SECTION === */
     #loginSection {
       display: flex;
@@ -947,6 +1015,167 @@
       margin-bottom: 12px;
       opacity: 0.5;
     }
+
+    /* Plan de Compensacion y Simulador */
+    .comp-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+    .comp-section h3 {
+      margin: 0 0 16px 0;
+      font-size: 17px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .comp-section h3 span.comp-icon {
+      font-size: 22px;
+    }
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .comp-table th {
+      background: var(--bg-light);
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--border-color);
+    }
+    .comp-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+    .comp-table tr:last-child td { border-bottom: none; }
+    .comp-table tr:hover td { background: #f8f9fb; }
+    .comp-table .mono { font-family: 'Courier New', monospace; font-weight: 600; color: var(--text-primary); }
+    .comp-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .comp-tag.blue { background: #e3f2fd; color: #1565c0; }
+    .comp-tag.green { background: #e8f5e9; color: #2e7d32; }
+    .comp-tag.orange { background: #fff3e0; color: #e65100; }
+    .comp-tag.purple { background: #f3e5f5; color: #6a1b9a; }
+    .comp-tag.grey { background: #eceff1; color: #37474f; }
+    .comp-formula {
+      background: #1a1f36;
+      color: #a8d8ff;
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+    .comp-formula .comment { color: #6b7a99; }
+    .comp-formula .keyword { color: #f78c6c; }
+    .comp-formula .value { color: #c3e88d; }
+    .comp-param-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin: 12px 0;
+    }
+    .comp-param-card {
+      background: var(--bg-light);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid var(--border-color);
+    }
+    .comp-param-card .param-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary-blue);
+      margin-bottom: 4px;
+    }
+    .comp-param-card .param-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Simulator styles */
+    .sim-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .sim-field label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+    .sim-field select,
+    .sim-field input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .sim-field select:focus,
+    .sim-field input:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(0,82,204,0.1);
+    }
+    .sim-field small {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .sim-results-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .sim-summary-card {
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .sim-summary-card .sim-val {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .sim-summary-card .sim-lbl {
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .sim-summary-card.blue { background: #e3f2fd; }
+    .sim-summary-card.blue .sim-val { color: #1565c0; }
+    .sim-summary-card.blue .sim-lbl { color: #1976d2; }
+    .sim-summary-card.green { background: #e8f5e9; }
+    .sim-summary-card.green .sim-val { color: #2e7d32; }
+    .sim-summary-card.green .sim-lbl { color: #388e3c; }
+    .sim-summary-card.orange { background: #fff3e0; }
+    .sim-summary-card.orange .sim-val { color: #e65100; }
+    .sim-summary-card.orange .sim-lbl { color: #ef6c00; }
+    .sim-summary-card.purple { background: #f3e5f5; }
+    .sim-summary-card.purple .sim-val { color: #6a1b9a; }
+    .sim-summary-card.purple .sim-lbl { color: #7b1fa2; }
   </style>
 </head>
 <body>
@@ -1000,6 +1229,7 @@
       <button class="tab-button" data-tab="profits">Ganancias</button>
       <button class="tab-button" data-tab="education">Educación</button>
       <button class="tab-button" data-tab="branding">Identidad Visual</button>
+      <button class="tab-button" data-tab="compensation">Plan de Compensaci&oacute;n</button>
     </div>
 
     <!-- Tab: Resumen -->
@@ -2680,6 +2910,400 @@
 
       </div>
     </div>
+
+    <!-- Tab: Plan de Compensacion y Simulador -->
+    <div id="tab-compensation" class="tab-content">
+      <div style="max-width:1200px;margin:0 auto;">
+
+        <!-- Header -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:16px;">
+          <div>
+            <h2 style="margin:0;">Plan de Compensaci&oacute;n y Simulador</h2>
+            <p style="margin:8px 0 0 0;color:#666;font-size:14px;">Informaci&oacute;n t&eacute;cnica del plan de compensaci&oacute;n actual y simulador interactivo alineado con el backend</p>
+          </div>
+          <span class="comp-tag grey" style="font-size:13px;padding:6px 14px;">Solo lectura &mdash; No modifica datos reales</span>
+        </div>
+
+        <!-- Parametros Principales -->
+        <div class="comp-section">
+          <h3><span class="comp-icon">&#9881;</span> Par&aacute;metros del Sistema</h3>
+          <p style="font-size:13px;color:#666;margin:0 0 14px 0;">Constantes definidas en <code>confirm-order.js</code> que rigen toda la distribuci&oacute;n de comisiones.</p>
+          <div class="comp-param-grid">
+            <div class="comp-param-card">
+              <div class="param-value">$2.800</div>
+              <div class="param-label">Valor del Punto (COP)</div>
+            </div>
+            <div class="comp-param-card">
+              <div class="param-value">5</div>
+              <div class="param-label">Niveles Unilevel</div>
+            </div>
+            <div class="comp-param-card">
+              <div class="param-value">10%</div>
+              <div class="param-label">Comisi&oacute;n Distribuidores</div>
+            </div>
+            <div class="comp-param-card">
+              <div class="param-value">5%</div>
+              <div class="param-label">Comisi&oacute;n Restaurantes</div>
+            </div>
+            <div class="comp-param-card">
+              <div class="param-value">50 pts</div>
+              <div class="param-label">Umbral Quick Start</div>
+            </div>
+            <div class="comp-param-card">
+              <div class="param-value">10 pts</div>
+              <div class="param-label">Activaci&oacute;n Mensual</div>
+            </div>
+            <div class="comp-param-card">
+              <div class="param-value">$20.000</div>
+              <div class="param-label">M&iacute;nimo de Retiro (COP)</div>
+            </div>
+            <div class="comp-param-card">
+              <div class="param-value">Sin l&iacute;mite</div>
+              <div class="param-label">Tope M&aacute;ximo de Pago</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estructura Unilevel -->
+        <div class="comp-section">
+          <h3><span class="comp-icon">&#128101;</span> Estructura Unilevel</h3>
+          <p style="font-size:13px;color:#666;margin:0 0 14px 0;">Cada usuario tiene un &uacute;nico patrocinador directo. Las comisiones fluyen hacia arriba hasta 5 niveles de profundidad. No existe compresi&oacute;n din&aacute;mica: si un upline no existe, la cadena se detiene.</p>
+          <div class="comp-formula">
+            <span class="comment">// Recorrido de la cadena de patrocinio</span><br>
+            Comprador &rarr; Nivel 1 (Patrocinador Directo) &rarr; Nivel 2 &rarr; Nivel 3 &rarr; Nivel 4 &rarr; Nivel 5<br><br>
+            <span class="comment">// Si no hay patrocinador en un nivel, se detiene la distribuci&oacute;n</span><br>
+            <span class="keyword">MAX_LEVELS_NORMAL</span> = <span class="value">5</span><br>
+            <span class="keyword">Sin compresi&oacute;n din&aacute;mica</span> &mdash; <span class="comment">Niveles vac&iacute;os no se saltan</span>
+          </div>
+        </div>
+
+        <!-- Comisiones por tipo de comprador -->
+        <div class="comp-section">
+          <h3><span class="comp-icon">&#128176;</span> Comisiones por Tipo de Comprador</h3>
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th>Tipo de Comprador</th>
+                <th>Tasa por Nivel</th>
+                <th>Niveles</th>
+                <th>Escalonada</th>
+                <th>F&oacute;rmula por Upline</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="comp-tag blue">Distribuidor (recompra)</span></td>
+                <td class="mono">10%</td>
+                <td>1 al 5</td>
+                <td>No &mdash; uniforme</td>
+                <td class="mono">puntos &times; 2.800 &times; 0.10</td>
+              </tr>
+              <tr>
+                <td><span class="comp-tag green">Restaurante</span></td>
+                <td class="mono">5%</td>
+                <td>1 al 5</td>
+                <td>No &mdash; uniforme</td>
+                <td class="mono">puntos &times; 0.05 (en puntos)</td>
+              </tr>
+              <tr>
+                <td><span class="comp-tag orange">Cliente</span></td>
+                <td>Diferencia de precio</td>
+                <td>Solo nivel 1</td>
+                <td>N/A</td>
+                <td class="mono">(precioCliente - precioDist) &times; cantidad</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top:16px;">
+            <h4 style="margin:0 0 8px 0;font-size:14px;color:var(--text-primary);">Distribuidor &mdash; Comisi&oacute;n del 10% por nivel</h4>
+            <div class="comp-formula">
+              <span class="keyword">COMMISSION_RATE</span> = <span class="value">0.10</span><br>
+              <span class="keyword">POINT_VALUE</span> = <span class="value">2800</span> COP<br><br>
+              <span class="comment">// Para cada uno de los 5 uplines:</span><br>
+              valor_total = puntos_compra &times; 2.800<br>
+              comision_COP = valor_total &times; 0.10<br>
+              comision_puntos = puntos_compra &times; 0.10<br><br>
+              <span class="comment">// Ejemplo: compra de 30 puntos</span><br>
+              valor_total = 30 &times; 2.800 = <span class="value">$84.000</span><br>
+              comision_por_upline = $84.000 &times; 0.10 = <span class="value">$8.400</span> (<span class="value">3 pts</span>)<br>
+              total_distribuido_5_niveles = $8.400 &times; 5 = <span class="value">$42.000</span>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;">
+            <h4 style="margin:0 0 8px 0;font-size:14px;color:var(--text-primary);">Restaurante &mdash; Comisi&oacute;n del 5% por nivel</h4>
+            <div class="comp-formula">
+              <span class="keyword">RESTAURANT_COMMISSION_RATE</span> = <span class="value">0.05</span><br><br>
+              <span class="comment">// Para cada uno de los 5 uplines:</span><br>
+              comision_puntos = puntos_totales &times; 0.05<br>
+              comision_COP = round(comision_puntos &times; 2.800)<br><br>
+              <span class="comment">// Ejemplo: compra de 20 puntos</span><br>
+              comision_por_upline = 20 &times; 0.05 = <span class="value">1 punto</span> = <span class="value">$2.800</span><br>
+              total_distribuido_5_niveles = $2.800 &times; 5 = <span class="value">$14.000</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Start Bonus -->
+        <div class="comp-section">
+          <h3><span class="comp-icon">&#9889;</span> Bono de Inicio R&aacute;pido (Quick Start Bonus)</h3>
+          <p style="font-size:13px;color:#666;margin:0 0 14px 0;">Se activa en la <strong>primera compra</strong> de un <strong>Distribuidor</strong> o un <strong>Restaurante</strong> cuando es <strong>igual o superior a 50 puntos</strong>. Es mutuamente excluyente con la comisi&oacute;n normal (10% o 5%). Solo se paga <strong>una &uacute;nica vez por usuario</strong>: el campo <code>quickStartPaid</code> se marca como <code>true</code> y se registra <code>quickStartOrderId</code> para impedir duplicidad.</p>
+
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th>Nivel</th>
+                <th>Beneficiario</th>
+                <th>Puntos por Paquete de 50</th>
+                <th>COP por Paquete</th>
+                <th>Tipo de Registro</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">Nivel 1</td>
+                <td>Patrocinador Directo</td>
+                <td class="mono" style="color:var(--primary-blue);font-size:16px;">21 puntos</td>
+                <td class="mono">$58.800</td>
+                <td><span class="comp-tag purple">quick_start_bonus</span></td>
+              </tr>
+              <tr>
+                <td class="mono">Nivel 2</td>
+                <td>Upline 2</td>
+                <td class="mono">1 punto</td>
+                <td class="mono">$2.800</td>
+                <td><span class="comp-tag grey">quick_start_upper_level</span></td>
+              </tr>
+              <tr>
+                <td class="mono">Nivel 3</td>
+                <td>Upline 3</td>
+                <td class="mono">1 punto</td>
+                <td class="mono">$2.800</td>
+                <td><span class="comp-tag grey">quick_start_upper_level</span></td>
+              </tr>
+              <tr>
+                <td class="mono">Nivel 4</td>
+                <td>Upline 4</td>
+                <td class="mono">1 punto</td>
+                <td class="mono">$2.800</td>
+                <td><span class="comp-tag grey">quick_start_upper_level</span></td>
+              </tr>
+              <tr>
+                <td class="mono">Nivel 5</td>
+                <td>Upline 5</td>
+                <td class="mono">1 punto</td>
+                <td class="mono">$2.800</td>
+                <td><span class="comp-tag grey">quick_start_upper_level</span></td>
+              </tr>
+              <tr style="background:#f0f7ff;font-weight:600;">
+                <td colspan="2">TOTAL por paquete de 50 pts</td>
+                <td class="mono">25 puntos</td>
+                <td class="mono">$70.000</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="comp-formula" style="margin-top:16px;">
+            <span class="keyword">QUICK_START_THRESHOLD</span> = <span class="value">50</span> puntos<br>
+            <span class="keyword">QUICK_START_DIRECT_POINTS</span> = <span class="value">21</span> (nivel 1)<br>
+            <span class="keyword">QUICK_START_UPPER_LEVELS_POINTS</span> = <span class="value">1</span> (niveles 2-5)<br>
+            <span class="keyword">MAX_LEVELS_QUICK_START</span> = <span class="value">4</span> (niveles superiores al patrocinador)<br>
+            <span class="keyword">Aplica a:</span> <span class="value">Distribuidores y Restaurantes</span><br><br>
+            <span class="comment">// C&aacute;lculo (igual para ambos roles):</span><br>
+            num_paquetes = floor(puntos_compra / 50)<br>
+            puntos_nivel_1 = num_paquetes &times; 21<br>
+            puntos_nivel_2_a_5 = num_paquetes &times; 1 (cada uno)<br>
+            COP_nivel_1 = puntos_nivel_1 &times; 2.800<br>
+            COP_nivel_2_a_5 = puntos_nivel_2_a_5 &times; 2.800 (cada uno)<br><br>
+            <span class="comment">// Ejemplo Distribuidor: primera compra de 100 puntos = 2 paquetes</span><br>
+            Nivel 1: 2 &times; 21 = <span class="value">42 pts</span> = <span class="value">$117.600</span><br>
+            Niveles 2-5: 2 &times; 1 = <span class="value">2 pts</span> = <span class="value">$5.600</span> c/u<br>
+            Total: 42 + 2 + 2 + 2 + 2 = <span class="value">50 pts</span> = <span class="value">$140.000</span><br><br>
+            <span class="comment">// Ejemplo Restaurante: primera compra de 50 puntos = 1 paquete</span><br>
+            Nivel 1: 1 &times; 21 = <span class="value">21 pts</span> = <span class="value">$58.800</span> (21 &times; 2.800 COP)<br>
+            Nivel 2: 1 &times; 1 = <span class="value">1 pt</span> = <span class="value">$2.800</span> (1 &times; 2.800 COP)<br>
+            Nivel 3: 1 &times; 1 = <span class="value">1 pt</span> = <span class="value">$2.800</span> (1 &times; 2.800 COP)<br>
+            Nivel 4: 1 &times; 1 = <span class="value">1 pt</span> = <span class="value">$2.800</span> (1 &times; 2.800 COP)<br>
+            Nivel 5: 1 &times; 1 = <span class="value">1 pt</span> = <span class="value">$2.800</span> (1 &times; 2.800 COP)<br>
+            Total: 21 + 1 + 1 + 1 + 1 = <span class="value">25 pts</span> = <span class="value">$70.000</span><br><br>
+            <span class="comment">// Ejemplo Restaurante: primera compra de 100 puntos = 2 paquetes</span><br>
+            Nivel 1: 2 &times; 21 = <span class="value">42 pts</span> = <span class="value">$117.600</span><br>
+            Niveles 2-5: 2 &times; 1 = <span class="value">2 pts</span> = <span class="value">$5.600</span> c/u<br>
+            Total: 42 + 2 + 2 + 2 + 2 = <span class="value">50 pts</span> = <span class="value">$140.000</span>
+          </div>
+        </div>
+
+        <!-- Reglas de activacion -->
+        <div class="comp-section">
+          <h3><span class="comp-icon">&#128203;</span> Reglas de Activaci&oacute;n y Retiro</h3>
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th>Regla</th>
+                <th>Valor</th>
+                <th>Descripci&oacute;n</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Activaci&oacute;n mensual</td>
+                <td class="mono">10 puntos personales</td>
+                <td>M&iacute;nimo para mantener comisiones del mes. Se reinicia cada mes calendario.</td>
+              </tr>
+              <tr>
+                <td>M&iacute;nimo de retiro</td>
+                <td class="mono">$20.000 COP</td>
+                <td>Balance m&iacute;nimo para solicitar un cobro.</td>
+              </tr>
+              <tr>
+                <td>Requisito de cobro</td>
+                <td class="mono">&ge;50 pts personales o ser Master</td>
+                <td>Debe tener 50+ puntos acumulados o no tener patrocinador (Master).</td>
+              </tr>
+              <tr>
+                <td>Tope m&aacute;ximo de pago</td>
+                <td class="mono">Sin l&iacute;mite</td>
+                <td>No existen l&iacute;mites diarios, semanales o mensuales de pago.</td>
+              </tr>
+              <tr>
+                <td>Compresi&oacute;n din&aacute;mica</td>
+                <td class="mono">No implementada</td>
+                <td>Si un upline no existe, la cadena se detiene. No se salta al siguiente nivel.</td>
+              </tr>
+              <tr>
+                <td>Bonos de igualaci&oacute;n</td>
+                <td class="mono">No implementados</td>
+                <td>No existen matching bonus, bonos de rango ni de liderazgo.</td>
+              </tr>
+              <tr>
+                <td>Inactividad</td>
+                <td class="mono">Purga manual por admin</td>
+                <td>Las comisiones de usuarios inactivos se revierten mediante proceso de purga.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Flujo de comisiones -->
+        <div class="comp-section">
+          <h3><span class="comp-icon">&#128260;</span> Flujo de Distribuci&oacute;n de Comisiones</h3>
+          <p style="font-size:13px;color:#666;margin:0 0 14px 0;">Resumen del flujo desde la confirmaci&oacute;n de una orden hasta el pago de comisiones.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+            <div style="background:#e3f2fd;padding:16px;border-radius:10px;text-align:center;">
+              <div style="font-size:24px;margin-bottom:6px;">1&#65039;&#8419;</div>
+              <div style="font-size:13px;font-weight:600;color:#1565c0;">Orden creada</div>
+              <div style="font-size:11px;color:#1976d2;">Estado: pendiente</div>
+            </div>
+            <div style="background:#e8f5e9;padding:16px;border-radius:10px;text-align:center;">
+              <div style="font-size:24px;margin-bottom:6px;">2&#65039;&#8419;</div>
+              <div style="font-size:13px;font-weight:600;color:#2e7d32;">Admin confirma</div>
+              <div style="font-size:11px;color:#388e3c;">confirm-order.js</div>
+            </div>
+            <div style="background:#fff3e0;padding:16px;border-radius:10px;text-align:center;">
+              <div style="font-size:24px;margin-bottom:6px;">3&#65039;&#8419;</div>
+              <div style="font-size:13px;font-weight:600;color:#e65100;">Evaluar tipo</div>
+              <div style="font-size:11px;color:#ef6c00;">QS / Normal / Restaurante</div>
+            </div>
+            <div style="background:#f3e5f5;padding:16px;border-radius:10px;text-align:center;">
+              <div style="font-size:24px;margin-bottom:6px;">4&#65039;&#8419;</div>
+              <div style="font-size:13px;font-weight:600;color:#6a1b9a;">Distribuir comisiones</div>
+              <div style="font-size:11px;color:#7b1fa2;">Balance + GroupPoints + History</div>
+            </div>
+            <div style="background:#eceff1;padding:16px;border-radius:10px;text-align:center;">
+              <div style="font-size:24px;margin-bottom:6px;">5&#65039;&#8419;</div>
+              <div style="font-size:13px;font-weight:600;color:#37474f;">Auditor&iacute;a</div>
+              <div style="font-size:11px;color:#546e7a;">confirmations + activity_logs</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIMULADOR INTERACTIVO -->
+        <div class="comp-section" style="border:2px solid var(--primary-blue);">
+          <h3 style="font-size:20px;"><span class="comp-icon">&#128187;</span> Simulador Interactivo de Comisiones</h3>
+          <p style="font-size:13px;color:#666;margin:0 0 6px 0;">Herramienta de pr&aacute;ctica y validaci&oacute;n. Calcula exactamente como <code>confirm-order.js</code>. <strong>No escribe en Firestore ni afecta balances reales.</strong></p>
+
+          <div class="sim-form-grid">
+            <div class="sim-field">
+              <label for="simBuyerType">Tipo de Comprador</label>
+              <select id="simBuyerType">
+                <option value="dist_first">Distribuidor &mdash; Primera compra (&ge;50 pts)</option>
+                <option value="dist_repurchase">Distribuidor &mdash; Recompra</option>
+                <option value="restaurant_first">Restaurante &mdash; Primera compra (&ge;50 pts)</option>
+                <option value="restaurant">Restaurante &mdash; Recompra</option>
+              </select>
+              <small>Determina qu&eacute; tipo de comisi&oacute;n se aplica</small>
+            </div>
+            <div class="sim-field">
+              <label for="simPoints">Puntos de la compra</label>
+              <input type="number" id="simPoints" min="1" max="10000" value="50" step="1">
+              <small>Puntos totales de la orden</small>
+            </div>
+            <div class="sim-field" id="simPackagesField">
+              <label for="simPackages">Paquetes de 50 puntos</label>
+              <input type="number" id="simPackages" min="0" max="200" value="1" readonly style="background:#f4f5f7;">
+              <small>Se calcula autom&aacute;ticamente: floor(puntos / 50)</small>
+            </div>
+            <div class="sim-field">
+              <label for="simLevels">Niveles de red disponibles</label>
+              <select id="simLevels">
+                <option value="5" selected>5 niveles (m&aacute;ximo)</option>
+                <option value="4">4 niveles</option>
+                <option value="3">3 niveles</option>
+                <option value="2">2 niveles</option>
+                <option value="1">1 nivel (solo patrocinador directo)</option>
+              </select>
+              <small>Cu&aacute;ntos uplines existen en la cadena</small>
+            </div>
+          </div>
+
+          <div style="text-align:center;margin:10px 0 20px 0;">
+            <button id="simRunBtn" class="btn-primary" style="padding:12px 40px;font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:8px;">
+              &#9654; Simular Distribuci&oacute;n
+            </button>
+            <button id="simResetBtn" class="btn-secondary" style="padding:12px 24px;font-size:14px;margin-left:10px;">
+              Limpiar
+            </button>
+          </div>
+
+          <!-- Resultados del simulador -->
+          <div id="simResults" style="display:none;">
+            <h4 style="margin:0 0 12px 0;font-size:15px;color:var(--text-primary);">Resultado de la Simulaci&oacute;n</h4>
+
+            <div id="simBuyerInfo" style="background:#f8f9fb;padding:14px 18px;border-radius:8px;margin-bottom:16px;font-size:13px;color:#555;border-left:4px solid var(--primary-blue);"></div>
+
+            <table class="comp-table" id="simResultsTable">
+              <thead>
+                <tr>
+                  <th>Nivel</th>
+                  <th>Tipo de Bono</th>
+                  <th>Puntos Ganados</th>
+                  <th>Valor en COP</th>
+                  <th>Acumulado COP</th>
+                </tr>
+              </thead>
+              <tbody id="simResultsBody">
+              </tbody>
+              <tfoot>
+                <tr style="background:#f0f7ff;font-weight:700;">
+                  <td colspan="2">TOTAL DISTRIBUIDO</td>
+                  <td id="simTotalPoints" class="mono">0</td>
+                  <td id="simTotalCOP" class="mono">$0</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <div class="sim-results-summary" id="simSummaryCards"></div>
+
+            <div id="simValidation" style="margin-top:16px;padding:12px 16px;border-radius:8px;font-size:13px;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
   <!-- Modal para agregar/editar contenido educativo -->
@@ -4214,9 +4838,15 @@
         const initials = getUserInitials(userGroup.buyerUsername);
         const ordersCount = userGroup.orders.length;
 
+        // Calculate total points for all pending orders of this user
+        const userTotalPoints = userGroup.orders.reduce((sum, o) => {
+          return sum + Number(o.totalPoints || o.points || o.puntos || 0);
+        }, 0);
+
         const groupEl = document.createElement('div');
         groupEl.className = 'user-orders-group';
         groupEl.dataset.userId = userGroup.buyerUid;
+        groupEl.dataset.totalPoints = userTotalPoints;
 
         groupEl.innerHTML = `
           <div class="user-orders-header" onclick="toggleUserOrders('${userGroup.buyerUid}')">
@@ -4235,6 +4865,9 @@
           </div>
           <div class="user-orders-content" id="orders-${userGroup.buyerUid}">
             ${userGroup.orders.map(order => renderOrderCard(order)).join('')}
+            <div class="quick-start-area" id="quick-start-${userGroup.buyerUid}">
+              ${userTotalPoints >= 50 ? '<div class="quick-start-loading"><span>Verificando elegibilidad de Inicio Rápido...</span></div>' : ''}
+            </div>
           </div>
         `;
 
@@ -4243,6 +4876,9 @@
 
       // Setup expand/collapse all buttons
       setupExpandCollapseButtons();
+
+      // Check Quick Start eligibility for qualifying groups
+      checkAllQuickStartEligibility(groupedOrders);
     }
 
     // Render individual order card
@@ -4510,6 +5146,202 @@
         }
       }
     }
+
+    // --- QUICK START: Eligibility check and button ---
+
+    // Check Quick Start eligibility for all qualifying user groups
+    async function checkAllQuickStartEligibility(groupedOrders) {
+      for (const userGroup of groupedOrders) {
+        const totalPoints = userGroup.orders.reduce((sum, o) => {
+          return sum + Number(o.totalPoints || o.points || o.puntos || 0);
+        }, 0);
+
+        if (totalPoints >= 50 && userGroup.buyerUid) {
+          checkQuickStartEligibility(userGroup.buyerUid, totalPoints);
+        }
+      }
+    }
+
+    // Check if a specific user is eligible for Quick Start bulk confirm
+    async function checkQuickStartEligibility(buyerUid, totalPoints) {
+      const areaEl = document.getElementById(`quick-start-${buyerUid}`);
+      if (!areaEl) return;
+
+      try {
+        const userDoc = await getDoc(doc(db, 'usuarios', buyerUid));
+        if (!userDoc.exists()) {
+          areaEl.innerHTML = '';
+          return;
+        }
+
+        const userData = userDoc.data();
+        const isMaster = userData.isMaster === true;
+        const quickStartPaid = userData.quickStartPaid === true;
+        const hasQuickStartOrderId = !!userData.quickStartOrderId;
+
+        // Show informational message if already paid/master
+        if (isMaster) {
+          areaEl.innerHTML = `
+            <div class="quick-start-info-msg already-master">
+              Usuario ya calificado como m&aacute;ster
+            </div>
+          `;
+          return;
+        }
+
+        if (quickStartPaid || hasQuickStartOrderId) {
+          areaEl.innerHTML = `
+            <div class="quick-start-info-msg already-paid">
+              Inicio R&aacute;pido ya pagado
+            </div>
+          `;
+          return;
+        }
+
+        // All conditions met - show the button
+        const packages = Math.floor(totalPoints / 50);
+        const bonusLevel1 = packages * 21;
+        const bonusLevels2to5 = packages * 1;
+
+        areaEl.innerHTML = `
+          <div class="quick-start-btn-container">
+            <div class="qs-info">
+              Total: <strong>${totalPoints} puntos</strong> &mdash;
+              ${packages} paquete(s) de 50 pts &mdash;
+              Bono: ${bonusLevel1} pts (Nivel 1) + ${bonusLevels2to5} pt (Niveles 2-5)
+            </div>
+            <button class="btn-quick-start" onclick="confirmAllQuickStart('${buyerUid}', this)">
+              &#9889; Confirmar Todo y Pagar Inicio R&aacute;pido
+            </button>
+          </div>
+        `;
+      } catch (err) {
+        console.error('Error checking Quick Start eligibility:', err);
+        areaEl.innerHTML = '';
+      }
+    }
+
+    // Handler: Confirm all orders + Quick Start for a user
+    window.confirmAllQuickStart = async function(buyerUid, buttonEl) {
+      if (!currentUser) return;
+
+      const container = buttonEl.closest('.quick-start-btn-container');
+      const userGroup = buttonEl.closest('.user-orders-group');
+
+      // Confirmation dialog
+      const confirmed = confirm(
+        '¿Confirmar TODAS las ordenes pendientes de este usuario y procesar el Bono de Inicio Rapido?\n\n' +
+        'Esta accion:\n' +
+        '- Confirmara todas las ordenes pendientes\n' +
+        '- Pagara el Bono de Inicio Rapido a la linea de patrocinio\n' +
+        '- Marcara al usuario como master\n\n' +
+        'Esta accion no se puede deshacer.'
+      );
+
+      if (!confirmed) return;
+
+      // Disable button and show loading
+      buttonEl.disabled = true;
+      buttonEl.textContent = 'Procesando...';
+      container.style.opacity = '0.7';
+
+      try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch('/.netlify/functions/confirm-all-quick-start', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ buyerUid })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          console.error('Error en Confirm All Quick Start:', data);
+          alert('Error: ' + (data.error || 'Error desconocido') +
+                (data.details ? '\n\nDetalles: ' + data.details : ''));
+          buttonEl.disabled = false;
+          buttonEl.textContent = '\u26A1 Confirmar Todo y Pagar Inicio Rapido';
+          container.style.opacity = '1';
+          return;
+        }
+
+        // Success animation
+        if (userGroup) {
+          userGroup.style.transition = 'all 0.4s ease';
+          userGroup.style.backgroundColor = '#d4edda';
+          userGroup.style.borderColor = '#28a745';
+
+          // Update the quick start area to show success
+          container.innerHTML = `
+            <div style="color:#155724;font-weight:600;padding:8px 0;">
+              &#10003; ${data.ordersConfirmed} orden(es) confirmada(s) &mdash; Inicio R&aacute;pido procesado (${data.packages} paquete(s), ${data.beneficiaries} beneficiarios)
+            </div>
+          `;
+          container.style.opacity = '1';
+
+          // Mark all order cards in this group as confirmed
+          const orderCards = userGroup.querySelectorAll('.order-card');
+          orderCards.forEach(card => {
+            const statusEl = card.querySelector('.order-status');
+            if (statusEl) {
+              statusEl.textContent = 'Confirmada';
+              statusEl.className = 'order-status';
+              statusEl.style.background = '#28a745';
+              statusEl.style.color = 'white';
+            }
+            const actionsDiv = card.querySelector('.order-actions');
+            if (actionsDiv) {
+              actionsDiv.innerHTML = '<span style="color:#155724;font-size:13px;font-weight:600;">&#10003; Confirmada</span>';
+            }
+          });
+
+          // Remove the entire group after a delay
+          setTimeout(() => {
+            userGroup.style.opacity = '0';
+            userGroup.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+              // Remove all orders from data
+              const orderIds = Array.from(orderCards).map(c => c.dataset.orderId).filter(Boolean);
+              orderIds.forEach(oid => {
+                pendingOrdersData = pendingOrdersData.filter(o => o.id !== oid);
+              });
+              userGroup.remove();
+
+              // Update summary
+              const summaryEl = document.getElementById('pendingOrdersSummary');
+              if (summaryEl) {
+                const remainingGroups = groupOrdersByUser(pendingOrdersData);
+                const totalAmount = pendingOrdersData.reduce((sum, o) => sum + calculateOrderTotal(o), 0);
+                if (pendingOrdersData.length === 0) {
+                  summaryEl.textContent = '';
+                  document.getElementById('pendingOrdersGrouped').innerHTML = `
+                    <div class="empty-orders-state">
+                      <h3>No hay ordenes pendientes</h3>
+                      <p>Todas las ordenes han sido procesadas</p>
+                    </div>
+                  `;
+                } else {
+                  summaryEl.textContent = `${remainingGroups.length} usuario(s) | ${pendingOrdersData.length} orden(es) | Total: $${totalAmount.toLocaleString()}`;
+                }
+              }
+              loadStats();
+            }, 400);
+          }, 1500);
+        }
+
+      } catch (err) {
+        console.error('Error en confirmAllQuickStart:', err);
+        alert('Error: ' + err.message);
+        buttonEl.disabled = false;
+        buttonEl.textContent = '\u26A1 Confirmar Todo y Pagar Inicio Rapido';
+        container.style.opacity = '1';
+      }
+    };
+
+    // --- END QUICK START ---
 
     let allDistributors = [];
     let distributorReferralCounts = {}; // Global referral counts for sorting
@@ -11107,6 +11939,218 @@
 
     // Initialize branding when tab is clicked
     document.querySelector('[data-tab="branding"]')?.addEventListener('click', initBrandingSection, { once: true });
+
+    // =====================================================
+    // Simulador de Plan de Compensacion
+    // Constantes alineadas con confirm-order.js
+    // =====================================================
+    const SIM_CONSTANTS = {
+      POINT_VALUE: 2800,
+      MAX_LEVELS: 5,
+      DISTRIBUTOR_RATE: 0.10,
+      RESTAURANT_RATE: 0.05,
+      QUICK_START_DIRECT: 21,
+      QUICK_START_UPLINE: 1,
+      QUICK_START_THRESHOLD: 50
+    };
+
+    function initCompensationSimulator() {
+      const buyerTypeEl = document.getElementById('simBuyerType');
+      const pointsEl = document.getElementById('simPoints');
+      const packagesEl = document.getElementById('simPackages');
+      const packagesField = document.getElementById('simPackagesField');
+      const levelsEl = document.getElementById('simLevels');
+      const runBtn = document.getElementById('simRunBtn');
+      const resetBtn = document.getElementById('simResetBtn');
+      const resultsDiv = document.getElementById('simResults');
+
+      if (!buyerTypeEl || !runBtn) return;
+
+      function formatCOP(n) {
+        return '$' + Math.round(n).toLocaleString('es-CO');
+      }
+
+      function updatePackages() {
+        const type = buyerTypeEl.value;
+        const points = parseInt(pointsEl.value) || 0;
+        if (type === 'dist_first' || type === 'restaurant_first') {
+          packagesField.style.display = '';
+          packagesEl.value = Math.floor(points / SIM_CONSTANTS.QUICK_START_THRESHOLD);
+        } else {
+          packagesField.style.display = 'none';
+          packagesEl.value = 0;
+        }
+      }
+
+      buyerTypeEl.addEventListener('change', updatePackages);
+      pointsEl.addEventListener('input', updatePackages);
+      updatePackages();
+
+      resetBtn.addEventListener('click', function() {
+        buyerTypeEl.value = 'dist_first';
+        pointsEl.value = 50;
+        levelsEl.value = '5';
+        updatePackages();
+        resultsDiv.style.display = 'none';
+      });
+
+      runBtn.addEventListener('click', function() {
+        const buyerType = buyerTypeEl.value;
+        const points = parseInt(pointsEl.value) || 0;
+        const availableLevels = parseInt(levelsEl.value) || 5;
+
+        if (points < 1) {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire('Error', 'Ingrese al menos 1 punto.', 'warning');
+          }
+          return;
+        }
+
+        if ((buyerType === 'dist_first' || buyerType === 'restaurant_first') && points < SIM_CONSTANTS.QUICK_START_THRESHOLD) {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire('Aviso', 'La primera compra debe ser >= ' + SIM_CONSTANTS.QUICK_START_THRESHOLD + ' puntos para activar el Quick Start Bonus. Con menos de 50 puntos en primera compra no se distribuyen comisiones bajo esta modalidad.', 'info');
+          }
+          return;
+        }
+
+        var results = [];
+        var totalPoints = 0;
+        var totalCOP = 0;
+        var buyerInfoHTML = '';
+
+        if (buyerType === 'dist_first' || buyerType === 'restaurant_first') {
+          // Quick Start Bonus (aplica para Distribuidores y Restaurantes en primera compra >= 50 pts)
+          var packages = Math.floor(points / SIM_CONSTANTS.QUICK_START_THRESHOLD);
+          var valorCompra = points * SIM_CONSTANTS.POINT_VALUE;
+          var tipoLabel = buyerType === 'restaurant_first' ? 'Restaurante' : 'Distribuidor';
+          buyerInfoHTML = '<strong>Tipo:</strong> ' + tipoLabel + ' - Primera compra | <strong>Puntos:</strong> ' + points +
+            ' | <strong>Valor:</strong> ' + formatCOP(valorCompra) +
+            ' | <strong>Paquetes de 50:</strong> ' + packages +
+            ' | <strong>Bono aplicado:</strong> Quick Start Bonus';
+
+          for (var i = 0; i < Math.min(availableLevels, SIM_CONSTANTS.MAX_LEVELS); i++) {
+            var levelPoints, levelCOP, bonusType;
+            if (i === 0) {
+              levelPoints = packages * SIM_CONSTANTS.QUICK_START_DIRECT;
+              bonusType = 'quick_start_bonus';
+            } else {
+              levelPoints = packages * SIM_CONSTANTS.QUICK_START_UPLINE;
+              bonusType = 'quick_start_upper_level';
+            }
+            levelCOP = levelPoints * SIM_CONSTANTS.POINT_VALUE;
+            totalPoints += levelPoints;
+            totalCOP += levelCOP;
+            results.push({
+              level: i + 1,
+              bonusType: bonusType,
+              points: levelPoints,
+              cop: levelCOP,
+              accumulated: totalCOP
+            });
+          }
+        } else if (buyerType === 'dist_repurchase') {
+          // Comision normal distribuidores 10%
+          var valorCompra = points * SIM_CONSTANTS.POINT_VALUE;
+          var comisionCOP = valorCompra * SIM_CONSTANTS.DISTRIBUTOR_RATE;
+          var comisionPts = points * SIM_CONSTANTS.DISTRIBUTOR_RATE;
+          buyerInfoHTML = '<strong>Tipo:</strong> Distribuidor - Recompra | <strong>Puntos:</strong> ' + points +
+            ' | <strong>Valor:</strong> ' + formatCOP(valorCompra) +
+            ' | <strong>Comision por nivel:</strong> ' + formatCOP(comisionCOP) + ' (' + comisionPts.toFixed(2) + ' pts)';
+
+          for (var i = 0; i < Math.min(availableLevels, SIM_CONSTANTS.MAX_LEVELS); i++) {
+            totalPoints += comisionPts;
+            totalCOP += comisionCOP;
+            results.push({
+              level: i + 1,
+              bonusType: 'commission_normal (10%)',
+              points: comisionPts,
+              cop: comisionCOP,
+              accumulated: totalCOP
+            });
+          }
+        } else if (buyerType === 'restaurant') {
+          // Comision restaurantes 5%
+          var comisionPts = points * SIM_CONSTANTS.RESTAURANT_RATE;
+          var comisionCOP = Math.round(comisionPts * SIM_CONSTANTS.POINT_VALUE);
+          buyerInfoHTML = '<strong>Tipo:</strong> Restaurante | <strong>Puntos:</strong> ' + points +
+            ' | <strong>Comision por nivel:</strong> ' + comisionPts.toFixed(2) + ' pts (' + formatCOP(comisionCOP) + ')';
+
+          for (var i = 0; i < Math.min(availableLevels, SIM_CONSTANTS.MAX_LEVELS); i++) {
+            totalPoints += comisionPts;
+            totalCOP += comisionCOP;
+            results.push({
+              level: i + 1,
+              bonusType: 'restaurant_commission (5%)',
+              points: comisionPts,
+              cop: comisionCOP,
+              accumulated: totalCOP
+            });
+          }
+        }
+
+        // Render results
+        document.getElementById('simBuyerInfo').innerHTML = buyerInfoHTML;
+
+        var tbody = document.getElementById('simResultsBody');
+        tbody.innerHTML = '';
+        for (var r = 0; r < results.length; r++) {
+          var row = results[r];
+          var tagClass = row.bonusType.indexOf('quick_start_bonus') >= 0 ? 'purple' :
+                         row.bonusType.indexOf('quick_start_upper') >= 0 ? 'grey' :
+                         row.bonusType.indexOf('restaurant') >= 0 ? 'green' : 'blue';
+          tbody.innerHTML += '<tr>' +
+            '<td class="mono">Nivel ' + row.level + '</td>' +
+            '<td><span class="comp-tag ' + tagClass + '">' + row.bonusType + '</span></td>' +
+            '<td class="mono">' + row.points.toFixed(2) + '</td>' +
+            '<td class="mono">' + formatCOP(row.cop) + '</td>' +
+            '<td class="mono">' + formatCOP(row.accumulated) + '</td>' +
+            '</tr>';
+        }
+
+        document.getElementById('simTotalPoints').textContent = totalPoints.toFixed(2);
+        document.getElementById('simTotalCOP').textContent = formatCOP(totalCOP);
+
+        // Summary cards
+        var summaryCards = document.getElementById('simSummaryCards');
+        var valorCompraTotal = points * SIM_CONSTANTS.POINT_VALUE;
+        var pctDistribuido = valorCompraTotal > 0 ? ((totalCOP / valorCompraTotal) * 100).toFixed(1) : '0';
+        summaryCards.innerHTML =
+          '<div class="sim-summary-card blue"><div class="sim-val">' + formatCOP(valorCompraTotal) + '</div><div class="sim-lbl">Valor de la Compra</div></div>' +
+          '<div class="sim-summary-card green"><div class="sim-val">' + formatCOP(totalCOP) + '</div><div class="sim-lbl">Total Distribuido</div></div>' +
+          '<div class="sim-summary-card orange"><div class="sim-val">' + results.length + '</div><div class="sim-lbl">Niveles Beneficiados</div></div>' +
+          '<div class="sim-summary-card purple"><div class="sim-val">' + pctDistribuido + '%</div><div class="sim-lbl">% sobre Valor de Compra</div></div>';
+
+        // Validation
+        var validationDiv = document.getElementById('simValidation');
+        var isValid = true;
+        var validationMsg = '';
+
+        if (buyerType === 'dist_first' || buyerType === 'restaurant_first') {
+          var expectedTotalPts = (Math.floor(points / SIM_CONSTANTS.QUICK_START_THRESHOLD) * SIM_CONSTANTS.QUICK_START_DIRECT) +
+            (Math.floor(points / SIM_CONSTANTS.QUICK_START_THRESHOLD) * SIM_CONSTANTS.QUICK_START_UPLINE * (Math.min(availableLevels, SIM_CONSTANTS.MAX_LEVELS) - 1));
+          if (Math.abs(totalPoints - expectedTotalPts) > 0.01) {
+            isValid = false;
+            validationMsg = 'Discrepancia detectada en Quick Start Bonus. Esperado: ' + expectedTotalPts + ' pts, Obtenido: ' + totalPoints.toFixed(2) + ' pts.';
+          }
+        }
+
+        if (isValid) {
+          validationDiv.style.background = '#e8f5e9';
+          validationDiv.style.color = '#2e7d32';
+          validationDiv.innerHTML = '&#10003; Validaci&oacute;n exitosa: La distribuci&oacute;n es coherente con la l&oacute;gica de <code>confirm-order.js</code>. Total: ' +
+            totalPoints.toFixed(2) + ' pts distribuidos en ' + results.length + ' niveles = ' + formatCOP(totalCOP) + ' COP.';
+        } else {
+          validationDiv.style.background = '#ffebee';
+          validationDiv.style.color = '#c62828';
+          validationDiv.innerHTML = '&#10007; ' + validationMsg;
+        }
+
+        resultsDiv.style.display = '';
+      });
+    }
+
+    // Initialize simulator when tab is clicked
+    document.querySelector('[data-tab="compensation"]')?.addEventListener('click', initCompensationSimulator, { once: true });
 
   </script>
   <script type="module" src="/js/session-timeout.js"></script>
