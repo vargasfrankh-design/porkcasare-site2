@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PorkCasare Trivia - Demuestra tu conocimiento</title>
+  <link rel="stylesheet" href="css/game.css" />
+  <script src="/js/brand-loader.js"></script>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="game-loading-overlay" class="loading-overlay">
+    <div class="loader-card">
+      <div class="loader-spinner"><div class="dot"></div></div>
+      <div class="loader-text">
+        <div class="title">Cargando trivia...</div>
+        <div class="subtitle">Preparando tus preguntas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="game-nav">
+    <div class="nav-brand">
+      <a href="/oficina-virtual/" class="back-btn" title="Volver a la oficina virtual">
+        <span class="back-icon">&larr;</span>
+      </a>
+      <img data-brand-logo src="/images/logo.webp" alt="Logo" class="nav-logo" />
+      <h2>PorkCasare Trivia</h2>
+    </div>
+    <div class="nav-stats">
+      <div class="stat-item">
+        <span class="stat-icon">&#x1FA99;</span>
+        <span class="stat-value" id="navCoins">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">&#x2764;&#xFE0F;</span>
+        <span class="stat-value" id="navLives">5</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">&#x2B50;</span>
+        <span class="stat-value" id="navLevel">1</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Monthly Coins Progress Bar -->
+  <div class="monthly-progress-bar" id="monthlyProgressBar">
+    <div class="monthly-progress-info">
+      <span class="monthly-label">Monedas del mes</span>
+      <span class="monthly-values" id="monthlyValues">0 / 25,000</span>
+    </div>
+    <div class="monthly-track">
+      <div class="monthly-fill" id="monthlyFill" style="width: 0%"></div>
+    </div>
+    <span class="monthly-multiplier" id="monthlyMultiplier">Recompensa: 100%</span>
+  </div>
+
+  <!-- Main Game Container -->
+  <main class="game-container">
+    <!-- Game Header with Stats -->
+    <header class="game-header">
+      <div class="header-section">
+        <div class="player-info">
+          <img id="playerAvatar" src="/images/avatars/avatar1.png" alt="Avatar" class="player-avatar" />
+          <div class="player-details">
+            <span class="player-name" id="playerName">Jugador</span>
+            <span class="player-rank" id="playerRank">Novato</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-section game-stats">
+        <div class="game-stat">
+          <span class="stat-label">Categoria</span>
+          <span class="stat-value" id="currentCategory">General</span>
+        </div>
+        <div class="game-stat">
+          <span class="stat-label">Puntaje</span>
+          <span class="stat-value" id="currentScore">0</span>
+        </div>
+        <div class="game-stat">
+          <span class="stat-label">Pregunta</span>
+          <span class="stat-value" id="questionNumber">0/10</span>
+        </div>
+        <div class="game-stat timer">
+          <span class="stat-label">Tiempo</span>
+          <span class="stat-value" id="gameTimer">00:30</span>
+        </div>
+      </div>
+
+      <div class="header-section lives-section">
+        <div class="lives-container" id="livesContainer">
+          <span class="heart">&#x2764;&#xFE0F;</span>
+          <span class="heart">&#x2764;&#xFE0F;</span>
+          <span class="heart">&#x2764;&#xFE0F;</span>
+          <span class="heart">&#x2764;&#xFE0F;</span>
+          <span class="heart">&#x2764;&#xFE0F;</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Category Selection Screen -->
+    <section class="category-selection" id="categorySelection">
+      <h3 class="section-title">Elige una categoria</h3>
+      <div class="categories-grid" id="categoriesGrid">
+        <!-- Categories will be generated dynamically -->
+      </div>
+    </section>
+
+    <!-- Question Board -->
+    <section class="question-board" id="questionBoard" style="display: none;">
+      <!-- Progress bar -->
+      <div class="progress-bar-wrapper">
+        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+      </div>
+
+      <!-- Timer circle -->
+      <div class="timer-circle" id="timerCircle">
+        <svg viewBox="0 0 100 100">
+          <circle class="timer-bg" cx="50" cy="50" r="45"></circle>
+          <circle class="timer-progress" id="timerProgress" cx="50" cy="50" r="45"></circle>
+        </svg>
+        <span class="timer-text" id="timerText">30</span>
+      </div>
+
+      <!-- Question -->
+      <div class="question-card" id="questionCard">
+        <span class="question-category-badge" id="questionCategoryBadge">General</span>
+        <p class="question-text" id="questionText">Cargando pregunta...</p>
+      </div>
+
+      <!-- Answer Options -->
+      <div class="answers-grid" id="answersGrid">
+        <!-- Answers will be generated dynamically -->
+      </div>
+
+      <!-- Power-ups -->
+      <div class="powerups-bar">
+        <button class="btn-powerup" id="btnFiftyFifty" title="Eliminar 2 respuestas incorrectas">
+          <span class="powerup-icon">50/50</span>
+          <span class="powerup-count" id="fiftyFiftyCount">2</span>
+        </button>
+        <button class="btn-powerup" id="btnSkip" title="Saltar pregunta">
+          <span class="powerup-icon">&#x23ED;&#xFE0F;</span>
+          <span class="powerup-count" id="skipCount">1</span>
+        </button>
+        <button class="btn-powerup" id="btnExtraTime" title="Agregar 15 segundos">
+          <span class="powerup-icon">&#x23F0;</span>
+          <span class="powerup-count" id="extraTimeCount">1</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Game Controls -->
+    <footer class="game-controls" id="gameControls">
+      <button class="btn-game btn-primary" id="btnStartGame">
+        <span class="btn-icon">&#x25B6;&#xFE0F;</span>
+        <span>Iniciar Trivia</span>
+      </button>
+    </footer>
+  </main>
+
+  <!-- Game Over Modal -->
+  <div class="modal" id="gameOverModal">
+    <div class="modal-content game-over-content">
+      <div class="modal-header">
+        <h2 id="gameOverTitle">Fin de la Trivia</h2>
+      </div>
+      <div class="modal-body">
+        <div class="game-over-stats">
+          <div class="go-stat">
+            <span class="go-label">Puntaje Final</span>
+            <span class="go-value" id="finalScore">0</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">Correctas</span>
+            <span class="go-value" id="finalCorrect">0/10</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">Racha Maxima</span>
+            <span class="go-value" id="finalStreak">0</span>
+          </div>
+          <div class="go-stat highlight">
+            <span class="go-label">Monedas Ganadas</span>
+            <span class="go-value" id="coinsEarned">0 &#x1FA99;</span>
+          </div>
+        </div>
+        <div class="stars-earned" id="starsEarned">
+          <span class="star empty">&#x2B50;</span>
+          <span class="star empty">&#x2B50;</span>
+          <span class="star empty">&#x2B50;</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-game btn-secondary" id="btnBackToMenu">Menu</button>
+        <button class="btn-game btn-primary" id="btnPlayAgain">Jugar de Nuevo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script type="module" src="js/game-engine.js"></script>
+  <script type="module" src="js/game-ui.js"></script>
+  <script type="module" src="js/game-firebase.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

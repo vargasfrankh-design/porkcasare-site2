@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PorkCasare - Rueda de la Fortuna</title>
+  <link rel="stylesheet" href="css/game.css" />
+  <script src="/js/brand-loader.js"></script>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="game-loading-overlay" class="loading-overlay">
+    <div class="loader-card">
+      <div class="loader-spinner"><div class="dot"></div></div>
+      <div class="loader-text">
+        <div class="title">Cargando ruleta...</div>
+        <div class="subtitle">Preparando tu suerte</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="game-nav">
+    <div class="nav-brand">
+      <a href="/oficina-virtual/" class="back-btn" title="Volver a la oficina virtual">
+        <span class="back-icon">&larr;</span>
+      </a>
+      <img data-brand-logo src="/images/logo.webp" alt="Logo" class="nav-logo" />
+      <h2>Rueda de la Fortuna</h2>
+    </div>
+    <div class="nav-stats">
+      <div class="stat-item">
+        <span class="stat-icon">&#x1FA99;</span>
+        <span class="stat-value" id="navCoins">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">&#x1F3B0;</span>
+        <span class="stat-value" id="navSpins">3</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">&#x2B50;</span>
+        <span class="stat-value" id="navTotalWins">0</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Monthly Coins Progress Bar -->
+  <div class="monthly-progress-bar" id="monthlyProgressBar">
+    <div class="monthly-progress-info">
+      <span class="monthly-label">Monedas del mes</span>
+      <span class="monthly-values" id="monthlyValues">0 / 25,000</span>
+    </div>
+    <div class="monthly-track">
+      <div class="monthly-fill" id="monthlyFill" style="width: 0%"></div>
+    </div>
+    <span class="monthly-multiplier" id="monthlyMultiplier">Recompensa: 100%</span>
+  </div>
+
+  <!-- Main Game Container -->
+  <main class="game-container">
+    <!-- Game Header -->
+    <header class="game-header">
+      <div class="header-section">
+        <div class="player-info">
+          <img id="playerAvatar" src="/images/avatars/avatar1.png" alt="Avatar" class="player-avatar" />
+          <div class="player-details">
+            <span class="player-name" id="playerName">Jugador</span>
+            <span class="player-rank" id="playerRank">Novato</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-section game-stats">
+        <div class="game-stat">
+          <span class="stat-label">Giros Hoy</span>
+          <span class="stat-value" id="spinsToday">0</span>
+        </div>
+        <div class="game-stat">
+          <span class="stat-label">Mejor Premio</span>
+          <span class="stat-value" id="bestPrize">0</span>
+        </div>
+        <div class="game-stat highlight-stat">
+          <span class="stat-label">Total Ganado</span>
+          <span class="stat-value" id="totalWon">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Wheel Section -->
+    <section class="wheel-section">
+      <!-- Pointer/Arrow -->
+      <div class="wheel-pointer">
+        <div class="pointer-arrow"></div>
+      </div>
+
+      <!-- Wheel Container -->
+      <div class="wheel-container">
+        <div class="wheel-outer-ring">
+          <div class="wheel-inner" id="wheelInner">
+            <canvas id="wheelCanvas" width="360" height="360"></canvas>
+          </div>
+        </div>
+        <div class="wheel-center">
+          <span class="center-text">GIRA</span>
+        </div>
+      </div>
+
+      <!-- Spin Button -->
+      <button class="btn-spin" id="btnSpin">
+        <span class="spin-icon">&#x1F3B0;</span>
+        <span class="spin-text">Girar la Rueda</span>
+        <span class="spin-cost" id="spinCost">Gratis</span>
+      </button>
+
+      <!-- Spins remaining -->
+      <div class="spins-info" id="spinsInfo">
+        <span class="spins-label">Giros disponibles:</span>
+        <span class="spins-count" id="spinsRemaining">3</span>
+        <span class="multiplier-badge" id="multiplierBadge" style="display:none;"></span>
+      </div>
+    </section>
+
+    <!-- Prize History -->
+    <section class="prize-history">
+      <h3 class="history-title">Ultimos Premios</h3>
+      <div class="history-list" id="prizeHistory">
+        <div class="history-empty">Gira la rueda para ganar premios</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Prize Won Modal -->
+  <div class="modal" id="prizeModal">
+    <div class="modal-content prize-modal-content">
+      <div class="modal-header prize-header">
+        <h2 id="prizeTitle">Felicidades!</h2>
+      </div>
+      <div class="modal-body prize-body">
+        <div class="prize-display">
+          <div class="prize-icon-large" id="prizeIconLarge">&#x1FA99;</div>
+          <div class="prize-amount" id="prizeAmount">+50</div>
+          <div class="prize-label" id="prizeLabel">Monedas</div>
+        </div>
+        <p class="prize-message" id="prizeMessage">Has ganado un premio increible!</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-game btn-primary" id="btnClaimPrize">
+          <span>Reclamar Premio</span>
+        </button>
+        <button class="btn-game btn-secondary" id="btnSpinAgain">
+          <span>Girar de Nuevo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

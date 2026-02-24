@@ -168,11 +168,13 @@ export class GameUI {
 
     this.engine.onLevelComplete = (result) => {
       this.showLevelComplete(result);
+      this.updateMonthlyProgress();
       this.firebase.saveProgress(this.engine.getSaveState());
     };
 
     this.engine.onGameOver = (result) => {
       this.showGameOver(result);
+      this.updateMonthlyProgress();
       this.firebase.saveProgress(this.engine.getSaveState());
     };
   }
@@ -194,9 +196,40 @@ export class GameUI {
 
     // Actualizar UI inicial
     this.updateUI(this.engine.getState());
+    this.updateMonthlyProgress();
 
     // Ocultar loading
     this.hideLoading();
+  }
+
+  // Actualizar barra de progreso mensual
+  updateMonthlyProgress() {
+    const info = this.firebase.getMonthlyInfo();
+    const monthlyValues = document.getElementById('monthlyValues');
+    const monthlyFill = document.getElementById('monthlyFill');
+    const monthlyMultiplier = document.getElementById('monthlyMultiplier');
+
+    if (monthlyValues) {
+      monthlyValues.textContent = `${info.earned.toLocaleString()} / ${info.limit.toLocaleString()}`;
+    }
+    if (monthlyFill) {
+      monthlyFill.style.width = `${Math.min(100, info.progress * 100)}%`;
+      if (info.progress >= 1) monthlyFill.style.background = '#e74c3c';
+      else if (info.progress >= 0.8) monthlyFill.style.background = '#e67e22';
+      else if (info.progress >= 0.6) monthlyFill.style.background = '#f39c12';
+      else if (info.progress >= 0.4) monthlyFill.style.background = '#f1c40f';
+      else monthlyFill.style.background = '#7be495';
+    }
+    if (monthlyMultiplier) {
+      const pct = Math.round(info.multiplier * 100);
+      if (pct === 0) {
+        monthlyMultiplier.textContent = 'Limite mensual alcanzado';
+        monthlyMultiplier.style.color = '#e74c3c';
+      } else {
+        monthlyMultiplier.textContent = `Recompensa: ${pct}%`;
+        monthlyMultiplier.style.color = pct <= 30 ? '#e67e22' : '#aaa';
+      }
+    }
   }
 
   // Actualizar toda la UI

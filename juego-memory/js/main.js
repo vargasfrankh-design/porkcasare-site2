@@ -10,6 +10,7 @@ import { GameFirebaseHandler } from './game-firebase.js';
 // Instancias principales
 const gameEngine = new MemoryGameEngine();
 const firebaseHandler = new GameFirebaseHandler();
+gameEngine.setFirebaseHandler(firebaseHandler);
 let gameUI = null;
 
 // Inicialización

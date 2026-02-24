@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PorkCasare Memory - Juego de Parejas</title>
+  <title>PorkCasare Puzzle - Rompecabezas</title>
   <link rel="stylesheet" href="css/game.css" />
   <script src="/js/brand-loader.js"></script>
 </head>
@@ -13,8 +13,8 @@
     <div class="loader-card">
       <div class="loader-spinner"><div class="dot"></div></div>
       <div class="loader-text">
-        <div class="title">Cargando juego...</div>
-        <div class="subtitle">Preparando tu experiencia de Memory</div>
+        <div class="title">Cargando puzzle...</div>
+        <div class="subtitle">Preparando tu rompecabezas</div>
       </div>
     </div>
   </div>
@@ -23,22 +23,22 @@
   <nav class="game-nav">
     <div class="nav-brand">
       <a href="/oficina-virtual/" class="back-btn" title="Volver a la oficina virtual">
-        <span class="back-icon">←</span>
+        <span class="back-icon">&larr;</span>
       </a>
       <img data-brand-logo src="/images/logo.webp" alt="Logo" class="nav-logo" />
-      <h2>PorkCasare Memory</h2>
+      <h2>PorkCasare Puzzle</h2>
     </div>
     <div class="nav-stats">
       <div class="stat-item">
-        <span class="stat-icon">🪙</span>
+        <span class="stat-icon">&#x1FA99;</span>
         <span class="stat-value" id="navCoins">0</span>
       </div>
       <div class="stat-item">
-        <span class="stat-icon">❤️</span>
+        <span class="stat-icon">&#x2764;&#xFE0F;</span>
         <span class="stat-value" id="navLives">5</span>
       </div>
       <div class="stat-item">
-        <span class="stat-icon">⭐</span>
+        <span class="stat-icon">&#x2B50;</span>
         <span class="stat-value" id="navLevel">1</span>
       </div>
     </div>
@@ -58,7 +58,7 @@
 
   <!-- Main Game Container -->
   <main class="game-container">
-    <!-- Game Header with Stats -->
+    <!-- Game Header -->
     <header class="game-header">
       <div class="header-section">
         <div class="player-info">
@@ -76,10 +76,6 @@
           <span class="stat-value" id="currentLevel">1</span>
         </div>
         <div class="game-stat">
-          <span class="stat-label">Puntaje</span>
-          <span class="stat-value" id="currentScore">0</span>
-        </div>
-        <div class="game-stat">
           <span class="stat-label">Movimientos</span>
           <span class="stat-value" id="currentMoves">0</span>
         </div>
@@ -91,69 +87,60 @@
 
       <div class="header-section lives-section">
         <div class="lives-container" id="livesContainer">
-          <span class="heart">❤️</span>
-          <span class="heart">❤️</span>
-          <span class="heart">❤️</span>
-          <span class="heart">❤️</span>
-          <span class="heart">❤️</span>
+          <span class="heart">&#x2764;&#xFE0F;</span>
+          <span class="heart">&#x2764;&#xFE0F;</span>
+          <span class="heart">&#x2764;&#xFE0F;</span>
+          <span class="heart">&#x2764;&#xFE0F;</span>
+          <span class="heart">&#x2764;&#xFE0F;</span>
         </div>
-        <button class="btn-lives" id="btnBuyLives" title="Comprar vidas">
-          <span>+</span>
-        </button>
       </div>
     </header>
 
-    <!-- Game Board -->
-    <section class="game-board-wrapper">
-      <div class="game-board" id="gameBoard">
-        <!-- Cards will be generated dynamically -->
+    <!-- Image Selection Screen -->
+    <section class="image-selection" id="imageSelection">
+      <h3 class="section-title">Elige una imagen</h3>
+      <div class="images-grid" id="imagesGrid">
+        <!-- Images will be generated dynamically -->
+      </div>
+    </section>
+
+    <!-- Puzzle Board -->
+    <section class="puzzle-board-wrapper" id="puzzleBoardWrapper" style="display: none;">
+      <!-- Reference image thumbnail -->
+      <div class="reference-image" id="referenceImage">
+        <div class="ref-label">Imagen de referencia</div>
+        <div class="ref-preview" id="refPreview"></div>
+        <button class="btn-toggle-ref" id="btnToggleRef">Ver referencia</button>
+      </div>
+
+      <!-- Puzzle grid -->
+      <div class="puzzle-board" id="puzzleBoard">
+        <!-- Tiles will be generated dynamically -->
       </div>
     </section>
 
     <!-- Game Controls -->
-    <footer class="game-controls">
+    <footer class="game-controls" id="gameControls">
       <button class="btn-game btn-primary" id="btnStartGame">
-        <span class="btn-icon">▶️</span>
-        <span>Iniciar Juego</span>
+        <span class="btn-icon">&#x25B6;&#xFE0F;</span>
+        <span>Iniciar Puzzle</span>
       </button>
-      <button class="btn-game btn-secondary" id="btnPauseGame" disabled>
-        <span class="btn-icon">⏸️</span>
-        <span>Pausar</span>
-      </button>
-      <button class="btn-game btn-hint" id="btnHint" disabled>
-        <span class="btn-icon">💡</span>
-        <span>Pista (10🪙)</span>
+      <button class="btn-game btn-hint" id="btnHint" style="display: none;">
+        <span class="btn-icon">&#x1F4A1;</span>
+        <span>Pista (10&#x1FA99;)</span>
       </button>
     </footer>
   </main>
 
-  <!-- Level Selection Modal -->
-  <div class="modal" id="levelSelectModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Seleccionar Nivel</h2>
-        <button class="modal-close" id="closeLevelModal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="levels-grid" id="levelsGrid">
-          <!-- Levels will be generated dynamically -->
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Game Over Modal -->
+  <!-- Level Complete Modal -->
   <div class="modal" id="gameOverModal">
     <div class="modal-content game-over-content">
       <div class="modal-header">
-        <h2 id="gameOverTitle">Fin del Juego</h2>
+        <h2 id="gameOverTitle">Puzzle Completado!</h2>
       </div>
       <div class="modal-body">
+        <div class="completed-image" id="completedImage"></div>
         <div class="game-over-stats">
-          <div class="go-stat">
-            <span class="go-label">Puntaje Final</span>
-            <span class="go-value" id="finalScore">0</span>
-          </div>
           <div class="go-stat">
             <span class="go-label">Movimientos</span>
             <span class="go-value" id="finalMoves">0</span>
@@ -164,59 +151,23 @@
           </div>
           <div class="go-stat highlight">
             <span class="go-label">Monedas Ganadas</span>
-            <span class="go-value" id="coinsEarned">0 🪙</span>
+            <span class="go-value" id="coinsEarned">0 &#x1FA99;</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">Puntaje</span>
+            <span class="go-value" id="finalScore">0</span>
           </div>
         </div>
         <div class="stars-earned" id="starsEarned">
-          <span class="star empty">⭐</span>
-          <span class="star empty">⭐</span>
-          <span class="star empty">⭐</span>
+          <span class="star empty">&#x2B50;</span>
+          <span class="star empty">&#x2B50;</span>
+          <span class="star empty">&#x2B50;</span>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-game btn-secondary" id="btnBackToMenu">Menú</button>
+        <button class="btn-game btn-secondary" id="btnBackToMenu">Menu</button>
         <button class="btn-game btn-primary" id="btnNextLevel">Siguiente Nivel</button>
         <button class="btn-game btn-retry" id="btnRetryLevel">Reintentar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Shop Modal -->
-  <div class="modal" id="shopModal">
-    <div class="modal-content shop-content">
-      <div class="modal-header">
-        <h2>🛒 Tienda del Juego</h2>
-        <button class="modal-close" id="closeShopModal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="shop-balance">
-          <span>Tu saldo:</span>
-          <span class="balance-value" id="shopBalance">0 🪙</span>
-        </div>
-        <div class="shop-tabs">
-          <button class="shop-tab active" data-tab="lives">❤️ Vidas</button>
-          <button class="shop-tab" data-tab="hints">💡 Pistas</button>
-          <button class="shop-tab" data-tab="boosts">🚀 Potenciadores</button>
-        </div>
-        <div class="shop-items" id="shopItems">
-          <!-- Shop items will be generated dynamically -->
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Pause Modal -->
-  <div class="modal" id="pauseModal">
-    <div class="modal-content pause-content">
-      <div class="modal-header">
-        <h2>⏸️ Juego Pausado</h2>
-      </div>
-      <div class="modal-body">
-        <p>Tu progreso está guardado. ¿Qué deseas hacer?</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-game btn-secondary" id="btnExitGame">Salir</button>
-        <button class="btn-game btn-primary" id="btnResumeGame">Continuar</button>
       </div>
     </div>
   </div>
