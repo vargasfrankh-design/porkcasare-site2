@@ -79,6 +79,12 @@ export class MemoryGameEngine {
     this.onLevelComplete = null;
     this.onMatch = null;
     this.onMismatch = null;
+    this.firebaseHandler = null; // Referencia al handler para limite mensual
+  }
+
+  // Establecer referencia al firebase handler
+  setFirebaseHandler(handler) {
+    this.firebaseHandler = handler;
   }
 
   // Inicializar nivel
@@ -273,6 +279,12 @@ export class MemoryGameEngine {
     const config = LEVELS_CONFIG[this.state.currentLevel - 1];
     const result = this.calculateLevelResult(config);
 
+    // Aplicar limite mensual a las monedas
+    if (this.firebaseHandler) {
+      result.coinsEarned = this.firebaseHandler.applyMonthlyLimit(result.coinsEarned);
+      if (result.coinsEarned > 0) this.firebaseHandler.addMonthlyCoins(result.coinsEarned);
+    }
+
     // Guardar progreso del nivel
     this.state.levelProgress[this.state.currentLevel] = {
       stars: result.stars,
@@ -345,13 +357,20 @@ export class MemoryGameEngine {
     this.state.isPlaying = false;
     this.state.lives--;
 
+    let consolationCoins = Math.floor(this.state.score / 100);
+    // Aplicar limite mensual
+    if (this.firebaseHandler) {
+      consolationCoins = this.firebaseHandler.applyMonthlyLimit(consolationCoins);
+      if (consolationCoins > 0) this.firebaseHandler.addMonthlyCoins(consolationCoins);
+    }
+
     const result = {
       reason,
       score: this.state.score,
       moves: this.state.moves,
       time: this.state.timeElapsed,
       timeFormatted: this.formatTime(this.state.timeElapsed),
-      coinsEarned: Math.floor(this.state.score / 100), // Algo de consuelo
+      coinsEarned: consolationCoins,
       livesRemaining: this.state.lives
     };
 
