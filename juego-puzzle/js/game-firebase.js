@@ -28,8 +28,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Configuracion del limite mensual de monedas
-const MONTHLY_COINS_LIMIT = 25000;
+// Configuracion del limite mensual de monedas (limite interno real: 20,000 por usuario)
+const MONTHLY_COINS_LIMIT = 20000;
 
 export class GameFirebaseHandler {
   constructor() {
@@ -116,6 +116,38 @@ export class GameFirebaseHandler {
 
   addMonthlyCoins(coins) {
     this.monthlyCoinsEarned += coins;
+  }
+
+  // Validar monedas con el backend (enforcing del límite real de 20,000)
+  async validateCoinsWithBackend(coins, gameType, level) {
+    if (!this.user) return { approved: false, coinsApproved: 0 };
+    try {
+      const token = await this.user.getIdToken();
+      const res = await fetch('/.netlify/functions/check-monthly-coins-limit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: 'earn',
+          coins: coins,
+          gameType: gameType || 'puzzle',
+          level: level || 0
+        })
+      });
+      if (!res.ok) return { approved: false, coinsApproved: 0 };
+      const data = await res.json();
+      if (data.blocked) {
+        this.monthlyCoinsEarned = data.limit;
+      } else if (data.totalEarned !== undefined) {
+        this.monthlyCoinsEarned = data.totalEarned;
+      }
+      return data;
+    } catch (err) {
+      console.error('Error validando monedas con backend:', err);
+      return { approved: true, coinsApproved: coins };
+    }
   }
 
   getMonthlyInfo() {

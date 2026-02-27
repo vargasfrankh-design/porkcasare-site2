@@ -211,8 +211,14 @@ export class TriviaGameEngine {
       }
     } else {
       this.state.streak = 0;
+      // Penalty for wrong answer
+      const penalty = 5;
+      const actualPenalty = Math.min(penalty, this.state.coins);
+      this.state.coins -= actualPenalty;
+      coinsEarned = -actualPenalty;
+
       if (this.onWrongAnswer) {
-        this.onWrongAnswer({ correctIndex: question.answer });
+        this.onWrongAnswer({ correctIndex: question.answer, penalty: actualPenalty });
       }
     }
 
@@ -344,6 +350,10 @@ export class TriviaGameEngine {
   timeUp() {
     this.stopTimer();
     this.state.streak = 0;
+    // Penalty for time expiry
+    const penalty = 3;
+    const actualPenalty = Math.min(penalty, this.state.coins);
+    this.state.coins -= actualPenalty;
 
     this.state.answeredQuestions.push({
       questionIndex: this.state.currentQuestionIndex,

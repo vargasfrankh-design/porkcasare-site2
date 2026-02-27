@@ -524,6 +524,22 @@
               <div class="retos-header">
                 <h3>🎮 Retos - Juega y Gana</h3>
                 <p>Participa en nuestros juegos para ganar puntos extra y recompensas</p>
+
+                <!-- Premio Acumulado Dinámico -->
+                <div class="premio-acumulado-container" id="premioAcumuladoContainer">
+                  <div class="premio-acumulado-label">Premio Acumulado del Mes</div>
+                  <div class="premio-acumulado-value" id="premioAcumuladoValue">$1.000.000 COP</div>
+                  <div class="premio-acumulado-status" id="premioCreciendo">Creciendo...</div>
+                  <div class="premio-acumulado-bar">
+                    <div class="premio-acumulado-bar-fill" id="premioBarFill"></div>
+                  </div>
+                  <div class="premio-acumulado-meta">
+                    <span class="premio-min">$1.000.000</span>
+                    <span class="premio-meta-label">Meta de crecimiento mensual</span>
+                    <span class="premio-max">$25.000.000</span>
+                  </div>
+                </div>
+
                 <button class="btn-back-products" id="btnBackToProducts">
                   <span>←</span> Volver a Productos
                 </button>
@@ -550,10 +566,7 @@
                       <span class="points-value">10 puntos</span>
                     </div>
                   </div>
-                  <button class="btn-game-play" onclick="window.location.href='/juego-memory/'">
-                    <span class="btn-icon">▶️</span>
-                    Jugar ahora
-                  </button>
+                  <button class="btn-game-play" onclick="window.location.href='/juego-memory/'">Jugar ahora</button>
                 </div>
 
                 <!-- Game Card - Trivia (Available) -->
@@ -576,10 +589,7 @@
                       <span class="points-value">10 puntos</span>
                     </div>
                   </div>
-                  <button class="btn-game-play" onclick="window.location.href='/juego-trivia/'">
-                    <span class="btn-icon">▶️</span>
-                    Jugar ahora
-                  </button>
+                  <button class="btn-game-play" onclick="window.location.href='/juego-trivia/'">Jugar ahora</button>
                 </div>
 
                 <!-- Game Card - Puzzle (Available) -->
@@ -602,10 +612,7 @@
                       <span class="points-value">10 puntos</span>
                     </div>
                   </div>
-                  <button class="btn-game-play" onclick="window.location.href='/juego-puzzle/'">
-                    <span class="btn-icon">▶️</span>
-                    Jugar ahora
-                  </button>
+                  <button class="btn-game-play" onclick="window.location.href='/juego-puzzle/'">Jugar ahora</button>
                 </div>
 
                 <!-- Game Card - Rueda de la Fortuna (Available) -->
@@ -628,10 +635,7 @@
                       <span class="points-value">10 puntos</span>
                     </div>
                   </div>
-                  <button class="btn-game-play" onclick="window.location.href='/juego-ruleta/'">
-                    <span class="btn-icon">▶️</span>
-                    Jugar ahora
-                  </button>
+                  <button class="btn-game-play" onclick="window.location.href='/juego-ruleta/'">Jugar ahora</button>
                 </div>
               </div>
             </div>
@@ -1407,6 +1411,77 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
   } else {
     initRetosSection();
   }
+})();
+</script>
+
+<!-- Premio Acumulado Dinámico - Cálculo en tiempo real -->
+<script>
+(function() {
+  const PREMIO_MIN = 1000000;
+  const PREMIO_MAX = 25000000;
+
+  function getDaysInMonth(year, month) {
+    return new Date(year, month + 1, 0).getDate();
+  }
+
+  function calcularPremioAcumulado() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const day = now.getDate();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+
+    const totalDays = getDaysInMonth(year, month);
+    // Progreso exacto del mes incluyendo hora del día actual
+    const dayProgress = (day - 1 + (hours * 3600 + minutes * 60 + seconds) / 86400) / totalDays;
+    const progress = Math.min(Math.max(dayProgress, 0), 1);
+
+    // Crecimiento con curva suave (ease-in-out) para efecto más natural
+    const smoothProgress = progress < 0.5
+      ? 2 * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+    const premio = Math.floor(PREMIO_MIN + (PREMIO_MAX - PREMIO_MIN) * smoothProgress);
+    return { premio, progress };
+  }
+
+  function formatearCOP(num) {
+    // Formato pesos colombianos: $1.000.000 COP
+    return '$' + num.toLocaleString('es-CO') + ' COP';
+  }
+
+  function actualizarPremio() {
+    const valueEl = document.getElementById('premioAcumuladoValue');
+    const barFill = document.getElementById('premioBarFill');
+    const creciendoEl = document.getElementById('premioCreciendo');
+    if (!valueEl) return;
+
+    const { premio, progress } = calcularPremioAcumulado();
+    valueEl.textContent = formatearCOP(premio);
+
+    if (barFill) {
+      barFill.style.width = (progress * 100).toFixed(2) + '%';
+    }
+
+    if (creciendoEl) {
+      if (progress >= 0.98) {
+        creciendoEl.textContent = 'Crecimiento en su punto mas alto';
+        creciendoEl.className = 'premio-acumulado-status status-max';
+      } else if (progress >= 0.7) {
+        creciendoEl.textContent = 'Crecimiento acelerado';
+        creciendoEl.className = 'premio-acumulado-status status-fast';
+      } else {
+        creciendoEl.textContent = 'Creciendo...';
+        creciendoEl.className = 'premio-acumulado-status status-growing';
+      }
+    }
+  }
+
+  // Actualizar inmediatamente y luego cada 3 segundos
+  actualizarPremio();
+  setInterval(actualizarPremio, 3000);
 })();
 </script>
 

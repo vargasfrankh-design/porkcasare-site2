@@ -11,7 +11,8 @@ export const WHEEL_SEGMENTS = [
   { label: 'x2', value: 2, type: 'multiplier', color: '#9b59b6', icon: '&#x1F680;', probability: 8 },
   { label: '200', value: 200, type: 'coins', color: '#1abc9c', icon: '&#x1F4B0;', probability: 5 },
   { label: '+1 Giro', value: 1, type: 'spin', color: '#e67e22', icon: '&#x1F3B0;', probability: 10 },
-  { label: '5', value: 5, type: 'coins', color: '#95a5a6', icon: '&#x1FA99;', probability: 14 }
+  { label: '5', value: 5, type: 'coins', color: '#95a5a6', icon: '&#x1FA99;', probability: 4 },
+  { label: '-20', value: 20, type: 'penalty', color: '#e74c3c', icon: '💀', probability: 10 }
 ];
 
 export const GAME_CONFIG = {
@@ -167,6 +168,13 @@ export class WheelGameEngine {
       case 'spin':
         this.state.spinsRemaining += segment.value;
         prizeDisplay = `+${segment.value} giro gratis`;
+        break;
+
+      case 'penalty':
+        const deduction = Math.min(segment.value, this.state.coins);
+        this.state.coins -= deduction;
+        prizeDisplay = deduction > 0 ? `-${deduction} monedas` : 'Sin monedas para perder';
+        prizeValue = -deduction;
         break;
     }
 

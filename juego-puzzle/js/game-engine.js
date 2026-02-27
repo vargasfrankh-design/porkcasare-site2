@@ -299,13 +299,10 @@ export class PuzzleGameEngine {
     this.state.isPlaying = false;
     this.state.lives--;
 
-    let consolation = Math.floor(this.state.moves / 10);
-    // Aplicar limite mensual
-    if (this.firebaseHandler) {
-      consolation = this.firebaseHandler.applyMonthlyLimit(consolation);
-      if (consolation > 0) this.firebaseHandler.addMonthlyCoins(consolation);
-    }
-    this.state.coins += consolation;
+    // Penalty for failing to complete the puzzle
+    const penalty = 10;
+    const actualPenalty = Math.min(penalty, this.state.coins);
+    this.state.coins -= actualPenalty;
 
     if (this.onGameOver) {
       this.onGameOver({
@@ -313,7 +310,8 @@ export class PuzzleGameEngine {
         moves: this.state.moves,
         time: this.state.timeElapsed,
         timeFormatted: this.formatTime(this.state.timeElapsed),
-        coinsEarned: consolation,
+        coinsEarned: -actualPenalty,
+        penaltyApplied: actualPenalty > 0,
         livesRemaining: this.state.lives
       });
     }

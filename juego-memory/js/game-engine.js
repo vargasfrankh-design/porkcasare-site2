@@ -357,12 +357,10 @@ export class MemoryGameEngine {
     this.state.isPlaying = false;
     this.state.lives--;
 
-    let consolationCoins = Math.floor(this.state.score / 100);
-    // Aplicar limite mensual
-    if (this.firebaseHandler) {
-      consolationCoins = this.firebaseHandler.applyMonthlyLimit(consolationCoins);
-      if (consolationCoins > 0) this.firebaseHandler.addMonthlyCoins(consolationCoins);
-    }
+    // Game over penalty
+    const penalty = 15; // Penalty for failing to complete
+    const actualPenalty = Math.min(penalty, this.state.coins);
+    this.state.coins -= actualPenalty;
 
     const result = {
       reason,
@@ -370,11 +368,10 @@ export class MemoryGameEngine {
       moves: this.state.moves,
       time: this.state.timeElapsed,
       timeFormatted: this.formatTime(this.state.timeElapsed),
-      coinsEarned: consolationCoins,
+      coinsEarned: -actualPenalty,
+      penaltyApplied: actualPenalty > 0,
       livesRemaining: this.state.lives
     };
-
-    this.state.coins += result.coinsEarned;
 
     if (this.onGameOver) {
       this.onGameOver(result);
