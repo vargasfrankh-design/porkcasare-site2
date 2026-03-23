@@ -100,12 +100,14 @@ async function fetchPayment(paymentId, token) {
  * Process payment and update Firestore
  */
 async function processPayment(payment, db) {
-  // Parse external_reference: uid|type|timestamp
+  // Parse external_reference: uid|type|timestamp|orderIds
   const external = payment.external_reference || '';
   const parts = external.split('|');
   const uid = parts[0] || null;
   const type = parts[1] || 'payment';
   const timestamp = parts[2] || null;
+  const orderIdsStr = parts[3] || '';
+  const orderIds = orderIdsStr ? orderIdsStr.split(',').filter(id => id.trim()) : [];
 
   if (!uid) {
     console.warn('Payment has no uid in external_reference:', payment.id);
@@ -167,9 +169,9 @@ async function processPayment(payment, db) {
 
   // Process based on payment status
   if (payment.status === 'approved') {
-    await handleApprovedPayment(uid, payment, db, paymentRef);
+    await handleApprovedPayment(uid, payment, db, paymentRef, orderIds);
   } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
-    await handleFailedPayment(uid, payment, db, paymentRef);
+    await handleFailedPayment(uid, payment, db, paymentRef, orderIds);
   } else if (payment.status === 'pending' || payment.status === 'in_process') {
     console.log(`Payment ${paymentId} is pending: ${payment.status_detail}`);
   }
@@ -178,73 +180,166 @@ async function processPayment(payment, db) {
 }
 
 /**
- * Handle approved payment - update user points/balance
+ * Handle approved payment - update user points/balance and confirm orders
  */
-async function handleApprovedPayment(uid, payment, db, paymentRef) {
+async function handleApprovedPayment(uid, payment, db, paymentRef, orderIds) {
   const paymentId = String(payment.id);
   const amount = payment.transaction_amount || 0;
 
-  // Check if points already credited
+  // Check if already fully processed
   const paymentDoc = await paymentRef.get();
-  if (paymentDoc.exists && paymentDoc.data().pointsCredited) {
-    console.log(`Points already credited for payment ${paymentId}`);
-    return;
+  const paymentData = paymentDoc.exists ? paymentDoc.data() : {};
+
+  // Credit points if not already done
+  if (!paymentData.pointsCredited) {
+    // Calculate points based on payment amount
+    const POINT_VALUE = 2800; // COP per point
+    const pointsToAdd = Math.floor(amount / 6000); // ~1 point per 6000 COP
+
+    const userRef = db.collection('usuarios').doc(uid);
+    const now = Date.now();
+
+    try {
+      await db.runTransaction(async (t) => {
+        const userDoc = await t.get(userRef);
+
+        if (!userDoc.exists) {
+          console.warn(`User ${uid} not found when crediting payment ${paymentId}`);
+          return;
+        }
+
+        // Update user points and balance
+        t.update(userRef, {
+          puntos: admin.firestore.FieldValue.increment(pointsToAdd),
+          personalPoints: admin.firestore.FieldValue.increment(pointsToAdd),
+          history: admin.firestore.FieldValue.arrayUnion({
+            action: `Pago aprobado via MercadoPago - ${payment.payment_type_id || 'card'}`,
+            amount: amount,
+            points: pointsToAdd,
+            paymentId: paymentId,
+            date: new Date().toISOString(),
+            timestamp: now,
+            type: 'payment_approved'
+          })
+        });
+
+        // Mark payment as credited
+        t.update(paymentRef, {
+          pointsCredited: true,
+          pointsCreditedAt: new Date().toISOString(),
+          pointsAmount: pointsToAdd
+        });
+      });
+
+      console.log(`Credited ${pointsToAdd} points to user ${uid} for payment ${paymentId}`);
+    } catch (error) {
+      console.error(`Error crediting points for payment ${paymentId}:`, error);
+      throw error;
+    }
   }
 
-  // Calculate points based on payment amount
-  // Formula: 10 points per 60,000 COP (based on existing logic)
-  const POINT_VALUE = 2800; // COP per point
-  const pointsToAdd = Math.floor(amount / 6000); // Simplified: ~1 point per 6000 COP
+  // Update order statuses if not already done
+  if (!paymentData.ordersUpdated && orderIds.length > 0) {
+    try {
+      const now = new Date().toISOString();
+      const batch = db.batch();
+      let ordersUpdatedCount = 0;
 
-  const userRef = db.collection('usuarios').doc(uid);
-  const now = Date.now();
+      for (const orderId of orderIds) {
+        const orderRef = db.collection('orders').doc(orderId);
+        const orderDoc = await orderRef.get();
 
-  try {
-    await db.runTransaction(async (t) => {
-      const userDoc = await t.get(userRef);
+        if (!orderDoc.exists) {
+          console.warn(`Order ${orderId} not found for payment ${paymentId}`);
+          continue;
+        }
 
-      if (!userDoc.exists) {
-        console.warn(`User ${uid} not found when crediting payment ${paymentId}`);
-        return;
+        const orderData = orderDoc.data();
+        // Only update orders that are pending payment
+        if (['pending_payment', 'pending_mp', 'pending_delivery'].includes(orderData.status)) {
+          batch.update(orderRef, {
+            status: 'paid_mp',
+            paidAt: now,
+            paymentId: paymentId,
+            autoConfirmed: true,
+            mpPaymentStatus: 'approved',
+            mpPaymentAmount: amount
+          });
+          ordersUpdatedCount++;
+        }
       }
 
-      const userData = userDoc.data();
-      const currentPoints = Number(userData.puntos || userData.personalPoints || 0);
-
-      // Update user points and balance
-      t.update(userRef, {
-        puntos: admin.firestore.FieldValue.increment(pointsToAdd),
-        personalPoints: admin.firestore.FieldValue.increment(pointsToAdd),
-        history: admin.firestore.FieldValue.arrayUnion({
-          action: `Pago aprobado via MercadoPago - ${payment.payment_type_id || 'card'}`,
-          amount: amount,
-          points: pointsToAdd,
-          paymentId: paymentId,
-          date: new Date().toISOString(),
-          timestamp: now,
-          type: 'payment_approved'
-        })
+      // Mark orders as updated on the payment record
+      batch.update(paymentRef, {
+        ordersUpdated: true,
+        ordersUpdatedAt: now,
+        ordersUpdatedCount: ordersUpdatedCount,
+        orderIds: orderIds
       });
 
-      // Mark payment as credited
-      t.update(paymentRef, {
-        pointsCredited: true,
-        pointsCreditedAt: new Date().toISOString(),
-        pointsAmount: pointsToAdd
-      });
-    });
+      await batch.commit();
+      console.log(`Updated ${ordersUpdatedCount} orders to paid_mp for payment ${paymentId}`);
+    } catch (error) {
+      console.error(`Error updating orders for payment ${paymentId}:`, error);
+      // Don't throw - points were already credited, order update failure shouldn't rollback
+    }
+  } else if (!paymentData.ordersUpdated && orderIds.length === 0 && uid) {
+    // Fallback: try to find recent pending orders for this user
+    try {
+      const now = new Date().toISOString();
+      const ordersQuery = db.collection('orders')
+        .where('buyerUid', '==', uid)
+        .where('status', 'in', ['pending_payment', 'pending_mp'])
+        .where('paymentMethod', '==', 'mercadopago');
 
-    console.log(`Credited ${pointsToAdd} points to user ${uid} for payment ${paymentId}`);
-  } catch (error) {
-    console.error(`Error crediting points for payment ${paymentId}:`, error);
-    throw error;
+      const ordersSnap = await ordersQuery.get();
+
+      if (!ordersSnap.empty) {
+        const batch = db.batch();
+        let ordersUpdatedCount = 0;
+        const foundOrderIds = [];
+
+        ordersSnap.forEach(doc => {
+          const orderData = doc.data();
+          // Only update orders created recently (within last 2 hours)
+          const createdAt = new Date(orderData.createdAt);
+          const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+          if (createdAt >= twoHoursAgo) {
+            batch.update(doc.ref, {
+              status: 'paid_mp',
+              paidAt: now,
+              paymentId: paymentId,
+              autoConfirmed: true,
+              mpPaymentStatus: 'approved',
+              mpPaymentAmount: amount
+            });
+            ordersUpdatedCount++;
+            foundOrderIds.push(doc.id);
+          }
+        });
+
+        batch.update(paymentRef, {
+          ordersUpdated: true,
+          ordersUpdatedAt: now,
+          ordersUpdatedCount: ordersUpdatedCount,
+          orderIds: foundOrderIds
+        });
+
+        await batch.commit();
+        console.log(`Fallback: Updated ${ordersUpdatedCount} orders to paid_mp for user ${uid}`);
+      } else {
+        await paymentRef.update({ ordersUpdated: true, ordersUpdatedAt: now, ordersUpdatedCount: 0 });
+      }
+    } catch (error) {
+      console.error(`Error in fallback order update for payment ${paymentId}:`, error);
+    }
   }
 }
 
 /**
- * Handle failed/cancelled payment
+ * Handle failed/cancelled payment - update user history and order statuses
  */
-async function handleFailedPayment(uid, payment, db, paymentRef) {
+async function handleFailedPayment(uid, payment, db, paymentRef, orderIds) {
   const paymentId = String(payment.id);
   const userRef = db.collection('usuarios').doc(uid);
   const now = Date.now();
@@ -263,6 +358,29 @@ async function handleFailedPayment(uid, payment, db, paymentRef) {
       });
     }
     console.log(`Recorded failed payment ${paymentId} for user ${uid}`);
+
+    // Update order statuses to payment_failed
+    if (orderIds && orderIds.length > 0) {
+      const batch = db.batch();
+      for (const orderId of orderIds) {
+        const orderRef = db.collection('orders').doc(orderId);
+        const orderDoc = await orderRef.get();
+        if (orderDoc.exists) {
+          const orderData = orderDoc.data();
+          if (['pending_payment', 'pending_mp'].includes(orderData.status)) {
+            batch.update(orderRef, {
+              status: 'payment_failed',
+              paymentFailedAt: new Date().toISOString(),
+              paymentId: paymentId,
+              mpPaymentStatus: payment.status,
+              mpStatusDetail: payment.status_detail || null
+            });
+          }
+        }
+      }
+      await batch.commit();
+      console.log(`Updated orders to payment_failed for payment ${paymentId}`);
+    }
   } catch (error) {
     console.error(`Error recording failed payment ${paymentId}:`, error);
   }

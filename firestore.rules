@@ -163,8 +163,25 @@ service cloud.firestore {
       // Only admins can read activity logs
       allow read: if isAdmin();
 
-      // Only server-side functions should write (no client writes)
-      allow create, update, delete: if false;
+      // Admins can create activity logs from admin panel
+      allow create: if isAdmin();
+
+      allow update, delete: if false;
+    }
+
+    // ========== Admin Sales Collection (Ventas generadas por admin) ==========
+    match /admin_sales/{saleId} {
+      // Admins can read all sales, distributors/restaurants can read their own
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.distributorId == request.auth.uid);
+
+      // Only admins can create sales
+      allow create: if isAdmin();
+
+      // Only admins can update (e.g., cancel/modify)
+      allow update: if isAdmin();
+
+      // No deletes allowed
+      allow delete: if false;
     }
 
     // ========== Game Income Logs Collection ==========
