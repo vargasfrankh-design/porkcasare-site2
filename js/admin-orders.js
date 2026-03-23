@@ -107,7 +107,7 @@ async function loadPendingOrders() {
   ordersTbody.innerHTML = `<tr><td colspan="8" class="text-center small-muted">Cargando...</td></tr>`;
 
   const ordersCol = collection(db, ORDERS_COLLECTION);
-  const q = query(ordersCol, where("status", "in", ["pending_mp", "pending_cash", "pendiente_confirmacion", "pending_delivery"]));
+  const q = query(ordersCol, where("status", "in", ["pending_mp", "pending_cash", "pendiente_confirmacion", "pending_delivery", "pending_payment", "paid_mp", "confirmed"]));
   const snap = await getDocs(q);
 
   if (snap.empty) {
@@ -132,14 +132,39 @@ async function loadPendingOrders() {
       puntos: o.puntos,
       productName: o.productName
     });
-    
+
     const quantity = Number(o.quantity) || 1;
     const productName = o.productName || o.product || '';
-    const productosHTML = (o.items || o.productos || []).map(it => `<div><strong>${it.title || it.productName}</strong> <span class="small-muted">(${it.quantity || 1})</span></div>`).join("") || 
+    const productosHTML = (o.items || o.productos || []).map(it => `<div><strong>${it.title || it.productName}</strong> <span class="small-muted">(${it.quantity || 1})</span></div>`).join("") ||
       (productName ? `<div><strong>${productName}</strong> <span class="small-muted">(x${quantity})</span></div>` : '');
     const puntos = Number(o.totalPoints) || Number(o.pointsTotal) || (Number(o.puntos) * quantity) || (o.items?.reduce?.((a,it)=>a + (it.points||0),0) || o.productos?.reduce?.((a,it)=>a + (it.puntos||0),0) || 0);
     const precio = Number(o.totalPrice) || Number(o.priceTotal) || (Number(o.price) * quantity) || o.productos?.reduce?.((a,it)=>a + (it.precio||0),0) || (o.items?.reduce?.((a,it)=>a + (it.unit_price*(it.quantity||1)),0) || 0);
     const fecha = o.createdAt ? new Date(o.createdAt).toLocaleString() : (o.createdAt?.seconds ? new Date(o.createdAt.seconds*1000).toLocaleString() : "");
+
+    // Status badge based on order state
+    let statusBadge = '';
+    switch(o.status) {
+      case 'paid_mp':
+        statusBadge = '<span style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;background:#d1fae5;color:#065f46;">✅ Pagada (MercadoPago)</span>';
+        break;
+      case 'confirmed':
+        statusBadge = '<span style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;background:#dbeafe;color:#1e40af;">✔ Confirmada</span>';
+        break;
+      case 'pending_payment':
+        statusBadge = '<span style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;background:#fef3c7;color:#92400e;">⏳ Pendiente de pago</span>';
+        break;
+      case 'payment_failed':
+        statusBadge = '<span style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;background:#fee2e2;color:#991b1b;">❌ Pago fallido</span>';
+        break;
+      default:
+        statusBadge = `<span style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;background:#fed7aa;color:#9a3412;">⏳ ${o.status}</span>`;
+    }
+
+    // Show "Confirmar" button only for non-confirmed/non-delivered orders
+    const showConfirmBtn = !['confirmed', 'delivered', 'payment_failed'].includes(o.status);
+    // Show "Orden entregada" button for paid_mp or confirmed orders
+    const showDeliveredBtn = ['paid_mp', 'confirmed'].includes(o.status);
+
     return `
       <tr>
         <td><code>${o.id}</code></td>
@@ -148,9 +173,10 @@ async function loadPendingOrders() {
         <td>${puntos}</td>
         <td>${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(precio)}</td>
         <td>${fecha}</td>
-        <td>${o.status}</td>
+        <td>${statusBadge}</td>
         <td>
-          <button class="btn btn-sm btn-success btn-confirm" data-id="${o.id}">Confirmar</button>
+          ${showConfirmBtn ? `<button class="btn btn-sm btn-success btn-confirm" data-id="${o.id}">Confirmar</button>` : ''}
+          ${showDeliveredBtn ? `<button class="btn btn-sm btn-primary btn-delivered" data-id="${o.id}" style="background:#7c3aed;border-color:#7c3aed;">📦 Entregada</button>` : ''}
           <button class="btn btn-sm btn-outline-secondary btn-view" data-id="${o.id}">Ver</button>
         </td>
       </tr>
@@ -160,6 +186,7 @@ async function loadPendingOrders() {
   // attach events
   document.querySelectorAll(".btn-confirm").forEach(b => b.addEventListener("click", onConfirmClick));
   document.querySelectorAll(".btn-view").forEach(b => b.addEventListener("click", onViewClick));
+  document.querySelectorAll(".btn-delivered").forEach(b => b.addEventListener("click", onDeliveredClick));
 }
 
 function log(msg) {
@@ -187,6 +214,40 @@ async function onViewClick(e) {
     `,
     width: 800
   });
+}
+
+// Marcar orden como entregada
+async function onDeliveredClick(e) {
+  const orderId = e.currentTarget.dataset.id;
+  const { value: confirm } = await Swal.fire({
+    title: `Marcar orden ${orderId} como entregada?`,
+    text: "Esto cambiará el estado de la orden a 'entregada'.",
+    showCancelButton: true,
+    confirmButtonText: "Sí, marcar entregada",
+    cancelButtonText: "Cancelar",
+    icon: "question",
+    confirmButtonColor: "#7c3aed"
+  });
+  if (!confirm) return;
+
+  try {
+    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    const orderSnap = await getDoc(orderRef);
+    if (!orderSnap.exists()) return Swal.fire('Error', 'Orden no encontrada', 'error');
+
+    await updateDoc(orderRef, {
+      status: "delivered",
+      deliveredAt: new Date().toISOString(),
+      deliveredBy: auth.currentUser ? auth.currentUser.uid : null
+    });
+
+    log(`Orden ${orderId} marcada como entregada.`);
+    Swal.fire('Entregada', 'La orden ha sido marcada como entregada.', 'success');
+    await loadPendingOrders();
+  } catch (err) {
+    console.error("Error marcando orden como entregada:", err);
+    Swal.fire('Error', 'Ocurrió un error (mira consola).', 'error');
+  }
 }
 
 // Confirmar orden (proceso principal)

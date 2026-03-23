@@ -89,6 +89,7 @@ exports.handler = async function(event) {
     const amount = Number(body.amount) || 60000;
     const type = body.type || 'recompra';
     const description = body.description || `PorKCasare - ${type}`;
+    const orderIds = Array.isArray(body.orderIds) ? body.orderIds : [];
 
     // Get environment variables
     const token = process.env.MP_ACCESS_TOKEN;
@@ -145,9 +146,14 @@ exports.handler = async function(event) {
     const totalAmount = items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
 
     // Build preference object
+    // external_reference format: uid|type|timestamp|orderIds (comma-separated)
+    const externalRef = orderIds.length > 0
+      ? `${uid}|${type}|${Date.now()}|${orderIds.join(',')}`
+      : `${uid}|${type}|${Date.now()}`;
+
     const preference = {
       items,
-      external_reference: `${uid}|${type}|${Date.now()}`,
+      external_reference: externalRef,
       back_urls: {
         success: `${siteUrl}/oficina-virtual/index.html?payment_status=success`,
         failure: `${siteUrl}/oficina-virtual/index.html?payment_status=failure`,
@@ -159,6 +165,7 @@ exports.handler = async function(event) {
       metadata: {
         uid,
         type,
+        orderIds: orderIds.length > 0 ? orderIds : undefined,
         created_at: new Date().toISOString(),
         source: 'netlify_function'
       }

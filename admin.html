@@ -1217,7 +1217,7 @@
       <button class="tab-button" data-tab="pending">Órdenes Pendientes</button>
       <button class="tab-button" data-tab="confirmed">Órdenes Confirmadas</button>
       <button class="tab-button" data-tab="rejected">Órdenes Rechazadas</button>
-      <button class="tab-button" data-tab="distributors">Distribuidores</button>
+      <button class="tab-button" data-tab="distributors">Distribuidores / Restaurantes</button>
       <button class="tab-button" data-tab="clients">Clientes</button>
       <button class="tab-button" data-tab="payouts">Cobros de Distribuidores</button>
       <button class="tab-button" data-tab="users">Usuarios</button>
@@ -1248,7 +1248,7 @@
           <div class="value" id="pendingCount">0</div>
         </div>
         <div class="stat-card purple">
-          <h3>Distribuidores</h3>
+          <h3>Distribuidores / Restaurantes</h3>
           <div class="value" id="distributorsCount">0</div>
         </div>
         <div class="stat-card blue">
@@ -1349,8 +1349,13 @@
     <!-- Tab: Distribuidores -->
     <div id="tab-distributors" class="tab-content">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap;">
-        <h2 style="margin:0;">Distribuidores Registrados</h2>
+        <h2 style="margin:0;">Distribuidores y Restaurantes</h2>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="distributorTypeFilter" style="padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:white;">
+            <option value="all">Todos</option>
+            <option value="distribuidor">Distribuidores</option>
+            <option value="restaurante">Restaurantes</option>
+          </select>
           <input type="text" id="distributorSearchInput" placeholder="Buscar por nombre, usuario o cédula..." style="padding:10px 16px;border:1px solid #ddd;border-radius:6px;font-size:14px;min-width:200px;">
           <select id="distributorSortFilter" style="padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:white;">
             <option value="name_asc">Nombre A-Z</option>
@@ -1374,6 +1379,7 @@
           <tr>
             <th>Código</th>
             <th>Nombre</th>
+            <th>Tipo</th>
             <th>Email</th>
             <th>Celular</th>
             <th>Estado</th>
@@ -1390,7 +1396,7 @@
       <div id="distributorDetailsPanel" style="display:none;position:fixed;top:0;right:-600px;width:600px;height:100vh;background:white;box-shadow:-4px 0 20px rgba(0,0,0,0.15);z-index:2000;transition:right 0.3s ease;overflow-y:auto;">
         <div style="padding:24px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-            <h2 style="margin:0;font-size:20px;">Detalles del Distribuidor</h2>
+            <h2 style="margin:0;font-size:20px;">Detalles</h2>
             <button id="closeDistributorPanel" style="background:transparent;border:none;font-size:28px;cursor:pointer;color:#666;line-height:1;">&times;</button>
           </div>
           
@@ -3791,6 +3797,69 @@
     </div>
   </div>
 
+  <!-- Modal: Generar Venta para Distribuidor/Restaurante -->
+  <div id="adminSaleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;overflow-y:auto;">
+    <div style="background:white;padding:30px;border-radius:12px;width:95%;max-width:700px;max-height:90vh;overflow-y:auto;margin:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #764ba2;">
+        <div>
+          <h3 style="margin:0;font-size:20px;color:#333;">Generar Venta</h3>
+          <p id="adminSaleDistributorInfo" style="margin:4px 0 0 0;font-size:14px;color:#666;"></p>
+        </div>
+        <button id="adminSaleModalClose" style="background:transparent;border:none;font-size:28px;cursor:pointer;color:#666;line-height:1;">&times;</button>
+      </div>
+
+      <!-- Product selection -->
+      <div style="margin-bottom:20px;">
+        <label style="display:block;margin-bottom:8px;font-weight:600;color:#333;">Seleccionar Productos</label>
+        <div id="adminSaleProductsList" style="max-height:300px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:8px;">
+          <div style="text-align:center;padding:20px;color:#666;">Cargando productos...</div>
+        </div>
+      </div>
+
+      <!-- Selected products summary -->
+      <div id="adminSaleSelectedContainer" style="display:none;margin-bottom:20px;background:#f8f9fa;padding:16px;border-radius:8px;">
+        <h4 style="margin:0 0 12px 0;font-size:16px;color:#333;">Productos Seleccionados</h4>
+        <div id="adminSaleSelectedList"></div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #dee2e6;">
+          <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px;">
+            <span>Subtotal:</span>
+            <span id="adminSaleSubtotal">$0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:700;color:#28a745;margin-top:8px;padding-top:8px;border-top:1px solid #dee2e6;">
+            <span>Total Venta:</span>
+            <span id="adminSaleTotal">$0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Commission field -->
+      <div style="margin-bottom:20px;background:linear-gradient(135deg,#f3f0ff 0%,#ede9fe 100%);padding:16px;border-radius:8px;border:2px solid #764ba2;">
+        <label style="display:block;margin-bottom:8px;font-weight:700;color:#764ba2;font-size:15px;">Comisión por Venta *</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:18px;font-weight:700;color:#764ba2;">$</span>
+          <input type="number" id="adminSaleCommission" min="0" step="100" placeholder="Ingrese el valor de la comisión" style="flex:1;padding:12px;border:2px solid #764ba2;border-radius:6px;font-size:16px;font-weight:600;color:#333;" required>
+        </div>
+        <p style="font-size:12px;color:#666;margin:8px 0 0 0;">Este valor se sumará al balance del distribuidor/restaurante como ingreso por cobrar.</p>
+      </div>
+
+      <!-- Notes field -->
+      <div style="margin-bottom:20px;">
+        <label style="display:block;margin-bottom:8px;font-weight:600;color:#333;">Notas (opcional)</label>
+        <textarea id="adminSaleNotes" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:6px;font-size:14px;resize:vertical;min-height:60px;" placeholder="Agregar notas o comentarios sobre esta venta..."></textarea>
+      </div>
+
+      <!-- Hidden fields -->
+      <input type="hidden" id="adminSaleDistributorId" value="">
+      <input type="hidden" id="adminSaleDistributorUsername" value="">
+      <input type="hidden" id="adminSaleDistributorType" value="">
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding-top:10px;border-top:1px solid #eee;">
+        <button type="button" id="adminSaleModalCancel" class="btn-secondary">Cancelar</button>
+        <button type="button" id="adminSaleModalConfirm" style="padding:12px 24px;font-size:14px;font-weight:600;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:6px;cursor:pointer;" disabled>Confirmar Venta</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal para Informe Previo de Pago a Distribuidor -->
   <div id="payoutReportModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;align-items:center;justify-content:center;overflow-y:auto;">
     <div style="background:white;border-radius:12px;width:95%;max-width:800px;max-height:90vh;overflow-y:auto;margin:20px auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
@@ -3947,7 +4016,7 @@
 
   <script type="module">
     import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-    import { doc, getDoc, collection, getDocs, query, where, orderBy, limit, updateDoc, runTransaction, addDoc, setDoc, increment, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { doc, getDoc, collection, getDocs, query, where, orderBy, limit, updateDoc, runTransaction, addDoc, setDoc, increment, deleteDoc, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     import { auth, db } from "/src/firebase-config.js";
 
     const loginSection = document.getElementById("loginSection");
@@ -4560,7 +4629,7 @@
         
         const usersSnap = await getDocs(collection(db, "usuarios"));
         const users = usersSnap.docs.map(d => d.data());
-        const distributors = users.filter(u => u.role === 'distribuidor' || u.tipoRegistro === 'distribuidor' || (!u.role && !u.tipoRegistro));
+        const distributors = users.filter(u => u.role === 'distribuidor' || u.tipoRegistro === 'distribuidor' || u.tipoRegistro === 'restaurante' || (!u.role && !u.tipoRegistro));
         
         document.getElementById('totalSales').textContent = `$${totalSales.toLocaleString()}`;
         document.getElementById('confirmedCount').textContent = confirmed.length;
@@ -5352,7 +5421,7 @@
         const usersSnap = await getDocs(collection(db, "usuarios"));
         allDistributors = usersSnap.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter(u => (u.role === 'distribuidor' || u.tipoRegistro === 'distribuidor' || (!u.role && !u.tipoRegistro)));
+          .filter(u => (u.role === 'distribuidor' || u.tipoRegistro === 'distribuidor' || u.tipoRegistro === 'restaurante' || (!u.role && !u.tipoRegistro)));
 
         // Build referral counts
         distributorReferralCounts = {};
@@ -5386,23 +5455,40 @@
           sortFilter.dataset.listenerAttached = 'true';
           sortFilter.addEventListener('change', () => applyDistributorFilters());
         }
+
+        // Attach type filter event listener
+        const typeFilter = document.getElementById('distributorTypeFilter');
+        if (typeFilter && !typeFilter.dataset.listenerAttached) {
+          typeFilter.dataset.listenerAttached = 'true';
+          typeFilter.addEventListener('change', () => applyDistributorFilters());
+        }
       } catch (err) {
         console.error('Error loading distributors:', err);
       }
     }
 
-    // Apply both search and sort filters
+    // Apply both search, type, and sort filters
     function applyDistributorFilters() {
       const searchInput = document.getElementById('distributorSearchInput');
       const sortFilter = document.getElementById('distributorSortFilter');
+      const typeFilter = document.getElementById('distributorTypeFilter');
 
       const searchTerm = (searchInput?.value || '').toLowerCase().trim();
       const sortBy = sortFilter?.value || 'name_asc';
+      const typeValue = typeFilter?.value || 'all';
 
-      // First filter by search term
+      // First filter by type
       let filtered = allDistributors;
+      if (typeValue !== 'all') {
+        filtered = filtered.filter(dist => {
+          const tipo = dist.tipoRegistro || dist.role || 'distribuidor';
+          return tipo === typeValue;
+        });
+      }
+
+      // Then filter by search term
       if (searchTerm) {
-        filtered = allDistributors.filter(dist => {
+        filtered = filtered.filter(dist => {
           const nombre = (dist.nombre || '').toLowerCase();
           const usuario = (dist.usuario || '').toLowerCase();
           const cedula = (dist.cedula || '').toLowerCase();
@@ -5484,7 +5570,7 @@
       table.innerHTML = '';
 
       if (distributors.length === 0) {
-        table.innerHTML = '<tr><td colspan="9" class="empty-state">No hay distribuidores</td></tr>';
+        table.innerHTML = '<tr><td colspan="10" class="empty-state">No hay distribuidores ni restaurantes</td></tr>';
         return;
       }
 
@@ -5495,6 +5581,10 @@
         const groupPoints = dist.groupPoints || 0;
         const referralCount = dist.referralCount || 0;
         const monthlyPoints = dist.monthlyPoints || 0;
+        const tipo = dist.tipoRegistro || dist.role || 'distribuidor';
+        const tipoBadge = tipo === 'restaurante'
+          ? '<span style="background:#f59e0b;color:white;padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;">Restaurante</span>'
+          : '<span style="background:#6366f1;color:white;padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;">Distribuidor</span>';
 
         const isActive = dist.isActive;
         const statusBadge = isActive
@@ -5504,6 +5594,7 @@
         row.innerHTML = `
           <td>${dist.usuario || 'N/A'}</td>
           <td>${dist.nombre || 'N/A'}</td>
+          <td>${tipoBadge}</td>
           <td>${dist.email || 'N/A'}</td>
           <td>${dist.celular || 'N/A'}</td>
           <td>${statusBadge}</td>
@@ -6193,13 +6284,30 @@
           return userData.patrocinador === dist.usuario;
         });
         
-        // Get orders history
-        const ordersSnap = await getDocs(query(
-          collection(db, 'orders'),
-          where('buyerUid', '==', distributorId)
-        ));
-        const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        
+        // Get orders history (may fail if user lacks admin permissions)
+        let orders = [];
+        try {
+          const ordersSnap = await getDocs(query(
+            collection(db, 'orders'),
+            where('buyerUid', '==', distributorId)
+          ));
+          orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch (ordersErr) {
+          console.warn('Could not load orders for distributor:', ordersErr.message);
+        }
+
+        // Get admin-generated sales for this distributor/restaurant
+        let adminSales = [];
+        try {
+          const salesSnap = await getDocs(query(
+            collection(db, 'admin_sales'),
+            where('distributorId', '==', distributorId)
+          ));
+          adminSales = salesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch (salesErr) {
+          console.warn('Could not load admin sales for distributor:', salesErr.message);
+        }
+
         // Get history from user document
         const history = dist.history || [];
         
@@ -6231,32 +6339,36 @@
         });
         
         // Already collected this month from payouts
-        const payoutsSnap = await getDocs(query(
-          collection(db, 'payouts'),
-          where('userId', '==', distributorId),
-          where('status', '==', 'paid')
-        ));
-        
         let alreadyCollectedThisMonth = 0;
         let collectedPayoutsCount = 0;
-        
-        payoutsSnap.docs.forEach(doc => {
-          const payout = doc.data();
-          let paidDate = null;
-          
-          if (payout.paidAt) {
-            if (typeof payout.paidAt === 'string') {
-              paidDate = new Date(payout.paidAt);
-            } else if (payout.paidAt.seconds) {
-              paidDate = new Date(payout.paidAt.seconds * 1000);
+
+        try {
+          const payoutsSnap = await getDocs(query(
+            collection(db, 'payouts'),
+            where('userId', '==', distributorId),
+            where('status', '==', 'paid')
+          ));
+
+          payoutsSnap.docs.forEach(doc => {
+            const payout = doc.data();
+            let paidDate = null;
+
+            if (payout.paidAt) {
+              if (typeof payout.paidAt === 'string') {
+                paidDate = new Date(payout.paidAt);
+              } else if (payout.paidAt.seconds) {
+                paidDate = new Date(payout.paidAt.seconds * 1000);
+              }
             }
-          }
-          
-          if (paidDate && paidDate >= monthStart && paidDate <= monthEnd) {
-            alreadyCollectedThisMonth += (payout.amount || 0);
-            collectedPayoutsCount++;
-          }
-        });
+
+            if (paidDate && paidDate >= monthStart && paidDate <= monthEnd) {
+              alreadyCollectedThisMonth += (payout.amount || 0);
+              collectedPayoutsCount++;
+            }
+          });
+        } catch (payoutsErr) {
+          console.warn('Could not load payouts for distributor:', payoutsErr.message);
+        }
         
         // Pending amount from balance field
         const pendingAmount = balance;
@@ -6269,10 +6381,18 @@
           : `<span style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);color:white;padding:4px 12px;border-radius:16px;font-size:12px;font-weight:600;" title="Necesita ${MONTHLY_ACTIVATION_POINTS_THRESHOLD - monthlyPts} pts más">⚠ Inactivo (${monthlyPts}/${MONTHLY_ACTIVATION_POINTS_THRESHOLD} pts)</span>`;
         
         const contentDiv = document.getElementById('distributorDetailsContent');
+        const distType = dist.tipoRegistro || dist.role || 'distribuidor';
+        const distTypeBadge = distType === 'restaurante'
+          ? '<span style="background:#f59e0b;color:white;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">Restaurante</span>'
+          : '<span style="background:#6366f1;color:white;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">Distribuidor</span>';
+        const distTypeLabel = distType === 'restaurante' ? 'Restaurante' : 'Distribuidor';
         contentDiv.innerHTML = `
           <div style="background:#f8f9fa;padding:16px;border-radius:8px;margin-bottom:20px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-              <h3 style="margin:0;font-size:18px;color:#333;">${dist.nombre || dist.usuario || 'Sin nombre'}</h3>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h3 style="margin:0;font-size:18px;color:#333;">${dist.nombre || dist.usuario || 'Sin nombre'}</h3>
+                ${distTypeBadge}
+              </div>
               ${activeStatusBadge}
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:14px;">
@@ -6281,14 +6401,21 @@
               <div><strong>Celular:</strong> ${dist.celular || 'N/A'}</div>
               <div><strong>Patrocinador:</strong> ${dist.patrocinador || 'Ninguno'}</div>
             </div>
-            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #dee2e6;">
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #dee2e6;display:flex;gap:10px;">
               <button
                 onclick="openAdminPurchaseModal('${distributorId}', '${(dist.nombre || dist.usuario || 'Sin nombre').replace(/'/g, "\\'")}', '${dist.usuario || ''}')"
                 class="btn-success"
-                style="width:100%;padding:12px 16px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;"
+                style="flex:1;padding:12px 16px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;"
               >
                 <span style="font-size:18px;">🛒</span>
                 Generar Compra
+              </button>
+              <button
+                onclick="openAdminSaleModal('${distributorId}', '${(dist.nombre || dist.usuario || 'Sin nombre').replace(/'/g, "\\'")}', '${dist.usuario || ''}', '${distType}')"
+                style="flex:1;padding:12px 16px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;"
+              >
+                <span style="font-size:18px;">💰</span>
+                Generar Venta
               </button>
             </div>
           </div>
@@ -6445,7 +6572,41 @@
               </div>
             `}
           </div>
-          
+
+          <div style="margin-bottom:20px;">
+            <h4 style="margin:0 0 12px 0;font-size:16px;color:#333;border-bottom:2px solid #764ba2;padding-bottom:8px;">Ventas Generadas (${adminSales.length})</h4>
+            ${adminSales.length === 0 ? '<p style="color:#6c757d;font-size:14px;">No hay ventas generadas</p>' : `
+              <div style="max-height:250px;overflow-y:auto;">
+                <table style="width:100%;font-size:13px;">
+                  <thead style="background:#f3f0ff;">
+                    <tr>
+                      <th style="padding:8px;">Fecha</th>
+                      <th style="padding:8px;">Productos</th>
+                      <th style="padding:8px;">Total Venta</th>
+                      <th style="padding:8px;">Comisión</th>
+                      <th style="padding:8px;">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${adminSales.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).map(sale => {
+                      const saleDate = sale.createdAt ? new Date(sale.createdAt).toLocaleDateString() : 'N/A';
+                      const productNames = (sale.products || []).map(p => p.name + ' x' + p.quantity).join(', ') || 'N/A';
+                      const saleTotalFormatted = '$' + (sale.totalAmount || 0).toLocaleString();
+                      const commissionFormatted = '$' + (sale.commission || 0).toLocaleString();
+                      return '<tr style="border-bottom:1px solid #e9ecef;">' +
+                        '<td style="padding:8px;">' + saleDate + '</td>' +
+                        '<td style="padding:8px;font-size:12px;">' + productNames + '</td>' +
+                        '<td style="padding:8px;">' + saleTotalFormatted + '</td>' +
+                        '<td style="padding:8px;"><strong style="color:#764ba2;">' + commissionFormatted + '</strong></td>' +
+                        '<td style="padding:8px;"><span style="color:#28a745;font-weight:600;">Confirmada</span></td>' +
+                        '</tr>';
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+
           <div>
             <h4 style="margin:0 0 12px 0;font-size:16px;color:#333;border-bottom:2px solid #e9ecef;padding-bottom:8px;">Historial de Comisiones (${history.filter(h => h.type !== 'purchase' && !(h.action || '').includes('Compra confirmada')).length})</h4>
             ${history.filter(h => h.type !== 'purchase' && !(h.action || '').includes('Compra confirmada')).length === 0 ? '<p style="color:#6c757d;font-size:14px;">No hay historial de comisiones</p>' : `
@@ -6696,8 +6857,9 @@
           if (!prod) continue;
 
           const qty = adminPurchaseSelectedProducts[productId];
-          const price = prod.precioDistribuidor || prod.precio || 0;
-          const points = prod.puntos || 0;
+          const userType = distData.tipoRegistro || distData.role || 'distribuidor';
+          const price = userType === 'restaurante' ? (prod.precioRestaurante || prod.precioDistribuidor || prod.precio || 0) : (prod.precioDistribuidor || prod.precio || 0);
+          const points = userType === 'restaurante' ? (prod.puntosRestaurante || prod.puntos || 0) : (prod.puntos || 0);
           const totalPrice = price * qty;
           const totalPoints = points * qty;
           const shippingUnits = (prod.shippingUnits || 2) * qty;
@@ -6717,7 +6879,7 @@
             grandTotal: totalPrice,
             buyerUid: distributorId,
             buyerUsername: distributorUsername,
-            buyerType: 'distribuidor',
+            buyerType: distData.tipoRegistro || distData.role || 'distribuidor',
             buyerInfo: {
               name: distData.nombre || distData.usuario || '',
               email: distData.email || '',
@@ -6763,6 +6925,337 @@
     });
     // ========================================
     // End Admin Purchase Modal
+    // ========================================
+
+    // ========================================
+    // Admin Sale Modal - Generate sales for distributors/restaurants
+    // ========================================
+    let adminSaleSelectedProducts = {};
+    let adminSaleProductsCache = [];
+
+    window.openAdminSaleModal = async function(distributorId, distributorName, distributorUsername, distributorType) {
+      const modal = document.getElementById('adminSaleModal');
+      const infoEl = document.getElementById('adminSaleDistributorInfo');
+      const productsList = document.getElementById('adminSaleProductsList');
+      const typeLabel = distributorType === 'restaurante' ? 'Restaurante' : 'Distribuidor';
+
+      // Set distributor info
+      document.getElementById('adminSaleDistributorId').value = distributorId;
+      document.getElementById('adminSaleDistributorUsername').value = distributorUsername;
+      document.getElementById('adminSaleDistributorType').value = distributorType || 'distribuidor';
+      infoEl.textContent = 'Para: ' + distributorName + ' (' + distributorUsername + ') - ' + typeLabel;
+
+      // Reset state
+      adminSaleSelectedProducts = {};
+      document.getElementById('adminSaleNotes').value = '';
+      document.getElementById('adminSaleCommission').value = '';
+      document.getElementById('adminSaleSelectedContainer').style.display = 'none';
+      document.getElementById('adminSaleModalConfirm').disabled = true;
+
+      // Show modal
+      modal.style.display = 'flex';
+
+      // Load products
+      productsList.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">Cargando productos...</div>';
+
+      try {
+        const productsSnap = await getDocs(collection(db, "productos"));
+        adminSaleProductsCache = productsSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(p => !p.hidden && !p.deleted && !p.outOfStock)
+          .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+        if (adminSaleProductsCache.length === 0) {
+          productsList.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">No hay productos disponibles</div>';
+          return;
+        }
+
+        productsList.innerHTML = adminSaleProductsCache.map(function(prod) {
+          var price;
+          if (distributorType === 'restaurante') {
+            price = prod.precioRestaurante || prod.precioDistribuidor || prod.precio || 0;
+          } else {
+            price = prod.precioDistribuidor || prod.precio || 0;
+          }
+          var points = distributorType === 'restaurante' ? (prod.puntosRestaurante || prod.puntos || 0) : (prod.puntos || 0);
+          return '<div style="display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #eee;transition:background 0.2s;" onmouseover="this.style.background=\'#f8f9fa\'" onmouseout="this.style.background=\'transparent\'">' +
+            '<img src="' + (prod.imagen || '/images/placeholder.png') + '" alt="' + prod.nombre + '" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #ddd;">' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-weight:600;color:#333;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + prod.nombre + '</div>' +
+              '<div style="font-size:12px;color:#666;">$' + price.toLocaleString() + ' · ' + points + ' pts</div>' +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+              '<button type="button" onclick="adminSaleDecreaseQty(\'' + prod.id + '\')" style="width:28px;height:28px;border:1px solid #ddd;border-radius:4px;background:white;cursor:pointer;font-size:16px;">-</button>' +
+              '<span id="adminSaleQty-' + prod.id + '" style="width:30px;text-align:center;font-weight:600;">0</span>' +
+              '<button type="button" onclick="adminSaleIncreaseQty(\'' + prod.id + '\')" style="width:28px;height:28px;border:1px solid #764ba2;border-radius:4px;background:#764ba2;color:white;cursor:pointer;font-size:16px;">+</button>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+
+      } catch (err) {
+        console.error('Error loading products for sale:', err);
+        productsList.innerHTML = '<div style="text-align:center;padding:20px;color:#dc3545;">Error cargando productos</div>';
+      }
+    };
+
+    window.adminSaleIncreaseQty = function(productId) {
+      var currentQty = adminSaleSelectedProducts[productId] || 0;
+      adminSaleSelectedProducts[productId] = currentQty + 1;
+      document.getElementById('adminSaleQty-' + productId).textContent = currentQty + 1;
+      updateAdminSaleSummary();
+    };
+
+    window.adminSaleDecreaseQty = function(productId) {
+      var currentQty = adminSaleSelectedProducts[productId] || 0;
+      if (currentQty > 0) {
+        adminSaleSelectedProducts[productId] = currentQty - 1;
+        document.getElementById('adminSaleQty-' + productId).textContent = currentQty - 1;
+        if (currentQty - 1 === 0) {
+          delete adminSaleSelectedProducts[productId];
+        }
+        updateAdminSaleSummary();
+      }
+    };
+
+    function updateAdminSaleSummary() {
+      var selectedContainer = document.getElementById('adminSaleSelectedContainer');
+      var selectedList = document.getElementById('adminSaleSelectedList');
+      var confirmBtn = document.getElementById('adminSaleModalConfirm');
+      var commissionInput = document.getElementById('adminSaleCommission');
+      var distType = document.getElementById('adminSaleDistributorType').value || 'distribuidor';
+
+      var selectedIds = Object.keys(adminSaleSelectedProducts).filter(function(id) { return adminSaleSelectedProducts[id] > 0; });
+
+      if (selectedIds.length === 0) {
+        selectedContainer.style.display = 'none';
+        confirmBtn.disabled = true;
+        return;
+      }
+
+      selectedContainer.style.display = 'block';
+      // Enable confirm only if commission is provided
+      var commissionVal = parseFloat(commissionInput.value);
+      confirmBtn.disabled = !(commissionVal > 0);
+
+      var subtotal = 0;
+
+      var itemsHtml = selectedIds.map(function(productId) {
+        var prod = adminSaleProductsCache.find(function(p) { return p.id === productId; });
+        if (!prod) return '';
+
+        var qty = adminSaleSelectedProducts[productId];
+        var price;
+        if (distType === 'restaurante') {
+          price = prod.precioRestaurante || prod.precioDistribuidor || prod.precio || 0;
+        } else {
+          price = prod.precioDistribuidor || prod.precio || 0;
+        }
+        var itemTotal = price * qty;
+        subtotal += itemTotal;
+
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">' +
+          '<div>' +
+            '<span style="font-weight:500;">' + prod.nombre + '</span>' +
+            '<span style="color:#666;font-size:13px;"> x' + qty + '</span>' +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            '<div style="font-weight:600;">$' + itemTotal.toLocaleString() + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      selectedList.innerHTML = itemsHtml;
+      document.getElementById('adminSaleSubtotal').textContent = '$' + subtotal.toLocaleString();
+      document.getElementById('adminSaleTotal').textContent = '$' + subtotal.toLocaleString();
+    }
+
+    // Listen for commission input changes to enable/disable confirm button
+    document.getElementById('adminSaleCommission').addEventListener('input', function() {
+      var selectedIds = Object.keys(adminSaleSelectedProducts).filter(function(id) { return adminSaleSelectedProducts[id] > 0; });
+      var commissionVal = parseFloat(this.value);
+      var confirmBtn = document.getElementById('adminSaleModalConfirm');
+      confirmBtn.disabled = !(selectedIds.length > 0 && commissionVal > 0);
+    });
+
+    function closeAdminSaleModal() {
+      var modal = document.getElementById('adminSaleModal');
+      modal.style.display = 'none';
+      adminSaleSelectedProducts = {};
+    }
+
+    document.getElementById('adminSaleModalClose').addEventListener('click', closeAdminSaleModal);
+    document.getElementById('adminSaleModalCancel').addEventListener('click', closeAdminSaleModal);
+    document.getElementById('adminSaleModal').addEventListener('click', function(e) {
+      if (e.target.id === 'adminSaleModal') {
+        closeAdminSaleModal();
+      }
+    });
+
+    // Confirm sale - process the sale and update balances
+    document.getElementById('adminSaleModalConfirm').addEventListener('click', async function() {
+      var distributorId = document.getElementById('adminSaleDistributorId').value;
+      var distributorUsername = document.getElementById('adminSaleDistributorUsername').value;
+      var distributorType = document.getElementById('adminSaleDistributorType').value || 'distribuidor';
+      var notes = document.getElementById('adminSaleNotes').value.trim();
+      var commissionValue = parseFloat(document.getElementById('adminSaleCommission').value);
+      var confirmBtn = document.getElementById('adminSaleModalConfirm');
+
+      var selectedIds = Object.keys(adminSaleSelectedProducts).filter(function(id) { return adminSaleSelectedProducts[id] > 0; });
+
+      if (selectedIds.length === 0) {
+        alert('Selecciona al menos un producto');
+        return;
+      }
+
+      if (!commissionValue || commissionValue <= 0) {
+        alert('Debes ingresar un valor de comisión por venta válido');
+        return;
+      }
+
+      // Disable button and show loading
+      var originalText = confirmBtn.textContent;
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Procesando venta...';
+
+      try {
+        // Get distributor data
+        var distDoc2 = await getDoc(doc(db, 'usuarios', distributorId));
+        if (!distDoc2.exists()) {
+          throw new Error('Distribuidor/Restaurante no encontrado');
+        }
+        var distData = distDoc2.data();
+
+        // Build products array
+        var productsForSale = [];
+        var totalAmount = 0;
+
+        for (var i = 0; i < selectedIds.length; i++) {
+          var productId = selectedIds[i];
+          var prod = adminSaleProductsCache.find(function(p) { return p.id === productId; });
+          if (!prod) continue;
+
+          var qty = adminSaleSelectedProducts[productId];
+          var price;
+          if (distributorType === 'restaurante') {
+            price = prod.precioRestaurante || prod.precioDistribuidor || prod.precio || 0;
+          } else {
+            price = prod.precioDistribuidor || prod.precio || 0;
+          }
+          var itemTotal = price * qty;
+          totalAmount += itemTotal;
+
+          productsForSale.push({
+            productId: prod.id,
+            name: prod.nombre,
+            image: prod.imagen || '',
+            unitPrice: price,
+            quantity: qty,
+            total: itemTotal,
+            points: (distributorType === 'restaurante' ? (prod.puntosRestaurante || prod.puntos || 0) : (prod.puntos || 0)) * qty
+          });
+        }
+
+        // Generate a unique sale ID to prevent duplicates
+        var saleTimestamp = new Date().toISOString();
+
+        // Create the sale document in admin_sales collection
+        var saleObj = {
+          distributorId: distributorId,
+          distributorUsername: distributorUsername,
+          distributorType: distributorType,
+          distributorName: distData.nombre || distData.usuario || '',
+          products: productsForSale,
+          totalAmount: totalAmount,
+          commission: commissionValue,
+          notes: notes || null,
+          createdAt: saleTimestamp,
+          createdByAdmin: currentUser ? currentUser.uid : null,
+          status: 'confirmed'
+        };
+
+        var saleRef = await addDoc(collection(db, "admin_sales"), saleObj);
+        var saleId = saleRef.id;
+
+        // Update distributor/restaurant balance - ADD commission to balance (ingresos por cobrar)
+        var userRef = doc(db, 'usuarios', distributorId);
+        await runTransaction(db, async function(transaction) {
+          var userSnap = await transaction.get(userRef);
+          if (!userSnap.exists()) {
+            throw new Error('Usuario no encontrado');
+          }
+          var userData = userSnap.data();
+          var currentBalance = userData.balance || 0;
+          var currentTotalComisiones = userData.totalComisiones || 0;
+
+          // Add commission to balance and total
+          transaction.update(userRef, {
+            balance: currentBalance + commissionValue,
+            totalComisiones: currentTotalComisiones + commissionValue
+          });
+        });
+
+        // Add to user's history array
+        var historyEntry = {
+          type: 'sale_commission',
+          action: 'Comisión por venta generada - Venta #' + saleId.substring(0, 8),
+          amount: commissionValue,
+          points: 0,
+          saleId: saleId,
+          totalSaleAmount: totalAmount,
+          productsCount: productsForSale.length,
+          date: saleTimestamp
+        };
+
+        await updateDoc(userRef, {
+          history: arrayUnion(historyEntry)
+        });
+
+        // Log activity
+        try {
+          await addDoc(collection(db, "activity_logs"), {
+            action: 'Venta generada para ' + (distData.nombre || distributorUsername),
+            type: 'admin_sale',
+            userId: distributorId,
+            saleId: saleId,
+            amount: totalAmount,
+            commission: commissionValue,
+            details: {
+              distributorType: distributorType,
+              productsCount: productsForSale.length,
+              notes: notes
+            },
+            timestamp: serverTimestamp(),
+            createdAt: saleTimestamp,
+            adminUid: currentUser ? currentUser.uid : null
+          });
+        } catch (logErr) {
+          console.warn('Error logging activity:', logErr);
+        }
+
+        // Close modal
+        closeAdminSaleModal();
+
+        // Show success message
+        var typeLabel = distributorType === 'restaurante' ? 'restaurante' : 'distribuidor';
+        alert('Venta registrada exitosamente!\n\n' +
+          'Total venta: $' + totalAmount.toLocaleString() + '\n' +
+          'Comisión: $' + commissionValue.toLocaleString() + '\n\n' +
+          'La comisión ha sido sumada al balance del ' + typeLabel + ' como ingreso por cobrar.\n' +
+          'ID de venta: ' + saleId.substring(0, 8));
+
+        // Refresh distributor details panel
+        await showDistributorDetails(distributorId);
+
+      } catch (err) {
+        console.error('Error creating admin sale:', err);
+        alert('Error generando la venta: ' + err.message);
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+      }
+    });
+    // ========================================
+    // End Admin Sale Modal
     // ========================================
 
     // Inventory management

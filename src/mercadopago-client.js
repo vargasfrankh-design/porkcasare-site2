@@ -71,7 +71,8 @@ export async function createPayment(options) {
         type: options.type || 'recompra',
         description: options.description,
         items: options.items,
-        payer: options.payer
+        payer: options.payer,
+        orderIds: options.orderIds
       })
     });
 

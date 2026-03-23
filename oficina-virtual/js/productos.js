@@ -54,7 +54,7 @@ const POINTS_PER_KG = 10 / 3;
 // MercadoPago payment gateway fee configuration
 // This percentage is added to the total when the customer selects MercadoPago as payment method
 // The fee ensures the merchant receives 100% of the product value
-const MERCADOPAGO_FEE_PERCENTAGE = 5.8; // 5.8% - easily modifiable for future adjustments
+const MERCADOPAGO_FEE_PERCENTAGE = 0; // Fee disabled - merchant absorbs MercadoPago commission
 
 /**
  * Calculate MercadoPago payment gateway fee
@@ -1589,7 +1589,7 @@ async function onBuyClick(e) {
             <span style="display:block;font-size:12px;color:#666;margin-top:2px;">Tarjeta, PSE, Nequi, Efecty y más</span>
           </div>
         </label>
-        <label style="display:flex;align-items:center;padding:12px;border:2px solid #ddd;border-radius:8px;cursor:pointer;transition:all 0.2s;">
+        <label style="display:none;align-items:center;padding:12px;border:2px solid #ddd;border-radius:8px;cursor:pointer;transition:all 0.2s;">
           <input type="radio" name="paymentMethodSingle" value="efectivo_transferencia" style="margin-right:10px;">
           <div>
             <span style="font-weight:600;color:#333;">💵 Efectivo o Transferencia</span>
@@ -1698,7 +1698,7 @@ async function onBuyClick(e) {
       direccion: customerData.deliveryMethod === 'pickup' ? null : (customerData.address || null),
       telefono: customerData.deliveryMethod === 'pickup' ? (customerData.phone || null) : (customerData.phone || null),
       observaciones: customerData.notes || '',
-      status: "pending_delivery",
+      status: selectedPaymentMethod === 'mercadopago' ? 'pending_payment' : 'pending_delivery',
       createdAt: new Date().toISOString(),
       isInitial: prod.id === "paquete-inicio",
       initialBonusPaid: false,
@@ -1796,6 +1796,7 @@ async function onBuyClick(e) {
           items: mpItems,
           type: 'compra_producto',
           description: `PorKCasare - ${prod.nombre}${selectedVariant ? ` - ${selectedVariant}` : ''} (x${quantity})`,
+          orderIds: [orderRef.id],
           payer: {
             name: customerData.firstName,
             surname: customerData.lastName,
@@ -2001,31 +2002,11 @@ window.proceedToCheckout = async function() {
 
     // Function to update the total display based on payment method
     const updateTotalDisplay = (paymentMethod) => {
-      if (paymentMethod === 'mercadopago') {
-        const totalWithFee = totalPrice + mercadoPagoFee;
-        totalDiv.innerHTML = `
-          <div style="font-size:14px;color:#666;margin-bottom:8px;">Resumen de compra</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-            <span style="font-size:14px;color:#555;">Subtotal productos:</span>
-            <span style="font-size:14px;font-weight:600;color:#333;">$${totalPrice.toLocaleString()}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:6px 8px;background:#fff3cd;border-radius:4px;">
-            <span style="font-size:13px;color:#856404;">Logística pasarela de pago (Mercado Pago):</span>
-            <span style="font-size:13px;font-weight:600;color:#856404;">+$${mercadoPagoFee.toLocaleString()}</span>
-          </div>
-          <div style="border-top:1px solid #dee2e6;padding-top:8px;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:14px;font-weight:600;color:#333;">Total a pagar:</span>
-            <span style="font-size:22px;font-weight:700;color:#333;">$${totalWithFee.toLocaleString()}</span>
-          </div>
-          <div style="font-size:14px;color:#28a745;margin-top:4px;text-align:right;">${totalPoints} puntos</div>
-        `;
-      } else {
-        totalDiv.innerHTML = `
-          <div style="font-size:14px;color:#666;margin-bottom:4px;">Total a pagar</div>
-          <div style="font-size:24px;font-weight:700;color:#333;">$${totalPrice.toLocaleString()}</div>
-          <div style="font-size:14px;color:#28a745;margin-top:4px;">${totalPoints} puntos</div>
-        `;
-      }
+      totalDiv.innerHTML = `
+        <div style="font-size:14px;color:#666;margin-bottom:4px;">Total a pagar</div>
+        <div style="font-size:24px;font-weight:700;color:#333;">$${totalPrice.toLocaleString()}</div>
+        <div style="font-size:14px;color:#28a745;margin-top:4px;">${totalPoints} puntos</div>
+      `;
     };
 
     // Initialize with MercadoPago selected (default)
@@ -2043,7 +2024,7 @@ window.proceedToCheckout = async function() {
             <span style="display:block;font-size:12px;color:#666;margin-top:2px;">Tarjeta, PSE, Nequi, Efecty y más</span>
           </div>
         </label>
-        <label style="display:flex;align-items:center;padding:12px;border:2px solid #ddd;border-radius:8px;cursor:pointer;transition:all 0.2s;">
+        <label style="display:none;align-items:center;padding:12px;border:2px solid #ddd;border-radius:8px;cursor:pointer;transition:all 0.2s;">
           <input type="radio" name="paymentMethod" value="efectivo_transferencia" style="margin-right:10px;">
           <div>
             <span style="font-weight:600;color:#333;">💵 Efectivo o Transferencia</span>
@@ -2190,14 +2171,14 @@ window.proceedToCheckout = async function() {
           <span style="color:#166534;">🚚 ${getShippingMessage('')}:</span>
           <span id="shippingCostValue" style="font-weight:600;color:#ea580c;">$${calculateShippingCostByUE(cartTotalUE, '', 'home').toLocaleString()}</span>
         </div>
-        <div id="mercadoPagoFeeLine" style="display:${selectedPaymentMethod === 'mercadopago' ? 'flex' : 'none'};justify-content:space-between;align-items:center;margin-bottom:8px;padding:6px 8px;background:#fff3cd;border-radius:4px;">
+        <div id="mercadoPagoFeeLine" style="display:none;justify-content:space-between;align-items:center;margin-bottom:8px;padding:6px 8px;background:#fff3cd;border-radius:4px;">
           <span style="font-size:13px;color:#856404;">💳 Logística pasarela de pago (Mercado Pago):</span>
-          <span id="mercadoPagoFeeValue" style="font-size:13px;font-weight:600;color:#856404;">+$${mercadoPagoFee.toLocaleString()}</span>
+          <span id="mercadoPagoFeeValue" style="font-size:13px;font-weight:600;color:#856404;">+$0</span>
         </div>
         <p id="shippingHint" style="font-size:12px;color:#9ca3af;margin:4px 0 8px 0;">ℹ️ El costo de envío se calcula automáticamente según la ciudad de destino</p>
         <div style="border-top:1px solid #86efac;padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
           <span style="font-weight:700;font-size:16px;color:#166534;">💰 TOTAL A PAGAR:</span>
-          <span id="grandTotalValue" style="font-weight:700;font-size:18px;color:#166534;">$${(totalPrice + calculateShippingCostByUE(cartTotalUE, '', 'home') + (selectedPaymentMethod === 'mercadopago' ? mercadoPagoFee : 0)).toLocaleString()}</span>
+          <span id="grandTotalValue" style="font-weight:700;font-size:18px;color:#166534;">$${(totalPrice + calculateShippingCostByUE(cartTotalUE, '', 'home')).toLocaleString()}</span>
         </div>
       </div>
       <div style="margin-bottom:20px;">
@@ -2531,17 +2512,7 @@ window.proceedToCheckout = async function() {
           });
         }
 
-        // Add MercadoPago payment gateway fee as a separate line item
-        // This ensures the merchant receives 100% of the product value
-        if (mercadoPagoFee > 0) {
-          mpItems.push({
-            id: 'mp_fee',
-            title: 'Logística pasarela de pago (Mercado Pago)',
-            description: `Comisión del ${MERCADOPAGO_FEE_PERCENTAGE}% por uso de pasarela de pago`,
-            quantity: 1,
-            unit_price: mercadoPagoFee
-          });
-        }
+        // MercadoPago fee removed - merchant absorbs the commission
 
         try {
           // Show loading indicator
@@ -2563,6 +2534,7 @@ window.proceedToCheckout = async function() {
             items: mpItems,
             type: 'compra_carrito',
             description: `PorKCasare - Compra de ${cartItems.length} producto${cartItems.length !== 1 ? 's' : ''}`,
+            orderIds: orderIds,
             payer: {
               name: customerData.firstName,
               surname: customerData.lastName,
