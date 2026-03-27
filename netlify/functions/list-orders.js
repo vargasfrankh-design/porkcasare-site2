@@ -28,8 +28,19 @@ exports.handler = async (event) => {
       return { statusCode: 403, body: JSON.stringify({ error: 'No autorizado' }) };
     }
 
+    // Support optional status filter via query parameter
+    const qs = event.queryStringParameters || {};
+    const defaultStatuses = ['pending_mp', 'pending_cash', 'pending_delivery', 'pending_payment', 'paid_mp'];
+    const validStatuses = ['pending', 'pending_mp', 'pending_cash', 'pending_delivery', 'pending_payment', 'paid_mp', 'confirmed', 'rejected', 'delivered', 'payment_failed'];
+
+    let statusFilter = defaultStatuses;
+    if (qs.status) {
+      const requested = qs.status.split(',').map(s => s.trim()).filter(s => validStatuses.includes(s));
+      if (requested.length > 0) statusFilter = requested;
+    }
+
     const snap = await db.collection('orders')
-      .where('status', 'in', ['pending_mp', 'pending_cash', 'pending_delivery'])
+      .where('status', 'in', statusFilter)
       .get();
 
     // Optimización: obtener todos los buyerUids únicos primero
