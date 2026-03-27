@@ -109,6 +109,8 @@ async function processPayment(payment, db) {
   const orderIdsStr = parts[3] || '';
   const orderIds = orderIdsStr ? orderIdsStr.split(',').filter(id => id.trim()) : [];
 
+  console.log('[webhook] Parsed external_reference:', { uid, type, timestamp, orderIds, raw: external });
+
   if (!uid) {
     console.warn('Payment has no uid in external_reference:', payment.id);
     return { processed: false, reason: 'no_uid' };
@@ -240,6 +242,7 @@ async function handleApprovedPayment(uid, payment, db, paymentRef, orderIds) {
 
   // Update order statuses if not already done
   if (!paymentData.ordersUpdated && orderIds.length > 0) {
+    console.log(`[webhook] Updating ${orderIds.length} orders to paid_mp for payment ${paymentId}`);
     try {
       const now = new Date().toISOString();
       const batch = db.batch();
@@ -255,8 +258,8 @@ async function handleApprovedPayment(uid, payment, db, paymentRef, orderIds) {
         }
 
         const orderData = orderDoc.data();
-        // Only update orders that are pending payment
         if (['pending_payment', 'pending_mp', 'pending_delivery'].includes(orderData.status)) {
+          console.log(`[webhook] Order ${orderId}: status ${orderData.status} -> paid_mp`);
           batch.update(orderRef, {
             status: 'paid_mp',
             paidAt: now,
@@ -285,6 +288,7 @@ async function handleApprovedPayment(uid, payment, db, paymentRef, orderIds) {
     }
   } else if (!paymentData.ordersUpdated && orderIds.length === 0 && uid) {
     // Fallback: try to find recent pending orders for this user
+    console.log(`[webhook] No orderIds in external_reference, trying fallback query for user ${uid}`);
     try {
       const now = new Date().toISOString();
       const ordersQuery = db.collection('orders')

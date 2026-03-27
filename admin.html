@@ -427,10 +427,51 @@
       font-weight: 600;
       text-transform: uppercase;
     }
+    /* Status filter buttons */
+    .status-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .status-filter-btn {
+      padding: 6px 14px;
+      border: 2px solid #dee2e6;
+      border-radius: 20px;
+      background: #fff;
+      color: #495057;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .status-filter-btn:hover {
+      border-color: #adb5bd;
+      background: #f8f9fa;
+    }
+    .status-filter-btn.active {
+      background: #0d6efd;
+      color: #fff;
+      border-color: #0d6efd;
+    }
+    .status-filter-btn .filter-count {
+      display: inline-block;
+      background: rgba(0,0,0,0.15);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 11px;
+      margin-left: 4px;
+    }
+    .status-filter-btn.active .filter-count {
+      background: rgba(255,255,255,0.3);
+    }
     .order-status.pending { background: #fff3cd; color: #856404; }
     .order-status.pending_delivery { background: #cce5ff; color: #004085; }
     .order-status.pending_mp { background: #d4edda; color: #155724; }
     .order-status.pending_cash { background: #e2d6f5; color: #563d7c; }
+    .order-status.pending_payment { background: #fff3cd; color: #856404; }
+    .order-status.paid_mp { background: #d1fae5; color: #065f46; font-weight: 700; }
     .order-products {
       margin-bottom: 16px;
     }
@@ -754,6 +795,11 @@
     .activity-type-badge.sale {
       background: rgba(0, 135, 90, 0.1);
       color: var(--success-green);
+    }
+
+    .activity-type-badge.admin_sale {
+      background: rgba(111, 66, 193, 0.15);
+      color: #6f42c1;
     }
 
     .activity-type-badge.order_approved {
@@ -1176,6 +1222,120 @@
     .sim-summary-card.purple { background: #f3e5f5; }
     .sim-summary-card.purple .sim-val { color: #6a1b9a; }
     .sim-summary-card.purple .sim-lbl { color: #7b1fa2; }
+
+    /* === SKELETON LOADERS === */
+    @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 37%, #f0f0f0 63%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.8s ease-in-out infinite;
+      border-radius: 6px;
+    }
+    .skeleton-text {
+      height: 14px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+    }
+    .skeleton-text.short { width: 40%; }
+    .skeleton-text.medium { width: 65%; }
+    .skeleton-text.long { width: 90%; }
+
+    /* Skeleton stat card */
+    .skeleton-stat-card {
+      background: var(--bg-white);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+    }
+    .skeleton-stat-card .skeleton-label {
+      height: 10px;
+      width: 60%;
+      margin-bottom: 16px;
+    }
+    .skeleton-stat-card .skeleton-value {
+      height: 28px;
+      width: 50%;
+    }
+
+    /* Skeleton table row */
+    .skeleton-table-row td {
+      padding: 14px 16px;
+    }
+    .skeleton-table-row .skeleton-cell {
+      height: 16px;
+      border-radius: 4px;
+    }
+
+    /* Skeleton activity item */
+    .skeleton-activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 20px;
+      border-bottom: 1px solid #f1f3f4;
+    }
+    .skeleton-activity-item .skeleton-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .skeleton-activity-item .skeleton-lines {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Skeleton for full tab content */
+    .skeleton-tab-content {
+      padding: 0;
+    }
+
+    /* Pulse effect for stat values loading */
+    @keyframes pulse-value {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+    .stat-card .value.loading-pulse {
+      animation: pulse-value 1.5s ease-in-out infinite;
+      color: #ccc !important;
+    }
+
+    /* Skeleton ticker */
+    .skeleton-ticker-item {
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      gap: 10px;
+      border-right: 1px solid #30363d;
+    }
+    .skeleton-ticker-item .skeleton {
+      background: linear-gradient(90deg, #1c2333 25%, #2a3145 37%, #1c2333 63%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.8s ease-in-out infinite;
+    }
+    .skeleton-ticker-label {
+      height: 10px;
+      width: 80px;
+    }
+    .skeleton-ticker-value {
+      height: 16px;
+      width: 60px;
+    }
+
+    /* Smooth fade-in for loaded content */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeInUp 0.3s ease-out forwards;
+    }
   </style>
 </head>
 <body>
@@ -1196,11 +1356,15 @@
     <!-- Wall Street Ticker Banner -->
     <div class="ticker-wrapper" id="salesTicker">
       <div class="ticker-content" id="tickerContent">
-        <!-- Ticker items will be populated by JavaScript -->
-        <div class="ticker-item">
-          <span class="ticker-label">Cargando datos...</span>
-          <span class="ticker-value neutral">--</span>
-        </div>
+        <!-- Skeleton ticker items shown while loading -->
+        <div class="skeleton-ticker-item"><div class="skeleton skeleton-ticker-label"></div><div class="skeleton skeleton-ticker-value"></div></div>
+        <div class="skeleton-ticker-item"><div class="skeleton skeleton-ticker-label"></div><div class="skeleton skeleton-ticker-value"></div></div>
+        <div class="skeleton-ticker-item"><div class="skeleton skeleton-ticker-label"></div><div class="skeleton skeleton-ticker-value"></div></div>
+        <div class="skeleton-ticker-item"><div class="skeleton skeleton-ticker-label"></div><div class="skeleton skeleton-ticker-value"></div></div>
+        <div class="skeleton-ticker-item"><div class="skeleton skeleton-ticker-label"></div><div class="skeleton skeleton-ticker-value"></div></div>
+        <div class="skeleton-ticker-item"><div class="skeleton skeleton-ticker-label"></div><div class="skeleton skeleton-ticker-value"></div></div>
+        <div class="skeleton-ticker-item"><div class="skeleton skeleton-ticker-label"></div><div class="skeleton skeleton-ticker-value"></div></div>
+        <div class="skeleton-ticker-item"><div class="skeleton skeleton-ticker-label"></div><div class="skeleton skeleton-ticker-value"></div></div>
       </div>
     </div>
 
@@ -1234,34 +1398,39 @@
 
     <!-- Tab: Resumen -->
     <div id="tab-overview" class="tab-content active">
-      <div class="stats-grid">
+      <div class="stats-grid" id="statsGrid">
         <div class="stat-card blue">
           <h3>Total de Ventas</h3>
-          <div class="value" id="totalSales">$0</div>
+          <div class="value loading-pulse" id="totalSales">---</div>
         </div>
         <div class="stat-card green">
           <h3>Órdenes Confirmadas</h3>
-          <div class="value" id="confirmedCount">0</div>
+          <div class="value loading-pulse" id="confirmedCount">--</div>
         </div>
         <div class="stat-card orange">
           <h3>Órdenes Pendientes</h3>
-          <div class="value" id="pendingCount">0</div>
+          <div class="value loading-pulse" id="pendingCount">--</div>
         </div>
         <div class="stat-card purple">
           <h3>Distribuidores / Restaurantes</h3>
-          <div class="value" id="distributorsCount">0</div>
+          <div class="value loading-pulse" id="distributorsCount">--</div>
         </div>
         <div class="stat-card blue">
           <h3>Total Usuarios</h3>
-          <div class="value" id="usersCount">0</div>
+          <div class="value loading-pulse" id="usersCount">--</div>
         </div>
         <div class="stat-card red">
           <h3>Órdenes Rechazadas</h3>
-          <div class="value" id="rejectedCount">0</div>
+          <div class="value loading-pulse" id="rejectedCount">--</div>
         </div>
         <div class="stat-card green">
           <h3>Inventario Total</h3>
-          <div class="value" id="inventoryCount">0</div>
+          <div class="value loading-pulse" id="inventoryCount">--</div>
+        </div>
+        <div class="stat-card purple">
+          <h3>Ventas Directas (Admin)</h3>
+          <div class="value loading-pulse" id="adminSalesCount">--</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">Total: <span id="adminSalesTotal">---</span></div>
         </div>
       </div>
       
@@ -1272,11 +1441,11 @@
           <button class="activity-refresh-btn" onclick="loadRecentActivity()">Actualizar</button>
         </div>
         <div class="activity-list" id="recentActivityList">
-          <!-- Activity items will be populated by JavaScript -->
-          <div class="activity-empty">
-            <div class="activity-empty-icon">📊</div>
-            <div>Cargando actividad reciente...</div>
-          </div>
+          <!-- Skeleton activity items shown while loading -->
+          <div class="skeleton-activity-item"><div class="skeleton skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton skeleton-text long"></div><div class="skeleton skeleton-text medium"></div></div></div>
+          <div class="skeleton-activity-item"><div class="skeleton skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton skeleton-text long"></div><div class="skeleton skeleton-text short"></div></div></div>
+          <div class="skeleton-activity-item"><div class="skeleton skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton skeleton-text medium"></div><div class="skeleton skeleton-text long"></div></div></div>
+          <div class="skeleton-activity-item"><div class="skeleton skeleton-avatar"></div><div class="skeleton-lines"><div class="skeleton skeleton-text long"></div><div class="skeleton skeleton-text medium"></div></div></div>
         </div>
       </div>
 
@@ -1296,7 +1465,7 @@
 
     <!-- Tab: Órdenes Pendientes -->
     <div id="tab-pending" class="tab-content">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <h2 style="margin:0;">Órdenes Pendientes</h2>
         <div style="display:flex;gap:12px;align-items:center;">
           <span id="pendingOrdersSummary" style="font-size:14px;color:#6c757d;"></span>
@@ -1304,8 +1473,25 @@
           <button id="collapseAllOrders" class="btn-secondary" style="font-size:13px;padding:6px 12px;">Colapsar Todo</button>
         </div>
       </div>
+      <div class="status-filters" id="statusFilters">
+        <button class="status-filter-btn active" data-status="all" onclick="filterOrdersByStatus('all')">Todos <span class="filter-count" id="filter-count-all">0</span></button>
+        <button class="status-filter-btn" data-status="pending" onclick="filterOrdersByStatus('pending')">Pendiente <span class="filter-count" id="filter-count-pending">0</span></button>
+        <button class="status-filter-btn" data-status="pending_delivery" onclick="filterOrdersByStatus('pending_delivery')">Pendiente Entrega <span class="filter-count" id="filter-count-pending_delivery">0</span></button>
+        <button class="status-filter-btn" data-status="pending_mp" onclick="filterOrdersByStatus('pending_mp')">Pendiente MP <span class="filter-count" id="filter-count-pending_mp">0</span></button>
+        <button class="status-filter-btn" data-status="pending_cash" onclick="filterOrdersByStatus('pending_cash')">Pendiente Efectivo <span class="filter-count" id="filter-count-pending_cash">0</span></button>
+        <button class="status-filter-btn" data-status="pending_payment" onclick="filterOrdersByStatus('pending_payment')">Pendiente de Pago <span class="filter-count" id="filter-count-pending_payment">0</span></button>
+        <button class="status-filter-btn" data-status="paid_mp" onclick="filterOrdersByStatus('paid_mp')">Pagada (MP) <span class="filter-count" id="filter-count-paid_mp">0</span></button>
+      </div>
       <div id="pendingOrdersGrouped" class="pending-orders-container">
-        <!-- Grouped orders will be rendered here -->
+        <!-- Skeleton loader for pending orders -->
+        <div class="skeleton-tab-content" id="pendingOrdersSkeleton">
+          <div style="padding:16px 0;display:flex;flex-direction:column;gap:12px;">
+            <div class="skeleton" style="height:60px;border-radius:8px;"></div>
+            <div class="skeleton" style="height:60px;border-radius:8px;"></div>
+            <div class="skeleton" style="height:60px;border-radius:8px;"></div>
+            <div class="skeleton" style="height:60px;border-radius:8px;"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1324,7 +1510,11 @@
             <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="confirmedOrdersTable"></tbody>
+        <tbody id="confirmedOrdersTable">
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:80%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:30%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:80%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:75%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td></tr>
+        </tbody>
       </table>
     </div>
 
@@ -1342,7 +1532,11 @@
             <th>Motivo</th>
           </tr>
         </thead>
-        <tbody id="rejectedOrdersTable"></tbody>
+        <tbody id="rejectedOrdersTable">
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:80%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:90%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:80%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:75%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:85%"></div></td></tr>
+        </tbody>
       </table>
     </div>
 
@@ -1389,7 +1583,11 @@
             <th>Detalles</th>
           </tr>
         </thead>
-        <tbody id="distributorsTable"></tbody>
+        <tbody id="distributorsTable">
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:80%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:75%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:30%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td></tr>
+        </tbody>
       </table>
       
       <!-- Distributor Details Panel -->
@@ -1422,7 +1620,11 @@
             <th>Registro</th>
           </tr>
         </thead>
-        <tbody id="clientsTable"></tbody>
+        <tbody id="clientsTable">
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:80%"></div></td><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:75%"></div></td><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td></tr>
+        </tbody>
       </table>
     </div>
 
@@ -1439,7 +1641,11 @@
             <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="payoutsTable"></tbody>
+        <tbody id="payoutsTable">
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:75%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td></tr>
+        </tbody>
       </table>
     </div>
 
@@ -1476,7 +1682,10 @@
             <th>Estado</th>
           </tr>
         </thead>
-        <tbody id="productInventoryTable"></tbody>
+        <tbody id="productInventoryTable">
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:30%"></div></td></tr>
+        </tbody>
       </table>
 
       <h3>Historial de Movimientos</h3>
@@ -1491,7 +1700,10 @@
             <th>Notas</th>
           </tr>
         </thead>
-        <tbody id="inventoryHistoryTable"></tbody>
+        <tbody id="inventoryHistoryTable">
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td></tr>
+        </tbody>
       </table>
     </div>
 
@@ -1513,7 +1725,11 @@
             <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="usersTable"></tbody>
+        <tbody id="usersTable">
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:75%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td></tr>
+        </tbody>
       </table>
     </div>
 
@@ -4135,7 +4351,8 @@
       ]);
     }
 
-    // Enhanced Recent Activity Loader
+    // Enhanced Recent Activity Loader (exposed on window for inline onclick)
+    window.loadRecentActivity = loadRecentActivity;
     async function loadRecentActivity() {
       const activityList = document.getElementById('recentActivityList');
       if (!activityList) return;
@@ -4260,6 +4477,7 @@
       activityList.innerHTML = activities.map((activity, index) => {
         const typeLabels = {
           'sale': 'Venta',
+          'admin_sale': 'Venta Directa',
           'order_approved': 'Aprobado',
           'order_rejected': 'Rechazado',
           'order_pending': 'Pendiente',
@@ -4273,13 +4491,35 @@
         const timestamp = activity.createdAt || activity.timestamp;
         const dateStr = timestamp ? formatActivityDate(timestamp) : 'Fecha no disponible';
         const fullDateStr = timestamp ? formatActivityFullDate(timestamp) : 'Fecha no disponible';
-        const userName = activity.user?.name || 'Usuario desconocido';
-        const userType = activity.user?.type || '';
-        const userId = activity.user?.id || '';
-        const totalPoints = activity.financial?.totalPoints || 0;
-        const totalValue = activity.financial?.totalValue || 0;
-        const productName = activity.product?.name || activity.title?.replace(/^(Venta|Pendiente|Rechazado|Aprobado):\s*/, '') || 'N/A';
-        const beneficiariesCount = activity.beneficiariesCount || activity.beneficiaries?.length || 0;
+
+        // Handle admin_sale type which has a flat data structure
+        const isAdminSale = activity.type === 'admin_sale';
+        const userName = isAdminSale
+          ? (activity.action || 'Venta directa')
+          : (activity.user?.name || 'Usuario desconocido');
+        const userType = isAdminSale
+          ? (activity.details?.distributorType || '')
+          : (activity.user?.type || '');
+        const userId = isAdminSale
+          ? (activity.userId || '')
+          : (activity.user?.id || '');
+        const totalPoints = isAdminSale
+          ? 0
+          : (activity.financial?.totalPoints || 0);
+        const totalValue = isAdminSale
+          ? (activity.amount || 0)
+          : (activity.financial?.totalValue || 0);
+        const adminSaleCommission = isAdminSale ? (activity.commission || 0) : 0;
+        const adminSaleProductsCount = isAdminSale ? (activity.details?.productsCount || 0) : 0;
+        const adminSaleProductNames = isAdminSale ? (activity.details?.productNames || '') : '';
+        const adminSaleNotes = isAdminSale ? (activity.details?.notes || '') : '';
+        const adminUid = isAdminSale ? (activity.adminUid || '') : '';
+        const productName = isAdminSale
+          ? (`${adminSaleProductsCount} producto(s)`)
+          : (activity.product?.name || activity.title?.replace(/^(Venta|Pendiente|Rechazado|Aprobado):\s*/, '') || 'N/A');
+        const beneficiariesCount = isAdminSale
+          ? 0
+          : (activity.beneficiariesCount || activity.beneficiaries?.length || 0);
 
         // Map user type to role display name
         const roleLabels = {
@@ -4293,7 +4533,79 @@
         const userRole = roleLabels[userType?.toLowerCase()] || userType || 'No especificado';
 
         // Build the detailed expanded view HTML
-        let detailsHtml = `
+        let detailsHtml = '';
+        if (isAdminSale) {
+          // Admin direct sale - show commission, products, admin info instead of MLM
+          detailsHtml = `
+            <div class="activity-details" id="activity-details-${index}">
+              <div class="activity-detail-section">
+                <div class="activity-detail-section-title">Información de Venta Directa</div>
+                <div class="activity-detail-grid">
+                  <div class="activity-detail-item">
+                    <span class="activity-detail-label">Tipo de Actividad</span>
+                    <span class="activity-detail-value" style="color:#6f42c1;font-weight:600;">Venta Directa (Admin)</span>
+                  </div>
+                  <div class="activity-detail-item">
+                    <span class="activity-detail-label">Productos</span>
+                    <span class="activity-detail-value">${adminSaleProductNames || (adminSaleProductsCount + ' producto(s)')}</span>
+                  </div>
+                  <div class="activity-detail-item">
+                    <span class="activity-detail-label">Destinatario</span>
+                    <span class="activity-detail-value">${userName}</span>
+                  </div>
+                  <div class="activity-detail-item">
+                    <span class="activity-detail-label">Tipo de Destinatario</span>
+                    <span class="activity-detail-value">${userRole}</span>
+                  </div>
+                  <div class="activity-detail-item">
+                    <span class="activity-detail-label">Fecha y Hora</span>
+                    <span class="activity-detail-value">${fullDateStr}</span>
+                  </div>
+                  ${userId ? `
+                  <div class="activity-detail-item">
+                    <span class="activity-detail-label">ID Destinatario</span>
+                    <span class="activity-detail-value" style="font-size:11px;word-break:break-all;">${userId}</span>
+                  </div>
+                  ` : ''}
+                  <div class="activity-detail-item">
+                    <span class="activity-detail-label">Valor Total de Venta</span>
+                    <span class="activity-detail-value highlight-green">$${totalValue.toLocaleString('es-CO')}</span>
+                  </div>
+                  <div class="activity-detail-item">
+                    <span class="activity-detail-label">Ganancia / Comisión</span>
+                    <span class="activity-detail-value" style="color:#28a745;font-weight:700;font-size:16px;">$${adminSaleCommission.toLocaleString('es-CO')}</span>
+                  </div>
+                  ${adminUid ? `
+                  <div class="activity-detail-item">
+                    <span class="activity-detail-label">Generada por Admin</span>
+                    <span class="activity-detail-value" style="font-size:11px;word-break:break-all;">${adminUid}</span>
+                  </div>
+                  ` : ''}
+                  ${activity.saleId ? `
+                  <div class="activity-detail-item">
+                    <span class="activity-detail-label">ID de Venta</span>
+                    <span class="activity-detail-value" style="font-size:11px;word-break:break-all;">${activity.saleId}</span>
+                  </div>
+                  ` : ''}
+                  ${adminSaleNotes ? `
+                  <div class="activity-detail-item" style="grid-column: 1 / -1;">
+                    <span class="activity-detail-label">Notas</span>
+                    <span class="activity-detail-value">${adminSaleNotes}</span>
+                  </div>
+                  ` : ''}
+                </div>
+              </div>
+              <div class="activity-detail-section">
+                <div class="no-beneficiaries-message">
+                  <span class="no-beneficiaries-message-icon">ℹ️</span>
+                  <span>Venta directa — no aplica comisiones multinivel</span>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          // Regular sale / network marketing - existing detailed view
+          detailsHtml = `
           <div class="activity-details" id="activity-details-${index}">
             <!-- Base event information -->
             <div class="activity-detail-section">
@@ -4366,19 +4678,29 @@
             </div>
           </div>
         `;
-
+        } // end else (non-admin_sale)
         return `
           <div class="activity-item has-details" onclick="toggleActivityDetails(${index})" id="activity-item-${index}">
             <div class="activity-item-header">
               <span class="activity-type-badge ${activity.type}">${typeLabel}</span>
               <span class="activity-timestamp">${dateStr}</span>
             </div>
-            <div class="activity-title">${activity.title || productName || 'Actividad'}</div>
+            <div class="activity-title">${activity.title || (isAdminSale ? userName : productName) || 'Actividad'}</div>
             <div class="activity-user">
-              <strong>${userName}</strong>
+              <strong>${isAdminSale ? userName : userName}</strong>
               ${userType ? `<span style="color: var(--text-secondary);"> · ${userRole}</span>` : ''}
             </div>
             <div class="activity-financial">
+              ${isAdminSale ? `
+              <div class="activity-stat">
+                <span class="activity-stat-label">Ganancia</span>
+                <span class="activity-stat-value positive">$${adminSaleCommission.toLocaleString('es-CO')}</span>
+              </div>
+              <div class="activity-stat">
+                <span class="activity-stat-label">Total Venta</span>
+                <span class="activity-stat-value positive">$${totalValue.toLocaleString('es-CO')}</span>
+              </div>
+              ` : `
               <div class="activity-stat">
                 <span class="activity-stat-label">Puntos</span>
                 <span class="activity-stat-value">${totalPoints}</span>
@@ -4387,9 +4709,13 @@
                 <span class="activity-stat-label">Valor</span>
                 <span class="activity-stat-value positive">$${totalValue.toLocaleString('es-CO')}</span>
               </div>
+              `}
             </div>
             <div class="click-to-expand-hint">
-              ${beneficiariesCount > 0 ? `
+              ${isAdminSale ? `
+                <span style="color:#6f42c1;font-weight:500;">${adminSaleProductsCount} producto(s)</span>
+                <span>Ver detalle de venta directa</span>
+              ` : beneficiariesCount > 0 ? `
                 <span class="activity-beneficiaries-count">${beneficiariesCount} beneficiarios</span>
                 <span>Ver detalle completo</span>
               ` : `
@@ -4621,22 +4947,45 @@
           }
         }
         
-        const pending = orders.filter(o => o.status === 'pending' || o.status === 'pending_delivery');
+        const pending = orders.filter(o => o.status === 'pending' || o.status === 'pending_delivery' || o.status === 'pending_mp' || o.status === 'pending_cash' || o.status === 'pending_payment' || o.status === 'paid_mp');
         const confirmed = orders.filter(o => o.status === 'confirmed');
         const rejected = orders.filter(o => o.status === 'rejected');
         
-        const totalSales = confirmed.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
-        
+        const totalSalesFromOrders = confirmed.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+
+        // Fetch admin-generated sales (ventas directas)
+        let adminSalesList = [];
+        try {
+          const adminSalesSnap = await getDocs(collection(db, "admin_sales"));
+          adminSalesList = adminSalesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch (err) {
+          console.warn('Error loading admin sales for stats:', err);
+        }
+        const adminSalesConfirmed = adminSalesList.filter(s => s.status === 'confirmed');
+        const totalAdminSales = adminSalesConfirmed.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+
+        // Combined total: orders + admin direct sales
+        const totalSales = totalSalesFromOrders + totalAdminSales;
+
         const usersSnap = await getDocs(collection(db, "usuarios"));
         const users = usersSnap.docs.map(d => d.data());
         const distributors = users.filter(u => u.role === 'distribuidor' || u.tipoRegistro === 'distribuidor' || u.tipoRegistro === 'restaurante' || (!u.role && !u.tipoRegistro));
-        
+
         document.getElementById('totalSales').textContent = `$${totalSales.toLocaleString()}`;
+        document.getElementById('totalSales').classList.remove('loading-pulse');
         document.getElementById('confirmedCount').textContent = confirmed.length;
+        document.getElementById('confirmedCount').classList.remove('loading-pulse');
         document.getElementById('pendingCount').textContent = pending.length;
+        document.getElementById('pendingCount').classList.remove('loading-pulse');
         document.getElementById('rejectedCount').textContent = rejected.length;
+        document.getElementById('rejectedCount').classList.remove('loading-pulse');
         document.getElementById('distributorsCount').textContent = distributors.length;
+        document.getElementById('distributorsCount').classList.remove('loading-pulse');
         document.getElementById('usersCount').textContent = users.length;
+        document.getElementById('usersCount').classList.remove('loading-pulse');
+        document.getElementById('adminSalesCount').textContent = adminSalesConfirmed.length;
+        document.getElementById('adminSalesCount').classList.remove('loading-pulse');
+        document.getElementById('adminSalesTotal').textContent = `$${totalAdminSales.toLocaleString()}`;
         
         // Recent activity
         const recentOrders = orders.slice(0, 10);
@@ -4700,12 +5049,21 @@
         // Don't filter out any orders - show all including test users
         const filteredOrders = orders;
 
-        const pending = filteredOrders.filter(o => o.status === 'pending' || o.status === 'pending_delivery' || o.status === 'pending_mp' || o.status === 'pending_cash').sort((a, b) => a.id.localeCompare(b.id));
+        const pending = filteredOrders.filter(o => o.status === 'pending' || o.status === 'pending_delivery' || o.status === 'pending_mp' || o.status === 'pending_cash' || o.status === 'pending_payment' || o.status === 'paid_mp').sort((a, b) => a.id.localeCompare(b.id));
         const confirmed = filteredOrders.filter(o => o.status === 'confirmed');
         const rejected = filteredOrders.filter(o => o.status === 'rejected');
 
+        // Store all pending for filtering and update counts
+        allPendingOrders = pending;
+        updateFilterCounts(pending);
+
+        // Apply current filter
+        const visiblePending = currentStatusFilter === 'all'
+          ? pending
+          : pending.filter(o => o.status === currentStatusFilter);
+
         // Use new grouped rendering for pending orders
-        renderGroupedPendingOrders(pending);
+        renderGroupedPendingOrders(visiblePending);
         renderOrderTable('confirmedOrdersTable', confirmed, false);
         renderOrderTable('rejectedOrdersTable', rejected, false);
       } catch (err) {
@@ -4775,6 +5133,39 @@
 
     // Store pending orders globally for updates
     let pendingOrdersData = [];
+    let allPendingOrders = [];
+    let currentStatusFilter = 'all';
+
+    // Filter orders by status (exposed on window for inline onclick handlers)
+    window.filterOrdersByStatus = filterOrdersByStatus;
+    function filterOrdersByStatus(status) {
+      currentStatusFilter = status;
+
+      // Update active button
+      document.querySelectorAll('#statusFilters .status-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+      });
+
+      // Filter and re-render
+      const filtered = status === 'all'
+        ? allPendingOrders
+        : allPendingOrders.filter(o => o.status === status);
+
+      renderGroupedPendingOrders(filtered);
+    }
+
+    // Update filter badge counts
+    function updateFilterCounts(orders) {
+      const counts = { all: orders.length };
+      const statuses = ['pending', 'pending_delivery', 'pending_mp', 'pending_cash', 'pending_payment', 'paid_mp'];
+      statuses.forEach(s => { counts[s] = 0; });
+      orders.forEach(o => { if (counts.hasOwnProperty(o.status)) counts[o.status]++; });
+
+      Object.keys(counts).forEach(key => {
+        const el = document.getElementById('filter-count-' + key);
+        if (el) el.textContent = counts[key];
+      });
+    }
 
     // Group orders by user
     function groupOrdersByUser(orders) {
@@ -4813,7 +5204,9 @@
         'pending': 'Pendiente',
         'pending_delivery': 'Pendiente Entrega',
         'pending_mp': 'Pendiente MP',
-        'pending_cash': 'Pendiente Efectivo'
+        'pending_cash': 'Pendiente Efectivo',
+        'pending_payment': 'Pendiente de Pago',
+        'paid_mp': 'Pagada (MercadoPago)'
       };
       return labels[status] || status;
     }
@@ -7212,8 +7605,10 @@
 
         // Log activity
         try {
+          var productNames = productsForSale.map(function(p) { return p.name; }).join(', ');
           await addDoc(collection(db, "activity_logs"), {
             action: 'Venta generada para ' + (distData.nombre || distributorUsername),
+            title: 'Venta Directa: ' + productNames.substring(0, 60),
             type: 'admin_sale',
             userId: distributorId,
             saleId: saleId,
@@ -7222,6 +7617,7 @@
             details: {
               distributorType: distributorType,
               productsCount: productsForSale.length,
+              productNames: productNames,
               notes: notes
             },
             timestamp: serverTimestamp(),
@@ -7480,6 +7876,7 @@
         }
 
         document.getElementById('inventoryCount').textContent = totalStock;
+        document.getElementById('inventoryCount').classList.remove('loading-pulse');
         document.getElementById('totalStockUnits').textContent = totalStock;
         document.getElementById('totalSoldUnits').textContent = totalSoldUnits;
         document.getElementById('lastInventoryUpdate').textContent = lastUpdate;
