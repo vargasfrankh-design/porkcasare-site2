@@ -6,6 +6,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@netlify/blobs": "^10.7.4",
     "firebase-admin": "^13.6.0"
   }
 }

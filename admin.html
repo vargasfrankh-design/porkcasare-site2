@@ -4199,6 +4199,16 @@
         </div>
       </div>
 
+      <!-- Documentación del Distribuidor -->
+      <div style="padding:24px;border-bottom:1px solid #e9ecef;">
+        <h3 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">📄</span> Documentación del Distribuidor
+        </h3>
+        <div id="payoutReportDocsContainer" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;">
+          <p style="color:#6c757d;font-size:13px;grid-column:1/-1;">Cargando documentos...</p>
+        </div>
+      </div>
+
       <!-- Monto a Pagar -->
       <div style="padding:24px;background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border-bottom:1px solid #e9ecef;">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
@@ -6353,6 +6363,9 @@
         document.getElementById('payoutReportUserIdHidden').value = userId;
         document.getElementById('payoutReportAmountHidden').value = amount;
 
+        // Cargar documentación del distribuidor
+        loadDistributorDocuments(userId);
+
       } catch (err) {
         console.error('Error loading payout report:', err);
         alert('Error cargando el informe: ' + err.message);
@@ -6532,6 +6545,110 @@
     function closePayoutReportModal() {
       document.getElementById('payoutReportModal').style.display = 'none';
     }
+
+    // --- Documentación del distribuidor en el informe de pago ---
+    const DOC_TYPE_LABELS = {
+      cedula_frontal: 'Cédula (Frontal)',
+      cedula_posterior: 'Cédula (Posterior)',
+      rut: 'RUT',
+      certificacion_bancaria: 'Cert. Bancaria',
+    };
+
+    async function loadDistributorDocuments(userId) {
+      const container = document.getElementById('payoutReportDocsContainer');
+      container.innerHTML = '<p style="color:#6c757d;font-size:13px;grid-column:1/-1;">Cargando documentos...</p>';
+
+      try {
+        const res = await fetch('/.netlify/functions/get-documents?userId=' + encodeURIComponent(userId));
+        const data = await res.json();
+
+        if (!data.success || !data.documents || Object.keys(data.documents).length === 0) {
+          container.innerHTML = '<p style="color:#dc2626;font-size:13px;grid-column:1/-1;">El distribuidor no ha subido documentación.</p>';
+          return;
+        }
+
+        container.innerHTML = '';
+        const docTypes = ['cedula_frontal', 'cedula_posterior', 'rut', 'certificacion_bancaria'];
+
+        for (const dt of docTypes) {
+          const docInfo = data.documents[dt];
+          const label = DOC_TYPE_LABELS[dt] || dt;
+
+          if (!docInfo) {
+            container.innerHTML += `
+              <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px;">
+                <div style="font-size:12px;color:#dc2626;font-weight:600;">${label}</div>
+                <div style="font-size:11px;color:#991b1b;margin-top:4px;">No cargado</div>
+              </div>`;
+            continue;
+          }
+
+          const statusColors = {
+            uploaded: { bg: '#dbeafe', border: '#bfdbfe', text: '#1d4ed8' },
+            approved: { bg: '#dcfce7', border: '#bbf7d0', text: '#16a34a' },
+            rejected: { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
+          };
+          const sc = statusColors[docInfo.status] || statusColors.uploaded;
+          const uploadDate = docInfo.uploadedAt ? new Date(docInfo.uploadedAt).toLocaleDateString('es-CO') : 'N/A';
+          const fileSize = docInfo.fileSize ? (docInfo.fileSize / 1024).toFixed(0) + ' KB' : '';
+
+          container.innerHTML += `
+            <div style="background:${sc.bg};border:1px solid ${sc.border};border-radius:8px;padding:14px;">
+              <div style="font-size:12px;color:${sc.text};font-weight:600;">${label}</div>
+              <div style="font-size:11px;color:#475569;margin-top:4px;">${docInfo.fileName || 'Archivo'}</div>
+              <div style="font-size:10px;color:#94a3b8;margin-top:2px;">${fileSize} — ${uploadDate}</div>
+              <div style="margin-top:8px;display:flex;gap:6px;">
+                <button onclick="previewAdminDoc('${userId}','${dt}')" style="padding:4px 10px;font-size:11px;border-radius:4px;border:1px solid ${sc.border};background:white;cursor:pointer;color:${sc.text};">Ver</button>
+                <button onclick="downloadAdminDoc('${userId}','${dt}')" style="padding:4px 10px;font-size:11px;border-radius:4px;border:1px solid ${sc.border};background:white;cursor:pointer;color:${sc.text};">Descargar</button>
+              </div>
+            </div>`;
+        }
+      } catch (err) {
+        console.error('Error loading distributor docs:', err);
+        container.innerHTML = '<p style="color:#dc2626;font-size:13px;grid-column:1/-1;">Error al cargar documentos.</p>';
+      }
+    }
+
+    window.previewAdminDoc = async function(userId, docType) {
+      try {
+        const res = await fetch(`/.netlify/functions/get-documents?userId=${encodeURIComponent(userId)}&docType=${encodeURIComponent(docType)}`);
+        const data = await res.json();
+        if (!data.success || !data.file) {
+          alert('No se pudo cargar el documento.');
+          return;
+        }
+        const win = window.open('', '_blank');
+        if (data.file.fileType === 'application/pdf') {
+          win.document.write(`<html><head><title>${DOC_TYPE_LABELS[docType] || docType}</title></head><body style="margin:0;"><iframe src="${data.file.data}" style="width:100%;height:100vh;border:none;"></iframe></body></html>`);
+        } else {
+          win.document.write(`<html><head><title>${DOC_TYPE_LABELS[docType] || docType}</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f0f0f0;"><img src="${data.file.data}" style="max-width:100%;max-height:100vh;object-fit:contain;"></body></html>`);
+        }
+        win.document.close();
+      } catch (err) {
+        console.error('Preview error:', err);
+        alert('Error al previsualizar documento.');
+      }
+    };
+
+    window.downloadAdminDoc = async function(userId, docType) {
+      try {
+        const res = await fetch(`/.netlify/functions/get-documents?userId=${encodeURIComponent(userId)}&docType=${encodeURIComponent(docType)}`);
+        const data = await res.json();
+        if (!data.success || !data.file) {
+          alert('No se pudo descargar el documento.');
+          return;
+        }
+        const a = document.createElement('a');
+        a.href = data.file.data;
+        a.download = data.file.fileName || `${docType}.${data.file.fileType.split('/')[1]}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (err) {
+        console.error('Download error:', err);
+        alert('Error al descargar documento.');
+      }
+    };
 
     // Event listeners para el modal de informe de pago
     document.getElementById('payoutReportModalClose').addEventListener('click', closePayoutReportModal);
