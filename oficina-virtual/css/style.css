@@ -646,14 +646,14 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: #ffffff;
   padding: 6px 12px;
   border-radius: 6px;
   text-decoration: none;
   font-weight: 500;
   font-size: 12px;
-  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.25),
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25),
               0 1px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   cursor: pointer;
@@ -662,7 +662,7 @@ body {
 
 .btn-documentation:hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 12px rgba(37, 211, 102, 0.35),
+  box-shadow: 0 3px 12px rgba(59, 130, 246, 0.35),
               0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
@@ -700,6 +700,151 @@ body {
   }
 }
 /* ========== End Botón de Documentación ========== */
+
+/* ========== Document Upload Modal ========== */
+.doc-upload-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.doc-card-header {
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.doc-card-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.doc-card-status {
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.doc-card-status.status-uploaded {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.doc-card-status.status-approved {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.doc-card-status.status-rejected {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.doc-card-status.status-error {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.doc-card-body {
+  padding: 16px;
+}
+
+.doc-drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px 16px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+}
+
+.doc-drop-zone:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.drop-icon {
+  font-size: 28px;
+}
+
+.drop-text {
+  font-size: 13px;
+  color: #475569;
+  text-align: center;
+}
+
+.drop-hint {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.doc-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #eff6ff;
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+}
+
+.preview-name {
+  font-size: 13px;
+  color: #1e40af;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 10px;
+}
+
+.btn-remove-doc {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.doc-progress {
+  margin-top: 8px;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.doc-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.4s ease;
+}
+/* ========== End Document Upload Modal ========== */
 
 /* Avatar grid */
 .avatar-options {

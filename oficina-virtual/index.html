@@ -309,12 +309,12 @@
         <p><strong>Puntos personales:</strong> <span id="points">0</span></p>
         <p><strong>Puntos grupales:</strong> <span id="teamPoints">0</span></p>
 
-        <!-- Botón de documentación (dinámico) -->
+        <!-- Botón de documentación (abre modal) -->
         <div class="documentation-btn-container" id="documentationContainer" style="margin: 16px 0;">
-          <a href="https://wa.me/573125929316" target="_blank" rel="noopener noreferrer" class="btn-documentation" id="btnDocumentation" title="Gestionar documentación">
+          <button type="button" class="btn-documentation" id="btnDocumentation" title="Gestionar documentación" onclick="document.getElementById('docUploadModal').style.display='flex'">
             <span class="btn-doc-icon">📄</span>
             <span class="btn-doc-text" id="btnDocText">Subir documentación</span>
-          </a>
+          </button>
         </div>
 
         <!-- Bloque de comisiones -->
@@ -1482,6 +1482,343 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
   // Actualizar inmediatamente y luego cada 3 segundos
   actualizarPremio();
   setInterval(actualizarPremio, 3000);
+})();
+</script>
+
+<!-- ===== Modal: Subir Documentación ===== -->
+<div id="docUploadModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;align-items:center;justify-content:center;overflow-y:auto;">
+  <div style="background:white;border-radius:12px;width:95%;max-width:600px;max-height:90vh;overflow-y:auto;margin:20px auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg, #1a1f36 0%, #2c3e50 100%);color:white;padding:24px;border-radius:12px 12px 0 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2 style="margin:0;font-size:20px;font-weight:700;">📄 Subir Documentación</h2>
+          <p style="margin:8px 0 0 0;opacity:0.8;font-size:13px;">Sube tus documentos requeridos de forma segura</p>
+        </div>
+        <button onclick="document.getElementById('docUploadModal').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:24px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+      </div>
+    </div>
+
+    <!-- Document upload cards -->
+    <div style="padding:24px;display:flex;flex-direction:column;gap:20px;" id="docUploadCards">
+
+      <!-- Cédula Frontal -->
+      <div class="doc-upload-card" data-doc-type="cedula_frontal">
+        <div class="doc-card-header">
+          <div>
+            <span class="doc-card-title">🪪 Cédula de Identidad (Frontal)</span>
+            <span class="doc-card-status" id="status_cedula_frontal">Pendiente</span>
+          </div>
+        </div>
+        <div class="doc-card-body">
+          <input type="file" id="file_cedula_frontal" accept=".pdf,.jpg,.jpeg,.png" capture="environment" style="display:none" onchange="handleDocFileSelect(this, 'cedula_frontal')">
+          <div class="doc-drop-zone" id="dropzone_cedula_frontal" onclick="document.getElementById('file_cedula_frontal').click()">
+            <span class="drop-icon">📤</span>
+            <span class="drop-text">Toca para seleccionar archivo o tomar foto</span>
+            <span class="drop-hint">PDF, JPG, PNG — Máximo 5MB</span>
+          </div>
+          <div class="doc-preview" id="preview_cedula_frontal" style="display:none;">
+            <span class="preview-name" id="fname_cedula_frontal"></span>
+            <button class="btn-remove-doc" onclick="removeDocFile('cedula_frontal')">✕</button>
+          </div>
+          <div class="doc-progress" id="progress_cedula_frontal" style="display:none;">
+            <div class="doc-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cédula Posterior -->
+      <div class="doc-upload-card" data-doc-type="cedula_posterior">
+        <div class="doc-card-header">
+          <div>
+            <span class="doc-card-title">🪪 Cédula de Identidad (Posterior)</span>
+            <span class="doc-card-status" id="status_cedula_posterior">Pendiente</span>
+          </div>
+        </div>
+        <div class="doc-card-body">
+          <input type="file" id="file_cedula_posterior" accept=".pdf,.jpg,.jpeg,.png" capture="environment" style="display:none" onchange="handleDocFileSelect(this, 'cedula_posterior')">
+          <div class="doc-drop-zone" id="dropzone_cedula_posterior" onclick="document.getElementById('file_cedula_posterior').click()">
+            <span class="drop-icon">📤</span>
+            <span class="drop-text">Toca para seleccionar archivo o tomar foto</span>
+            <span class="drop-hint">PDF, JPG, PNG — Máximo 5MB</span>
+          </div>
+          <div class="doc-preview" id="preview_cedula_posterior" style="display:none;">
+            <span class="preview-name" id="fname_cedula_posterior"></span>
+            <button class="btn-remove-doc" onclick="removeDocFile('cedula_posterior')">✕</button>
+          </div>
+          <div class="doc-progress" id="progress_cedula_posterior" style="display:none;">
+            <div class="doc-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RUT -->
+      <div class="doc-upload-card" data-doc-type="rut">
+        <div class="doc-card-header">
+          <div>
+            <span class="doc-card-title">📋 RUT (Registro Único Tributario)</span>
+            <span class="doc-card-status" id="status_rut">Pendiente</span>
+          </div>
+        </div>
+        <div class="doc-card-body">
+          <input type="file" id="file_rut" accept=".pdf,.jpg,.jpeg,.png" capture="environment" style="display:none" onchange="handleDocFileSelect(this, 'rut')">
+          <div class="doc-drop-zone" id="dropzone_rut" onclick="document.getElementById('file_rut').click()">
+            <span class="drop-icon">📤</span>
+            <span class="drop-text">Toca para seleccionar archivo o tomar foto</span>
+            <span class="drop-hint">PDF, JPG, PNG — Máximo 5MB</span>
+          </div>
+          <div class="doc-preview" id="preview_rut" style="display:none;">
+            <span class="preview-name" id="fname_rut"></span>
+            <button class="btn-remove-doc" onclick="removeDocFile('rut')">✕</button>
+          </div>
+          <div class="doc-progress" id="progress_rut" style="display:none;">
+            <div class="doc-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Certificación Bancaria -->
+      <div class="doc-upload-card" data-doc-type="certificacion_bancaria">
+        <div class="doc-card-header">
+          <div>
+            <span class="doc-card-title">🏦 Certificación Bancaria</span>
+            <span class="doc-card-status" id="status_certificacion_bancaria">Pendiente</span>
+          </div>
+        </div>
+        <div class="doc-card-body">
+          <input type="file" id="file_certificacion_bancaria" accept=".pdf,.jpg,.jpeg,.png" capture="environment" style="display:none" onchange="handleDocFileSelect(this, 'certificacion_bancaria')">
+          <div class="doc-drop-zone" id="dropzone_certificacion_bancaria" onclick="document.getElementById('file_certificacion_bancaria').click()">
+            <span class="drop-icon">📤</span>
+            <span class="drop-text">Toca para seleccionar archivo o tomar foto</span>
+            <span class="drop-hint">PDF, JPG, PNG — Máximo 5MB</span>
+          </div>
+          <div class="doc-preview" id="preview_certificacion_bancaria" style="display:none;">
+            <span class="preview-name" id="fname_certificacion_bancaria"></span>
+            <button class="btn-remove-doc" onclick="removeDocFile('certificacion_bancaria')">✕</button>
+          </div>
+          <div class="doc-progress" id="progress_certificacion_bancaria" style="display:none;">
+            <div class="doc-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:16px 24px;background:#f8f9fa;border-radius:0 0 12px 12px;display:flex;justify-content:flex-end;gap:12px;">
+      <button onclick="document.getElementById('docUploadModal').style.display='none'" style="padding:10px 20px;border-radius:8px;border:1px solid #ccc;background:white;cursor:pointer;font-size:14px;">Cerrar</button>
+      <button id="btnUploadAllDocs" onclick="uploadAllDocuments()" style="padding:10px 24px;border-radius:8px;border:none;background:linear-gradient(135deg, #3b82f6, #1d4ed8);color:white;cursor:pointer;font-weight:600;font-size:14px;">Subir Documentos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Document upload logic -->
+<script>
+(function() {
+  const DOC_TYPES = ['cedula_frontal', 'cedula_posterior', 'rut', 'certificacion_bancaria'];
+  const MAX_SIZE = 5 * 1024 * 1024;
+  const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+  const pendingFiles = {};
+
+  // Make functions globally accessible
+  window.handleDocFileSelect = function(input, docType) {
+    const file = input.files[0];
+    if (!file) return;
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      alert('Tipo de archivo no permitido. Use PDF, JPG o PNG.');
+      input.value = '';
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      alert('El archivo excede el tamaño máximo de 5MB.');
+      input.value = '';
+      return;
+    }
+
+    pendingFiles[docType] = file;
+    const preview = document.getElementById('preview_' + docType);
+    const dropzone = document.getElementById('dropzone_' + docType);
+    const fname = document.getElementById('fname_' + docType);
+
+    fname.textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+    preview.style.display = 'flex';
+    dropzone.style.display = 'none';
+  };
+
+  window.removeDocFile = function(docType) {
+    delete pendingFiles[docType];
+    const input = document.getElementById('file_' + docType);
+    input.value = '';
+    document.getElementById('preview_' + docType).style.display = 'none';
+    document.getElementById('dropzone_' + docType).style.display = 'flex';
+  };
+
+  window.uploadAllDocuments = async function() {
+    const typesToUpload = Object.keys(pendingFiles);
+    if (typesToUpload.length === 0) {
+      alert('No hay documentos seleccionados para subir.');
+      return;
+    }
+
+    // Get current user ID from Firebase
+    const { auth } = await import('/src/firebase-config.js');
+    const user = auth.currentUser;
+    if (!user) {
+      alert('Debes iniciar sesión para subir documentos.');
+      return;
+    }
+
+    const btn = document.getElementById('btnUploadAllDocs');
+    btn.disabled = true;
+    btn.textContent = 'Subiendo...';
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const docType of typesToUpload) {
+      const file = pendingFiles[docType];
+      const progressEl = document.getElementById('progress_' + docType);
+      const progressBar = progressEl.querySelector('.doc-progress-bar');
+      progressEl.style.display = 'block';
+      progressBar.style.width = '30%';
+
+      try {
+        const base64 = await fileToBase64(file);
+        progressBar.style.width = '60%';
+
+        const res = await fetch('/.netlify/functions/upload-document', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            docType,
+            fileName: file.name,
+            fileData: base64,
+            fileType: file.type,
+          }),
+        });
+
+        const data = await res.json();
+        progressBar.style.width = '100%';
+
+        if (data.success) {
+          successCount++;
+          updateDocStatus(docType, 'uploaded');
+          delete pendingFiles[docType];
+        } else {
+          errorCount++;
+          updateDocStatus(docType, 'error', data.error);
+        }
+      } catch (err) {
+        errorCount++;
+        updateDocStatus(docType, 'error', 'Error de conexión');
+        console.error('Upload error:', err);
+      }
+
+      setTimeout(() => { progressEl.style.display = 'none'; }, 1500);
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Subir Documentos';
+
+    if (successCount > 0 && errorCount === 0) {
+      alert('Todos los documentos se subieron correctamente.');
+    } else if (successCount > 0) {
+      alert(successCount + ' documento(s) subido(s). ' + errorCount + ' error(es).');
+    } else {
+      alert('Error al subir documentos. Intenta nuevamente.');
+    }
+
+    // Update button text on main page if all docs are uploaded
+    loadExistingDocStatus();
+  };
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function updateDocStatus(docType, status, errorMsg) {
+    const statusEl = document.getElementById('status_' + docType);
+    if (!statusEl) return;
+
+    const statusMap = {
+      pending: { text: 'Pendiente', cls: 'status-pending' },
+      uploaded: { text: 'Cargado ✓', cls: 'status-uploaded' },
+      approved: { text: 'Aprobado ✓', cls: 'status-approved' },
+      rejected: { text: 'Rechazado ✕', cls: 'status-rejected' },
+      error: { text: 'Error: ' + (errorMsg || ''), cls: 'status-error' },
+    };
+
+    const s = statusMap[status] || statusMap.pending;
+    statusEl.textContent = s.text;
+    statusEl.className = 'doc-card-status ' + s.cls;
+  }
+
+  // Load existing document status on modal open
+  window.loadExistingDocStatus = async function() {
+    try {
+      const { auth } = await import('/src/firebase-config.js');
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const res = await fetch('/.netlify/functions/get-documents?userId=' + user.uid);
+      const data = await res.json();
+      if (!data.success || !data.documents) return;
+
+      let uploadedCount = 0;
+      for (const docType of DOC_TYPES) {
+        if (data.documents[docType]) {
+          uploadedCount++;
+          const doc = data.documents[docType];
+          updateDocStatus(docType, doc.status || 'uploaded');
+
+          // Show the preview with existing file info
+          const preview = document.getElementById('preview_' + docType);
+          const dropzone = document.getElementById('dropzone_' + docType);
+          const fname = document.getElementById('fname_' + docType);
+          if (preview && dropzone && fname) {
+            fname.textContent = doc.fileName + ' (' + (doc.fileSize / 1024).toFixed(0) + ' KB)';
+            preview.style.display = 'flex';
+            dropzone.style.display = 'none';
+          }
+        }
+      }
+
+      // Update main page button
+      const btnDoc = document.getElementById('btnDocumentation');
+      const btnText = document.getElementById('btnDocText');
+      if (uploadedCount === DOC_TYPES.length) {
+        btnDoc.classList.add('docs-uploaded');
+        btnText.textContent = 'Documentación completa';
+      } else if (uploadedCount > 0) {
+        btnDoc.classList.add('docs-uploaded');
+        btnText.textContent = 'Documentación (' + uploadedCount + '/' + DOC_TYPES.length + ')';
+      }
+    } catch (err) {
+      console.error('Error loading doc status:', err);
+    }
+  };
+
+  // Load status when modal opens
+  const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.target.id === 'docUploadModal' && m.target.style.display === 'flex') {
+        loadExistingDocStatus();
+      }
+    }
+  });
+  const modal = document.getElementById('docUploadModal');
+  if (modal) observer.observe(modal, { attributes: true, attributeFilter: ['style'] });
+
+  // Also load status on page load (to update button text)
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(loadExistingDocStatus, 2000);
+  });
 })();
 </script>
 
