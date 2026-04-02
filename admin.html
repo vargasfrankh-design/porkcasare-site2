@@ -4203,9 +4203,19 @@
       <div style="padding:24px;border-bottom:1px solid #e9ecef;">
         <h3 style="margin:0 0 16px 0;font-size:16px;color:#333;display:flex;align-items:center;gap:8px;">
           <span style="font-size:20px;">📄</span> Documentación del Distribuidor
+          <span id="payoutReportDocEstadoBadge" style="display:none;margin-left:auto;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;"></span>
         </h3>
         <div id="payoutReportDocsContainer" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;">
           <p style="color:#6c757d;font-size:13px;grid-column:1/-1;">Cargando documentos...</p>
+        </div>
+        <!-- Admin documentation action buttons -->
+        <div id="docAdminActions" style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;">
+          <button id="btnConfirmarDocs" onclick="confirmarDocumentacion()" style="display:none;padding:10px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:white;cursor:pointer;font-weight:600;font-size:13px;display:none;">
+            ✓ Confirmar documentación
+          </button>
+          <button id="btnReabrirDocs" onclick="reabrirDocumentacion()" style="display:none;padding:10px 20px;border-radius:8px;border:1px solid #f59e0b;background:#fffbeb;color:#92400e;cursor:pointer;font-weight:600;font-size:13px;">
+            🔄 Habilitar nueva carga de documentos
+          </button>
         </div>
       </div>
 
@@ -6558,6 +6568,13 @@
       const container = document.getElementById('payoutReportDocsContainer');
       container.innerHTML = '<p style="color:#6c757d;font-size:13px;grid-column:1/-1;">Cargando documentos...</p>';
 
+      const estadoBadge = document.getElementById('payoutReportDocEstadoBadge');
+      const btnConfirmar = document.getElementById('btnConfirmarDocs');
+      const btnReabrir = document.getElementById('btnReabrirDocs');
+      estadoBadge.style.display = 'none';
+      btnConfirmar.style.display = 'none';
+      btnReabrir.style.display = 'none';
+
       try {
         const res = await fetch('/.netlify/functions/get-documents?userId=' + encodeURIComponent(userId));
         const data = await res.json();
@@ -6566,6 +6583,38 @@
           container.innerHTML = '<p style="color:#dc2626;font-size:13px;grid-column:1/-1;">El distribuidor no ha subido documentación.</p>';
           return;
         }
+
+        // Show documentation status badge
+        const estado = data.documentacionEstado;
+        if (estado === 'aprobado') {
+          estadoBadge.style.display = 'inline-block';
+          estadoBadge.style.background = '#dcfce7';
+          estadoBadge.style.color = '#166534';
+          estadoBadge.textContent = 'APROBADA';
+          btnReabrir.style.display = 'inline-flex';
+        } else if (estado === 'pendiente_validacion') {
+          estadoBadge.style.display = 'inline-block';
+          estadoBadge.style.background = '#fef9c3';
+          estadoBadge.style.color = '#92400e';
+          estadoBadge.textContent = 'PENDIENTE DE VALIDACIÓN';
+          btnConfirmar.style.display = 'inline-flex';
+          btnReabrir.style.display = 'none';
+        } else if (estado === 'pendiente') {
+          estadoBadge.style.display = 'inline-block';
+          estadoBadge.style.background = '#dbeafe';
+          estadoBadge.style.color = '#1e40af';
+          estadoBadge.textContent = 'REQUIERE ACTUALIZACIÓN';
+        } else {
+          // No estado or unknown — check if all docs are uploaded to show confirm btn
+          const docTypes = ['cedula_frontal', 'cedula_posterior', 'rut', 'certificacion_bancaria'];
+          const allUploaded = docTypes.every(dt => data.documents[dt]);
+          if (allUploaded) {
+            btnConfirmar.style.display = 'inline-flex';
+          }
+        }
+
+        // Store userId for action buttons
+        window._currentDocUserId = userId;
 
         container.innerHTML = '';
         const docTypes = ['cedula_frontal', 'cedula_posterior', 'rut', 'certificacion_bancaria'];
@@ -6608,6 +6657,82 @@
         container.innerHTML = '<p style="color:#dc2626;font-size:13px;grid-column:1/-1;">Error al cargar documentos.</p>';
       }
     }
+
+    // Admin: Confirm documentation (approve)
+    window.confirmarDocumentacion = async function() {
+      const userId = window._currentDocUserId;
+      if (!userId || !currentUser) return;
+
+      if (!confirm('¿Estás seguro de aprobar la documentación de este distribuidor? El usuario ya no podrá modificar sus documentos.')) return;
+
+      const btn = document.getElementById('btnConfirmarDocs');
+      btn.disabled = true;
+      btn.textContent = 'Procesando...';
+
+      try {
+        const res = await fetch('/.netlify/functions/manage-doc-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            action: 'approve',
+            adminId: currentUser.uid,
+          }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert('Documentación aprobada exitosamente.');
+          loadDistributorDocuments(userId);
+        } else {
+          alert('Error: ' + (data.error || 'No se pudo aprobar la documentación.'));
+        }
+      } catch (err) {
+        console.error('Error confirming docs:', err);
+        alert('Error al aprobar documentación.');
+      }
+
+      btn.disabled = false;
+      btn.textContent = '✓ Confirmar documentación';
+    };
+
+    // Admin: Reopen documentation
+    window.reabrirDocumentacion = async function() {
+      const userId = window._currentDocUserId;
+      if (!userId || !currentUser) return;
+
+      if (!confirm('¿Estás seguro de reabrir la documentación? El usuario podrá subir nuevos documentos.')) return;
+
+      const btn = document.getElementById('btnReabrirDocs');
+      btn.disabled = true;
+      btn.textContent = 'Procesando...';
+
+      try {
+        const res = await fetch('/.netlify/functions/manage-doc-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            action: 'reopen',
+            adminId: currentUser.uid,
+          }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert('Documentación reabierta. El usuario puede subir nuevos documentos.');
+          loadDistributorDocuments(userId);
+        } else {
+          alert('Error: ' + (data.error || 'No se pudo reabrir la documentación.'));
+        }
+      } catch (err) {
+        console.error('Error reopening docs:', err);
+        alert('Error al reabrir documentación.');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '🔄 Habilitar nueva carga de documentos';
+    };
 
     window.previewAdminDoc = async function(userId, docType) {
       try {

@@ -315,6 +315,8 @@
             <span class="btn-doc-icon">📄</span>
             <span class="btn-doc-text" id="btnDocText">Subir documentación</span>
           </button>
+          <!-- Status badge shown below button when documentation has a validation state -->
+          <div id="docStatusBadge" style="display:none;margin-top:8px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;text-align:center;"></div>
         </div>
 
         <!-- Bloque de comisiones -->
@@ -1668,6 +1670,18 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
       return;
     }
 
+    // Check if documentation is already approved
+    try {
+      const checkRes = await fetch('/.netlify/functions/get-documents?userId=' + user.uid);
+      const checkData = await checkRes.json();
+      if (checkData.success && checkData.documentacionEstado === 'aprobado') {
+        alert('Tu documentación ya fue aprobada. No puedes modificar los documentos.');
+        return;
+      }
+    } catch (e) {
+      // Continue with upload if check fails
+    }
+
     const btn = document.getElementById('btnUploadAllDocs');
     btn.disabled = true;
     btn.textContent = 'Subiendo...';
@@ -1768,13 +1782,52 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
 
       const res = await fetch('/.netlify/functions/get-documents?userId=' + user.uid);
       const data = await res.json();
-      if (!data.success || !data.documents) return;
+      if (!data.success) return;
+
+      const documentacionEstado = data.documentacionEstado || null;
+      const docs = data.documents || {};
+      const btnDoc = document.getElementById('btnDocumentation');
+      const btnText = document.getElementById('btnDocText');
+      const statusBadge = document.getElementById('docStatusBadge');
+      const uploadBtn = document.getElementById('btnUploadAllDocs');
+
+      // Handle documentation approved state
+      if (documentacionEstado === 'aprobado') {
+        // Hide the upload button completely
+        btnDoc.style.display = 'none';
+        // Show approved badge
+        statusBadge.style.display = 'block';
+        statusBadge.style.background = 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)';
+        statusBadge.style.color = '#166534';
+        statusBadge.style.border = '1px solid #86efac';
+        statusBadge.innerHTML = '✅ Documentación aprobada';
+        return;
+      }
+
+      // Show the upload button
+      btnDoc.style.display = '';
+
+      if (documentacionEstado === 'pendiente_validacion') {
+        statusBadge.style.display = 'block';
+        statusBadge.style.background = 'linear-gradient(135deg, #fef9c3 0%, #fde68a 100%)';
+        statusBadge.style.color = '#92400e';
+        statusBadge.style.border = '1px solid #fcd34d';
+        statusBadge.innerHTML = '⏳ Documentación pendiente de validación';
+      } else if (documentacionEstado === 'pendiente') {
+        statusBadge.style.display = 'block';
+        statusBadge.style.background = 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)';
+        statusBadge.style.color = '#1e40af';
+        statusBadge.style.border = '1px solid #93c5fd';
+        statusBadge.innerHTML = '📄 Documentación requiere actualización';
+      } else {
+        statusBadge.style.display = 'none';
+      }
 
       let uploadedCount = 0;
       for (const docType of DOC_TYPES) {
-        if (data.documents[docType]) {
+        if (docs[docType]) {
           uploadedCount++;
-          const doc = data.documents[docType];
+          const doc = docs[docType];
           updateDocStatus(docType, doc.status || 'uploaded');
 
           // Show the preview with existing file info
@@ -1789,15 +1842,21 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
         }
       }
 
-      // Update main page button
-      const btnDoc = document.getElementById('btnDocumentation');
-      const btnText = document.getElementById('btnDocText');
+      // Update main page button text
       if (uploadedCount === DOC_TYPES.length) {
         btnDoc.classList.add('docs-uploaded');
         btnText.textContent = 'Documentación completa';
       } else if (uploadedCount > 0) {
         btnDoc.classList.add('docs-uploaded');
         btnText.textContent = 'Documentación (' + uploadedCount + '/' + DOC_TYPES.length + ')';
+      } else {
+        btnText.textContent = 'Subir documentación';
+      }
+
+      // Disable upload inside modal if approved
+      if (uploadBtn && documentacionEstado === 'aprobado') {
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Documentación aprobada';
       }
     } catch (err) {
       console.error('Error loading doc status:', err);

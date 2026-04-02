@@ -1,8 +1,20 @@
 // netlify/functions/upload-document.mjs
 // Handles document uploads for user documentation (cédula, RUT, certificación bancaria)
-// Stores files in Netlify Blobs with user-scoped keys
+// Stores files in Firebase Storage, metadata in Firestore under usuarios/{userId}/documentos
 
-import { getStore } from '@netlify/blobs';
+import admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+  const saBase64 = process.env.FIREBASE_ADMIN_SA || '';
+  if (!saBase64) throw new Error('FIREBASE_ADMIN_SA missing');
+  const saJson = JSON.parse(Buffer.from(saBase64, 'base64').toString('utf8'));
+  admin.initializeApp({
+    credential: admin.credential.cert(saJson),
+    storageBucket: 'porkcasare-915ff.firebasestorage.app',
+  });
+}
+const db = admin.firestore();
+const bucket = admin.storage().bucket();
 
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -43,6 +55,17 @@ export const handler = async (event) => {
       return respond(400, { error: 'Tipo de archivo no permitido. Use PDF, JPG o PNG.' });
     }
 
+    // Check if documentation is already approved — block uploads in that case
+    const userDoc = await db.collection('usuarios').doc(userId).get();
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      if (userData.documentacionEstado === 'aprobado') {
+        return respond(403, {
+          error: 'La documentación ya fue aprobada. No se pueden modificar los documentos.',
+        });
+      }
+    }
+
     // Decode base64 file data
     const base64Data = fileData.replace(/^data:[^;]+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
@@ -51,44 +74,66 @@ export const handler = async (event) => {
       return respond(400, { error: 'El archivo excede el tamaño máximo de 5MB' });
     }
 
-    const store = getStore({ name: 'user-documents', consistency: 'strong' });
+    // Upload file to Firebase Storage
+    const storagePath = `documentos/${userId}/${docType}/${fileName}`;
+    const file = bucket.file(storagePath);
 
-    // Store the file
-    const blobKey = `${userId}/${docType}/${fileName}`;
-    await store.set(blobKey, buffer, {
+    await file.save(buffer, {
       metadata: {
-        userId,
-        docType,
-        fileName,
-        fileType,
-        uploadedAt: new Date().toISOString(),
-        fileSize: String(buffer.length),
+        contentType: fileType,
+        metadata: {
+          userId,
+          docType,
+          uploadedAt: new Date().toISOString(),
+        },
       },
     });
 
-    // Update the user's document index
-    const indexKey = `${userId}/_index`;
-    let index = {};
-    try {
-      const existing = await store.get(indexKey, { type: 'json' });
-      if (existing) index = existing;
-    } catch (_) { /* no index yet */ }
+    // Generate a signed download URL (valid for 5 years)
+    const [downloadUrl] = await file.getSignedUrl({
+      action: 'read',
+      expires: Date.now() + 5 * 365 * 24 * 60 * 60 * 1000,
+    });
 
-    index[docType] = {
+    // Save document metadata in Firestore under usuarios/{userId}/documentos/{docType}
+    const docData = {
       fileName,
       fileType,
-      blobKey,
+      storagePath,
+      downloadUrl,
       uploadedAt: new Date().toISOString(),
       fileSize: buffer.length,
       status: 'uploaded', // uploaded | approved | rejected
     };
 
-    await store.setJSON(indexKey, index);
+    await db
+      .collection('usuarios')
+      .doc(userId)
+      .collection('documentos')
+      .doc(docType)
+      .set(docData);
+
+    // Check if all 4 documents are now uploaded → set status to pendiente_validacion
+    const allDocsSnap = await db
+      .collection('usuarios')
+      .doc(userId)
+      .collection('documentos')
+      .get();
+    const uploadedTypes = [];
+    allDocsSnap.forEach((d) => uploadedTypes.push(d.id));
+    const allUploaded = VALID_DOC_TYPES.every((dt) => uploadedTypes.includes(dt));
+
+    if (allUploaded) {
+      await db.collection('usuarios').doc(userId).update({
+        documentacionEstado: 'pendiente_validacion',
+      });
+    }
 
     return respond(200, {
       success: true,
       message: 'Documento cargado exitosamente',
-      doc: index[docType],
+      doc: docData,
+      allDocumentsUploaded: allUploaded,
     });
   } catch (err) {
     console.error('upload-document error:', err);

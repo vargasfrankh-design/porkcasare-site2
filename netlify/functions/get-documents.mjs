@@ -1,8 +1,21 @@
 // netlify/functions/get-documents.mjs
 // Retrieves document index and file data for a user
+// Reads metadata from Firestore, files from Firebase Storage
 // Used by both the user portal and admin panel
 
-import { getStore } from '@netlify/blobs';
+import admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+  const saBase64 = process.env.FIREBASE_ADMIN_SA || '';
+  if (!saBase64) throw new Error('FIREBASE_ADMIN_SA missing');
+  const saJson = JSON.parse(Buffer.from(saBase64, 'base64').toString('utf8'));
+  admin.initializeApp({
+    credential: admin.credential.cert(saJson),
+    storageBucket: 'porkcasare-915ff.firebasestorage.app',
+  });
+}
+const db = admin.firestore();
+const bucket = admin.storage().bucket();
 
 function respond(statusCode, body) {
   return {
@@ -33,23 +46,27 @@ export const handler = async (event) => {
       return respond(400, { error: 'userId es requerido' });
     }
 
-    const store = getStore({ name: 'user-documents', consistency: 'strong' });
-
-    // If docType is provided, return the actual file
+    // If docType is provided, return the actual file from Firebase Storage
     if (docType) {
-      const indexKey = `${userId}/_index`;
-      const index = await store.get(indexKey, { type: 'json' });
-      if (!index || !index[docType]) {
+      // Get metadata from Firestore
+      const docSnap = await db
+        .collection('usuarios')
+        .doc(userId)
+        .collection('documentos')
+        .doc(docType)
+        .get();
+
+      if (!docSnap.exists) {
         return respond(404, { error: 'Documento no encontrado' });
       }
 
-      const docInfo = index[docType];
-      const fileBuffer = await store.get(docInfo.blobKey, { type: 'arrayBuffer' });
-      if (!fileBuffer) {
-        return respond(404, { error: 'Archivo no encontrado' });
-      }
+      const docInfo = docSnap.data();
 
-      const base64 = Buffer.from(fileBuffer).toString('base64');
+      // Download file from Firebase Storage
+      const file = bucket.file(docInfo.storagePath);
+      const [fileBuffer] = await file.download();
+
+      const base64 = fileBuffer.toString('base64');
       return respond(200, {
         success: true,
         file: {
@@ -59,17 +76,33 @@ export const handler = async (event) => {
           uploadedAt: docInfo.uploadedAt,
           fileSize: docInfo.fileSize,
           status: docInfo.status || 'uploaded',
+          downloadUrl: docInfo.downloadUrl,
         },
       });
     }
 
-    // Return document index only
-    const indexKey = `${userId}/_index`;
-    const index = await store.get(indexKey, { type: 'json' });
+    // Return all document metadata from Firestore
+    const docsSnap = await db
+      .collection('usuarios')
+      .doc(userId)
+      .collection('documentos')
+      .get();
+
+    const documents = {};
+    docsSnap.forEach((doc) => {
+      documents[doc.id] = doc.data();
+    });
+
+    // Also return the user-level documentation status
+    const userDoc = await db.collection('usuarios').doc(userId).get();
+    const documentacionEstado = userDoc.exists
+      ? userDoc.data().documentacionEstado || null
+      : null;
 
     return respond(200, {
       success: true,
-      documents: index || {},
+      documents,
+      documentacionEstado,
     });
   } catch (err) {
     console.error('get-documents error:', err);
