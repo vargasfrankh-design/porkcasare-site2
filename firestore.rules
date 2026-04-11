@@ -152,6 +152,15 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // ========== Inversiones Collection ==========
+    match /inversiones/{inversionId} {
+      // Public read - investments are displayed in virtual office
+      allow read: if true;
+
+      // Only admins can create, update, or delete investments
+      allow create, update, delete: if isAdmin();
+    }
+
     // ========== Commissions Purged Collection (Admin Reports) ==========
     match /commissionsPurged/{reportId} {
       // Only admins can read purge reports
