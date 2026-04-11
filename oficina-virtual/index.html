@@ -506,6 +506,11 @@
                   <span class="retos-emoji">🎮</span>
                   <span class="retos-name">Retos</span>
                 </button>
+                <!-- Inversiones Button -->
+                <button class="inversiones-btn-standalone" id="btnInversionesConsumo">
+                  <span class="inversiones-emoji">📈</span>
+                  <span class="inversiones-name">Inversiones</span>
+                </button>
               </div>
             </div>
 
@@ -639,6 +644,21 @@
                   </div>
                   <button class="btn-game-play" onclick="window.location.href='/juego-ruleta/'">Jugar ahora</button>
                 </div>
+              </div>
+            </div>
+
+            <!-- Inversiones Section -->
+            <div id="inversionesSection" class="inversiones-section" style="display: none;">
+              <div class="inversiones-header">
+                <h3>📈 Inversiones - Oportunidades de Crecimiento</h3>
+                <p>Explora nuestras oportunidades de inversión y haz crecer tu capital</p>
+                <button class="btn-back-products" id="btnBackFromInversiones">
+                  <span>←</span> Volver a Productos
+                </button>
+              </div>
+              <div class="inversiones-grid" id="inversionesGrid">
+                <!-- Investment cards loaded dynamically from Firestore -->
+                <p style="text-align:center;color:#666;padding:20px;">Cargando inversiones...</p>
               </div>
             </div>
 
@@ -1350,15 +1370,20 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
 
     if (!btnRetos || !retosSection || !productGrid) return;
 
+    const inversionesSection = document.getElementById('inversionesSection');
+    const btnInversiones = document.getElementById('btnInversionesConsumo');
+
     function showRetos() {
-      // Hide products and show retos
+      // Hide products, inversiones and show retos
       productGrid.style.display = 'none';
       if (historySection) historySection.style.display = 'none';
       if (productsTitle) productsTitle.style.display = 'none';
+      if (inversionesSection) inversionesSection.style.display = 'none';
       retosSection.style.display = 'block';
 
       // Update button state
       btnRetos.classList.add('active');
+      if (btnInversiones) btnInversiones.classList.remove('active');
 
       // Remove active state from category filters
       document.querySelectorAll('.category-filter-btn').forEach(btn => {
@@ -1367,14 +1392,16 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
     }
 
     function showProducts() {
-      // Show products and hide retos
+      // Show products and hide retos/inversiones
       productGrid.style.display = '';
       if (historySection) historySection.style.display = '';
       if (productsTitle) productsTitle.style.display = '';
       retosSection.style.display = 'none';
+      if (inversionesSection) inversionesSection.style.display = 'none';
 
       // Update button state
       btnRetos.classList.remove('active');
+      if (btnInversiones) btnInversiones.classList.remove('active');
 
       // Re-activate "Todas" category
       const todasBtn = document.querySelector('.category-filter-btn[data-category="todas"]');
@@ -1401,7 +1428,7 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
     // When clicking a category filter, go back to products
     document.querySelectorAll('.category-filter-btn').forEach(btn => {
       btn.addEventListener('click', function() {
-        if (retosSection.style.display === 'block') {
+        if (retosSection.style.display === 'block' || (inversionesSection && inversionesSection.style.display === 'block')) {
           showProducts();
         }
       });
@@ -1412,6 +1439,151 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
     document.addEventListener('DOMContentLoaded', initRetosSection);
   } else {
     initRetosSection();
+  }
+})();
+</script>
+
+<!-- Inversiones Section Toggle -->
+<script>
+(function() {
+  function initInversionesSection() {
+    const btnInversiones = document.getElementById('btnInversionesConsumo');
+    const btnBackFromInversiones = document.getElementById('btnBackFromInversiones');
+    const inversionesSection = document.getElementById('inversionesSection');
+    const productGrid = document.getElementById('productGrid');
+    const retosSection = document.getElementById('retosSection');
+    const historySection = document.querySelector('#tab-consumo .history-section:not(.consumo-section)');
+    const productsTitle = document.querySelector('.consumo-section h2');
+    const btnRetos = document.getElementById('btnRetosConsumo');
+
+    if (!btnInversiones || !inversionesSection || !productGrid) return;
+
+    let inversionesLoaded = false;
+
+    function showInversiones() {
+      productGrid.style.display = 'none';
+      if (historySection) historySection.style.display = 'none';
+      if (productsTitle) productsTitle.style.display = 'none';
+      if (retosSection) retosSection.style.display = 'none';
+      inversionesSection.style.display = 'block';
+
+      btnInversiones.classList.add('active');
+      if (btnRetos) btnRetos.classList.remove('active');
+
+      document.querySelectorAll('.category-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      if (!inversionesLoaded) {
+        loadInversiones();
+        inversionesLoaded = true;
+      }
+    }
+
+    function showProducts() {
+      productGrid.style.display = '';
+      if (historySection) historySection.style.display = '';
+      if (productsTitle) productsTitle.style.display = '';
+      inversionesSection.style.display = 'none';
+      if (retosSection) retosSection.style.display = 'none';
+
+      btnInversiones.classList.remove('active');
+      if (btnRetos) btnRetos.classList.remove('active');
+
+      const todasBtn = document.querySelector('.category-filter-btn[data-category="todas"]');
+      if (todasBtn) todasBtn.classList.add('active');
+    }
+
+    btnInversiones.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (inversionesSection.style.display === 'none' || inversionesSection.style.display === '') {
+        showInversiones();
+      } else {
+        showProducts();
+      }
+    });
+
+    if (btnBackFromInversiones) {
+      btnBackFromInversiones.addEventListener('click', function(e) {
+        e.preventDefault();
+        showProducts();
+      });
+    }
+  }
+
+  async function loadInversiones() {
+    const grid = document.getElementById('inversionesGrid');
+    if (!grid) return;
+
+    try {
+      // Import Firebase modules
+      const { db } = await import('/src/firebase-config.js');
+      const { collection, getDocs, query, where, orderBy } = await import('https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js');
+
+      const inversionesSnap = await getDocs(collection(db, 'inversiones'));
+      const inversiones = [];
+      inversionesSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (!data.deleted && data.activo !== false) {
+          inversiones.push({ id: docSnap.id, ...data });
+        }
+      });
+
+      if (inversiones.length === 0) {
+        grid.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">No hay inversiones disponibles en este momento.</p>';
+        return;
+      }
+
+      grid.innerHTML = inversiones.map(inv => {
+        const statusClass = (inv.estado || '').toLowerCase().replace(/\s+/g, '-')
+          .replace('á', 'a').replace('ó', 'o').replace('é', 'e');
+        const statusColors = {
+          'activo': { bg: 'linear-gradient(135deg, #00c853, #00e676)', color: '#fff' },
+          'proximamente': { bg: 'linear-gradient(135deg, #ff9800, #ffc107)', color: '#fff' },
+          'en-revision': { bg: 'linear-gradient(135deg, #42a5f5, #78909c)', color: '#fff' }
+        };
+        const statusStyle = statusColors[statusClass] || statusColors['en-revision'];
+        const imagen = inv.imagen || '';
+        const thumbnailBg = inv.thumbnailColor || 'linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #00695c 100%)';
+
+        return `
+          <div class="investment-card" data-id="${inv.id}" data-status="${statusClass}">
+            <div class="investment-thumbnail">
+              ${imagen
+                ? `<img src="${imagen}" alt="${inv.nombre}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`
+                : `<div class="investment-thumbnail-placeholder" style="background:${thumbnailBg};">
+                    <span class="investment-icon">${inv.icono || '📈'}</span>
+                  </div>`
+              }
+              <span class="investment-badge ${statusClass}">${inv.estado || 'En revisión'}</span>
+            </div>
+            <h4 class="investment-title">${inv.nombre}</h4>
+            <p class="investment-description">${inv.descripcion || ''}</p>
+            ${statusClass === 'activo'
+              ? `<div class="btn-invest-wrapper">
+                  <span class="invest-emoji invest-emoji-1">💰</span>
+                  <span class="invest-emoji invest-emoji-2">🔥</span>
+                  <span class="invest-emoji invest-emoji-3">💵</span>
+                  <span class="invest-emoji invest-emoji-4">🔥</span>
+                  <button class="btn-investment-info btn-invest-active" onclick="window.open('${inv.linkInfo || '#'}', '_blank')">
+                    💰 Invertir 🔥
+                  </button>
+                </div>`
+              : `<span class="btn-investment-status ${statusClass}">${inv.estado || 'En revisión'}</span>`
+            }
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      console.error('Error loading inversiones:', err);
+      grid.innerHTML = '<p style="text-align:center;color:#e74c3c;padding:20px;">Error al cargar las inversiones. Intente nuevamente.</p>';
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initInversionesSection);
+  } else {
+    initInversionesSection();
   }
 })();
 </script>
@@ -1795,11 +1967,16 @@ import { doc, updateDoc, collection, query, where, getDocs } from 'https://www.g
       if (documentacionEstado === 'aprobado') {
         // Hide the upload button completely
         btnDoc.style.display = 'none';
-        // Show approved badge
-        statusBadge.style.display = 'block';
-        statusBadge.style.background = 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)';
+        // Show approved badge - compact and subtle
+        statusBadge.style.display = 'inline-block';
+        statusBadge.style.background = 'rgba(22, 101, 52, 0.08)';
         statusBadge.style.color = '#166534';
-        statusBadge.style.border = '1px solid #86efac';
+        statusBadge.style.border = '1px solid rgba(134, 239, 172, 0.4)';
+        statusBadge.style.padding = '4px 12px';
+        statusBadge.style.fontSize = '11px';
+        statusBadge.style.fontWeight = '500';
+        statusBadge.style.borderRadius = '20px';
+        statusBadge.style.margin = '4px 0';
         statusBadge.innerHTML = '✅ Documentación aprobada';
         return;
       }

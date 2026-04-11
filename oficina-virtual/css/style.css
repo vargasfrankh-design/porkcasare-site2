@@ -4344,6 +4344,405 @@ body {
   box-shadow: 0 4px 16px rgba(232, 149, 106, 0.5), inset 0 -2px 0 rgba(0, 0, 0, 0.1);
 }
 
+/* ========== Inversiones Button & Section ========== */
+.inversiones-btn-standalone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 20px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #00695c 100%);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  min-width: 85px;
+  box-shadow: 0 4px 16px rgba(26, 35, 126, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.inversiones-btn-standalone::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  animation: inversiones-shimmer 3s infinite;
+}
+
+@keyframes inversiones-shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.inversiones-btn-standalone:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 6px 24px rgba(26, 35, 126, 0.45);
+}
+
+.inversiones-btn-standalone .inversiones-emoji {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.inversiones-btn-standalone .inversiones-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e8eaf6;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.inversiones-btn-standalone.active {
+  background: linear-gradient(135deg, #0d1b5e 0%, #0a3d8f 50%, #004d40 100%);
+  box-shadow: 0 4px 16px rgba(13, 27, 94, 0.6), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Inversiones Section */
+.inversiones-section {
+  padding: 16px 0;
+}
+
+.inversiones-header {
+  text-align: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #1a237e 0%, #0d47a1 40%, #00695c 100%);
+  border-radius: 16px;
+  color: #e8eaf6;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(26, 35, 126, 0.35);
+}
+
+.inversiones-header::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -10%;
+  width: 120%;
+  height: 160%;
+  background: radial-gradient(ellipse at 30% 50%, rgba(255,255,255,0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.inversiones-header h3 {
+  font-size: 26px;
+  margin: 0 0 8px 0;
+  font-weight: 800;
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.inversiones-header p {
+  font-size: 14px;
+  margin: 0 0 16px 0;
+  opacity: 0.9;
+  position: relative;
+  z-index: 1;
+}
+
+.inversiones-header .btn-back-products {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.inversiones-header .btn-back-products:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Inversiones Grid */
+.inversiones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  padding: 0;
+}
+
+/* Investment Card */
+.investment-card {
+  background: var(--product-card-bg, #ffffff);
+  border: 1px solid var(--product-card-border, #e8e8e8);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: relative;
+  min-height: 300px;
+  overflow: hidden;
+}
+
+.investment-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1a237e, #00695c, #1a237e);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.investment-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(26, 35, 126, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: rgba(26, 35, 126, 0.3);
+}
+
+.investment-card:hover::after {
+  opacity: 1;
+}
+
+/* Investment Thumbnail */
+.investment-thumbnail {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.investment-thumbnail-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.investment-icon {
+  font-size: 48px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Investment Badge */
+.investment-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.investment-badge.activo {
+  background: linear-gradient(135deg, #00c853, #00e676);
+  color: white;
+}
+
+.investment-badge.proximamente {
+  background: linear-gradient(135deg, #ff9800, #ffc107);
+  color: white;
+}
+
+.investment-badge.en-revision {
+  background: linear-gradient(135deg, #42a5f5, #78909c);
+  color: white;
+}
+
+/* Investment Title & Description */
+.investment-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  color: var(--text-color, #1a1a1a);
+}
+
+.investment-description {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 auto 0;
+  line-height: 1.4;
+  min-height: 50px;
+}
+
+/* Investment Info Button */
+.btn-investment-info {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 12px;
+  background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-investment-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 35, 126, 0.35);
+}
+
+/* Active Invest Button Wrapper */
+.btn-invest-wrapper {
+  position: relative;
+  margin-top: 12px;
+  overflow: visible;
+}
+
+.btn-invest-active {
+  background: linear-gradient(135deg, #66bb6a, #a5d6a7) !important;
+  color: #1b5e20 !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px;
+  padding: 12px 16px !important;
+  margin-top: 0 !important;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 4px 15px rgba(102, 187, 106, 0.4);
+  animation: investPulse 2s ease-in-out infinite;
+}
+
+.btn-invest-active:hover {
+  background: linear-gradient(135deg, #4caf50, #81c784) !important;
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5) !important;
+  transform: translateY(-3px) scale(1.03);
+}
+
+@keyframes investPulse {
+  0%, 100% { box-shadow: 0 4px 15px rgba(102, 187, 106, 0.4); }
+  50% { box-shadow: 0 4px 25px rgba(102, 187, 106, 0.7); }
+}
+
+/* Floating emojis on invest button */
+.invest-emoji {
+  position: absolute;
+  font-size: 16px;
+  z-index: 2;
+  pointer-events: none;
+  animation-duration: 2.5s;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+
+.invest-emoji-1 {
+  top: -8px;
+  left: 5px;
+  animation-name: floatEmoji1;
+}
+
+.invest-emoji-2 {
+  top: -6px;
+  right: 5px;
+  animation-name: floatEmoji2;
+}
+
+.invest-emoji-3 {
+  bottom: -6px;
+  left: 15px;
+  animation-name: floatEmoji3;
+}
+
+.invest-emoji-4 {
+  bottom: -8px;
+  right: 15px;
+  animation-name: floatEmoji4;
+}
+
+@keyframes floatEmoji1 {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; }
+  50% { transform: translateY(-10px) scale(1.2); opacity: 1; }
+}
+
+@keyframes floatEmoji2 {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0.9; }
+  50% { transform: translateY(-12px) rotate(15deg) scale(1.15); opacity: 1; }
+}
+
+@keyframes floatEmoji3 {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
+  50% { transform: translateY(-8px) scale(1.2); opacity: 1; }
+}
+
+@keyframes floatEmoji4 {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0.85; }
+  50% { transform: translateY(-10px) rotate(-15deg) scale(1.15); opacity: 1; }
+}
+
+.btn-investment-status {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  cursor: default;
+  color: #fff;
+  background: linear-gradient(135deg, #78909c, #90a4ae);
+}
+
+.btn-investment-status.proximamente {
+  background: linear-gradient(135deg, #ff9800, #ffc107);
+}
+
+.btn-investment-status.en-revision {
+  background: linear-gradient(135deg, #42a5f5, #78909c);
+}
+
+/* Responsive for Investment Cards */
+@media (max-width: 768px) {
+  .inversiones-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .investment-card {
+    min-height: 280px;
+    padding: 12px;
+  }
+
+  .investment-thumbnail {
+    height: 100px;
+  }
+
+  .investment-icon {
+    font-size: 40px;
+  }
+
+  .investment-title {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inversiones-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .investment-card {
+    min-height: 250px;
+  }
+}
+
 /* Responsive adjustments for game cards */
 @media (max-width: 768px) {
   .games-grid {
