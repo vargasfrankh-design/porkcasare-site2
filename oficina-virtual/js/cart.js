@@ -186,17 +186,17 @@ function createCartButton() {
   cartButton.className = 'btn';
   cartButton.style.cssText = `
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
+    bottom: 92px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
     box-shadow: 0 4px 12px rgba(118, 75, 162, 0.4);
     cursor: pointer;
-    z-index: 1000;
+    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;

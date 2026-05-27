@@ -11,6 +11,11 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:@anthropic-ai/sdk@0.99",
+        "npm:@netlify/blobs@^10.7.4",
+        "npm:@netlify/database@1",
+        "npm:drizzle-kit@^1.0.0-beta.22",
+        "npm:drizzle-orm@^1.0.0-beta.22",
         "npm:firebase-admin@^13.6.0"
       ]
     }
