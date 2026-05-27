@@ -1395,6 +1395,7 @@
       <button class="tab-button" data-tab="education">Educación</button>
       <button class="tab-button" data-tab="branding">Identidad Visual</button>
       <button class="tab-button" data-tab="compensation">Plan de Compensaci&oacute;n</button>
+      <button class="tab-button" data-tab="notificaciones">Notificaciones</button>
     </div>
 
     <!-- Tab: Resumen -->
@@ -3166,6 +3167,64 @@
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Tab: Notificaciones Admin -->
+    <div id="tab-notificaciones" class="tab-content">
+      <div style="max-width:900px;margin:0 auto;">
+        <h2 style="margin:0 0 8px 0;">Centro de Notificaciones</h2>
+        <p style="margin:0 0 24px 0;color:#666;font-size:14px;">Envia notificaciones a los usuarios de la plataforma.</p>
+
+        <div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:24px;">
+          <h3 style="margin:0 0 16px 0;">Enviar Notificacion</h3>
+          <div style="display:grid;gap:14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">Destinatario</label>
+                <select id="notifTarget" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;font-size:14px;">
+                  <option value="all">Todos los usuarios</option>
+                  <option value="single">Usuario especifico</option>
+                </select>
+              </div>
+              <div id="notifUserIdContainer" style="display:none;">
+                <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">ID del usuario</label>
+                <input type="text" id="notifUserId" placeholder="UID del usuario" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;font-size:14px;" />
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">Tipo</label>
+                <select id="notifType" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;font-size:14px;">
+                  <option value="general">General</option>
+                  <option value="pedido">Pedido</option>
+                  <option value="documento">Documento</option>
+                  <option value="comision">Comision</option>
+                  <option value="reunion">Reunion</option>
+                  <option value="empresa">Empresa</option>
+                  <option value="plataforma">Plataforma</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">Titulo</label>
+              <input type="text" id="notifTitle" placeholder="Titulo de la notificacion" maxlength="100" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;font-size:14px;" />
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;margin-bottom:4px;font-size:13px;">Mensaje</label>
+              <textarea id="notifMessage" rows="3" placeholder="Escribe el mensaje de la notificacion..." maxlength="500" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;font-size:14px;resize:vertical;"></textarea>
+            </div>
+            <button id="notifSendBtn" class="btn-primary" style="padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:none;color:#fff;">
+              Enviar Notificacion
+            </button>
+            <div id="notifSendResult" style="display:none;padding:10px;border-radius:8px;font-size:13px;text-align:center;"></div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+          <h3 style="margin:0 0 16px 0;">Historial de Notificaciones Enviadas</h3>
+          <div id="adminNotifHistory" style="max-height:400px;overflow-y:auto;">
+            <p style="color:#999;text-align:center;">Cargando historial...</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -13553,5 +13612,89 @@
 
   </script>
   <script type="module" src="/js/session-timeout.js"></script>
+  <script>
+  (function() {
+    const notifTab = document.querySelector('[data-tab="notificaciones"]');
+    if (!notifTab) return;
+
+    let initialized = false;
+
+    notifTab.addEventListener('click', function() {
+      if (initialized) return;
+      initialized = true;
+      initNotificacionesAdmin();
+    });
+
+    function initNotificacionesAdmin() {
+      const targetSel = document.getElementById('notifTarget');
+      const userIdContainer = document.getElementById('notifUserIdContainer');
+      const sendBtn = document.getElementById('notifSendBtn');
+      const resultDiv = document.getElementById('notifSendResult');
+
+      targetSel.addEventListener('change', function() {
+        userIdContainer.style.display = this.value === 'single' ? 'block' : 'none';
+      });
+
+      sendBtn.addEventListener('click', async function() {
+        const title = document.getElementById('notifTitle').value.trim();
+        const message = document.getElementById('notifMessage').value.trim();
+        const type = document.getElementById('notifType').value;
+        const target = targetSel.value;
+        const userId = document.getElementById('notifUserId').value.trim();
+
+        if (!title || !message) {
+          showResult('Titulo y mensaje son requeridos', false);
+          return;
+        }
+
+        if (target === 'single' && !userId) {
+          showResult('Ingrese el ID del usuario', false);
+          return;
+        }
+
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Enviando...';
+
+        try {
+          const user = firebase.auth().currentUser;
+          if (!user) { showResult('Sesion expirada', false); return; }
+          const token = await user.getIdToken();
+
+          const payload = { type, title, message };
+          if (target === 'all') payload.targetAll = true;
+          else payload.targetUserId = userId;
+
+          const resp = await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await resp.json();
+          if (resp.ok) {
+            showResult('Notificacion enviada' + (data.count ? ' a ' + data.count + ' usuarios' : ''), true);
+            document.getElementById('notifTitle').value = '';
+            document.getElementById('notifMessage').value = '';
+          } else {
+            showResult(data.error || 'Error al enviar', false);
+          }
+        } catch (e) {
+          showResult('Error de conexion', false);
+        } finally {
+          sendBtn.disabled = false;
+          sendBtn.textContent = 'Enviar Notificacion';
+        }
+      });
+
+      function showResult(msg, success) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = success ? '#e8f5e9' : '#ffebee';
+        resultDiv.style.color = success ? '#2e7d32' : '#c62828';
+        resultDiv.textContent = msg;
+        setTimeout(() => { resultDiv.style.display = 'none'; }, 4000);
+      }
+    }
+  })();
+  </script>
 </body>
 </html>
