@@ -95,6 +95,14 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Auditoría de inventario (eliminaciones de producto y cambios de estado)
+    match /inventoryAudit/{docId} {
+      // Sólo admins pueden leer y crear registros de auditoría
+      allow read, create: if isAdmin();
+      // Los registros de auditoría son inmutables
+      allow update, delete: if false;
+    }
+
     // ========== Distribuidores Collection ==========
     match /distribuidores/{docId} {
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.uid;

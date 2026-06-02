@@ -142,6 +142,144 @@ REGLAS:
 - Se conciso pero completo.
 - Si el usuario pregunta algo fuera del ambito de la plataforma, indicale amablemente que solo puedes ayudar con temas de PorKCasare.`;
 
+// Base de conocimiento local. Se usa como respaldo cuando el servicio de IA
+// no esta disponible, para que el asistente siempre responda algo util en
+// lugar de un mensaje de error generico.
+const KNOWLEDGE_BASE = [
+  {
+    keys: ["comprar", "compra", "producto", "pedido", "pedir", "carrito", "ordenar"],
+    answer:
+      "Para comprar, entra a la pestana \"Consumo\" de tu oficina virtual, agrega los productos al carrito y completa el pago con Nequi, Daviplata o MercadoPago. Recuerda que tu primera compra debe ser de minimo 50 puntos para activar tu codigo. Despues del pago, envia el comprobante por WhatsApp.",
+  },
+  {
+    keys: ["documento", "documentos", "cedula", "rut", "bancaria", "subir", "validacion"],
+    answer:
+      "En la seccion \"Documentos\" debes subir 4 archivos: cedula frontal, cedula posterior, RUT y certificacion bancaria. Acepta PDF, JPG o PNG (maximo 5MB c/u). Al subir los 4, tu estado pasa a \"pendiente de validacion\" y un administrador los revisa.",
+  },
+  {
+    keys: ["comision", "comisiones", "nivel", "niveles", "bono", "quick start", "gano", "ganar"],
+    answer:
+      "Las comisiones suben hasta 5 niveles: cada nivel superior recibe 10% del valor de los pedidos de tu red. En la primera compra (>=50 puntos) tu patrocinador directo recibe el Bono Quick Start de 21 puntos. Necesitas minimo 10 puntos personales al mes para estar activo y cobrar comisiones.",
+  },
+  {
+    keys: ["red", "referido", "referidos", "link", "enlace", "duplicacion", "arbol", "compartir", "frontline"],
+    answer:
+      "Tu link de referido esta en la pestana \"Duplicacion\" de tu oficina virtual. Ahi puedes copiarlo, compartirlo y ver tu arbol de red con los frontlines activos (verde) e inactivos (gris). Puedes referir personas ilimitadas y ganar hasta 5 niveles.",
+  },
+  {
+    keys: ["rango", "rangos", "plata", "oro", "diamante", "corona", "estrella", "avanzar", "subir"],
+    answer:
+      "Los rangos se logran acumulando compras y puntos personales: Plata ($1.400.000 / 500 pts), Oro ($4.200.000 / 1.500 pts), Estrellas ($8.400.000 / 3.000 pts), Diamante ($14.000.000 / 5.000 pts) y Corona ($28.000.000 / 10.000 pts). Desde Plata puedes personalizar tu foto de perfil.",
+  },
+  {
+    keys: ["envio", "envios", "domicilio", "flete", "yopal", "costo de envio", "recogida"],
+    answer:
+      "En Yopal el envio va de $5.000 a $12.000 segun la cantidad. En otras ciudades va de $16.000 a $50.000 segun el numero de unidades. La recogida en punto es gratis y puedes aplicar codigos promocionales si el administrador los habilita.",
+  },
+  {
+    keys: ["pago", "pagar", "nequi", "daviplata", "mercadopago", "comprobante", "metodo"],
+    answer:
+      "Aceptamos Nequi, Daviplata y MercadoPago. Despues de pagar con Nequi o Daviplata, envia el comprobante por WhatsApp al equipo de soporte para confirmar tu pedido.",
+  },
+  {
+    keys: ["retiro", "retirar", "retiros", "sacar", "dinero", "pago de comision"],
+    answer:
+      "El retiro minimo es de $20.000. Solo los Masters o distribuidores con 50+ puntos personales pueden retirar. Los pagos se programan el 15 o el 30 de cada mes. Si en un mes no tienes 10+ puntos personales, pierdes las comisiones de ese mes.",
+  },
+  {
+    keys: ["punto", "puntos", "activo", "activar", "personales", "grupales"],
+    answer:
+      "Los puntos personales se ganan con tus compras (1 punto = $2.800). Necesitas minimo 10 puntos personales al mes para estar activo y recibir comisiones. Para activar tu codigo por primera vez se requiere una compra de minimo 50 puntos.",
+  },
+  {
+    keys: ["inversion", "inversiones", "kpc capital", "ganaderia", "siembra", "agro"],
+    answer:
+      "Las inversiones estan en la pestana \"Consumo\" > seccion \"Inversiones\": KPC Capital (activa), Ganaderia Futura y Siembra KPC (proximamente) y Agro Expansion (en revision).",
+  },
+  {
+    keys: ["juego", "juegos", "reto", "retos", "memoria", "trivia", "rompecabezas", "ruleta", "rueda"],
+    answer:
+      "En \"Consumo\" > \"Retos\" tienes el Juego de Memoria, la Trivia PorKCasare, el Rompecabezas y la Rueda de la Fortuna. Dan recompensas en puntos y dinero, con limites mensuales y sistema de vidas.",
+  },
+  {
+    keys: ["educacion", "video", "videos", "libro", "pec", "formacion", "curso"],
+    answer:
+      "En la pestana \"Educacion\" encuentras videos educativos, libros y documentos de formacion, el PEC del Mes y enlaces utiles para distribuidores.",
+  },
+  {
+    keys: ["registro", "registrar", "registrarme", "cuenta", "patrocinador", "inscribir"],
+    answer:
+      "Para registrarte necesitas usuario, contrasena, nombre, apellido, documento, email, celular y direccion. Si alguien te refirio, su nombre aparece automaticamente como patrocinador. Luego haz una compra de minimo 50 puntos para activar tu codigo.",
+  },
+  {
+    keys: ["notificacion", "notificaciones", "campana", "campanita", "alerta", "alertas"],
+    answer:
+      "La campanita en la barra superior muestra alertas de pedidos, documentos, comisiones y novedades. Puedes filtrarlas por tipo y marcarlas como leidas; se actualizan automaticamente.",
+  },
+];
+
+const SUPPORT_NOTE =
+  " Si necesitas mas ayuda, escribe a soporte por WhatsApp al +573125929316.";
+
+const TOPICS_MENU =
+  "Puedo ayudarte con estos temas:\n" +
+  "- Comprar productos y realizar pedidos\n" +
+  "- Subir tus documentos\n" +
+  "- Comisiones y niveles\n" +
+  "- Tu red de referidos y link de duplicacion\n" +
+  "- Rangos y como avanzar\n" +
+  "- Envios y costos\n" +
+  "- Metodos de pago y retiros\n" +
+  "- Inversiones, juegos y educacion\n" +
+  "Escribe tu pregunta sobre cualquiera de estos temas." +
+  SUPPORT_NOTE;
+
+function normalizeText(str) {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+// Genera una respuesta a partir de la base de conocimiento local y las FAQs
+// de la base de datos. Se usa solo como respaldo si la IA no responde.
+function findLocalAnswer(message, faqs) {
+  const text = normalizeText(message);
+
+  let best = null;
+  let bestScore = 0;
+  for (const entry of KNOWLEDGE_BASE) {
+    let score = 0;
+    for (const key of entry.keys) {
+      if (text.includes(normalizeText(key))) score++;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = entry;
+    }
+  }
+
+  if (Array.isArray(faqs)) {
+    for (const faq of faqs) {
+      const q = normalizeText(faq.question || "");
+      const words = q.split(/\s+/).filter((w) => w.length > 4);
+      let score = 0;
+      for (const w of words) {
+        if (text.includes(w)) score++;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = { answer: faq.answer };
+      }
+    }
+  }
+
+  if (best && bestScore > 0) {
+    return best.answer + SUPPORT_NOTE;
+  }
+  return TOPICS_MENU;
+}
+
 export default async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204 });
@@ -170,17 +308,18 @@ export default async (req) => {
   const userMessage = message.trim().slice(0, 1000);
 
   let faqContext = "";
+  let faqList = [];
   try {
-    const topFaqs = await db
+    faqList = await db
       .select()
       .from(assistantFaqs)
       .orderBy(desc(assistantFaqs.usageCount))
       .limit(10);
 
-    if (topFaqs.length > 0) {
+    if (faqList.length > 0) {
       faqContext =
         "\n\nPreguntas frecuentes conocidas:\n" +
-        topFaqs
+        faqList
           .map((f) => `P: ${f.question}\nR: ${f.answer}`)
           .join("\n\n");
     }
@@ -189,20 +328,33 @@ export default async (req) => {
   }
 
   try {
+    // Construye el historial garantizando que empiece por "user" y que los
+    // roles alternen, tal como exige la API de mensajes. Un historial mal
+    // formado provocaba errores que dejaban al asistente sin responder.
     const messages = [];
     if (Array.isArray(conversationHistory)) {
       for (const msg of conversationHistory.slice(-6)) {
-        if (msg.role === "user" || msg.role === "assistant") {
-          messages.push({
-            role: msg.role,
-            content: typeof msg.content === "string" ? msg.content.slice(0, 1000) : "",
-          });
+        if (msg.role !== "user" && msg.role !== "assistant") continue;
+        const content =
+          typeof msg.content === "string" ? msg.content.slice(0, 1000).trim() : "";
+        if (!content) continue;
+        // Salta hasta encontrar el primer mensaje de usuario.
+        if (messages.length === 0 && msg.role !== "user") continue;
+        const prev = messages[messages.length - 1];
+        if (prev && prev.role === msg.role) {
+          // Fusiona mensajes consecutivos del mismo rol para mantener la alternancia.
+          prev.content += "\n" + content;
+        } else {
+          messages.push({ role: msg.role, content });
         }
       }
     }
 
     const lastMsg = messages[messages.length - 1];
-    if (!lastMsg || lastMsg.role !== "user" || lastMsg.content !== userMessage) {
+    if (lastMsg && lastMsg.role === "user") {
+      // El ultimo turno ya es del usuario: agrega el mensaje actual a ese turno.
+      if (lastMsg.content !== userMessage) lastMsg.content += "\n" + userMessage;
+    } else {
       messages.push({ role: "user", content: userMessage });
     }
 
@@ -219,16 +371,18 @@ export default async (req) => {
     });
 
     const assistantReply =
-      response.content[0]?.type === "text"
-        ? response.content[0].text
-        : "Lo siento, no pude generar una respuesta. Intenta de nuevo.";
+      response.content[0]?.type === "text" ? response.content[0].text.trim() : "";
 
-    return respond(200, { reply: assistantReply });
+    // Si la IA no devolvio texto, responde con la base de conocimiento local.
+    return respond(200, {
+      reply: assistantReply || findLocalAnswer(userMessage, faqList),
+    });
   } catch (err) {
     console.error("Assistant error:", err?.status, err?.message, err);
-    return respond(500, {
-      reply:
-        "Lo siento, estoy teniendo dificultades tecnicas. Por favor contacta al soporte por WhatsApp al +573125929316.",
+    // El servicio de IA fallo: en lugar de un error, responde con la base de
+    // conocimiento local para que el usuario siempre reciba ayuda util.
+    return respond(200, {
+      reply: findLocalAnswer(userMessage, faqList),
     });
   }
 };

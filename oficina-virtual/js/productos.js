@@ -42,7 +42,8 @@ import {
   where,
   getDocs,
   arrayUnion,
-  increment
+  increment,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { initializeCartUI, cart } from "./cart.js";
 import { createPayment, handlePaymentReturn, formatCurrency } from "/src/mercadopago-client.js";
@@ -372,6 +373,77 @@ async function loadProductsFromFirestore() {
   } catch (err) {
     console.error('Error loading products from Firestore:', err);
     productos = [];
+  }
+}
+
+// Determina si un producto está agotado a partir del estado automático calculado
+// por el panel administrativo (estadoInventario / stockDisponible). Estos campos
+// se actualizan automáticamente según las existencias reales del inventario. Si el
+// producto aún no tiene datos de inventario, se respeta la marca manual outOfStock.
+function isProductOutOfStock(prod) {
+  if (!prod) return false;
+  if (prod.estadoInventario === 'agotado') return true;
+  if (typeof prod.stockDisponible === 'number' && prod.stockDisponible <= 0) return true;
+  return prod.outOfStock === true;
+}
+
+// Suscripción en tiempo real a la colección de productos. Cuando el inventario o el
+// estado de un producto cambian en el panel administrativo, la tienda se actualiza
+// automáticamente sin recargar, evitando vender productos sin existencias.
+let _productsUnsub = null;
+function subscribeToProductsRealtime() {
+  try {
+    if (_productsUnsub) return; // evitar suscripciones duplicadas
+    _productsUnsub = onSnapshot(collection(db, "productos"), (snap) => {
+      const fresh = snap.docs
+        .map(d => ({ ...d.data(), docId: d.id, id: d.id }))
+        .filter(p => !p.deleted && !p.hidden)
+        .sort((a, b) => {
+          const aIsLaunch = a.isLaunchProduct && a.launchDate && new Date(a.launchDate).getTime() > Date.now();
+          const bIsLaunch = b.isLaunchProduct && b.launchDate && new Date(b.launchDate).getTime() > Date.now();
+          if (aIsLaunch && !bIsLaunch) return -1;
+          if (!aIsLaunch && bIsLaunch) return 1;
+          if (a.featured && !b.featured) return -1;
+          if (!a.featured && b.featured) return 1;
+          return 0;
+        });
+      productos = fresh;
+      setSessionCache(PRODUCTS_CACHE_KEY, fresh);
+      // Volver a renderizar sólo si la grilla de productos está presente
+      if (document.getElementById('productGrid')) {
+        try { renderProductos(); } catch (e) { console.warn('No se pudo re-renderizar productos:', e.message); }
+      }
+    }, (err) => {
+      console.warn('Suscripción en tiempo real de productos no disponible:', err.message);
+    });
+  } catch (e) {
+    console.warn('No se pudo iniciar la suscripción en tiempo real de productos:', e.message);
+  }
+}
+
+// Verifica contra Firestore que el producto tenga existencias disponibles justo
+// antes de crear la orden. Devuelve un mensaje de error si está agotado o no
+// alcanza la cantidad solicitada; null si la compra puede continuar.
+async function checkStockBeforeOrder(prod, quantity) {
+  try {
+    const docId = prod.docId || prod.id;
+    if (!docId) return null;
+    const snap = await getDoc(doc(db, "productos", docId));
+    if (!snap.exists()) return 'El producto ya no está disponible.';
+    const data = snap.data();
+    if (data.deleted) return 'El producto ya no está disponible.';
+    if (data.estadoInventario === 'agotado') return `"${prod.nombre}" está agotado actualmente.`;
+    if (typeof data.stockDisponible === 'number') {
+      if (data.stockDisponible <= 0) return `"${prod.nombre}" está agotado actualmente.`;
+      if (data.stockDisponible < quantity) {
+        return `Solo quedan ${data.stockDisponible} unidad(es) de "${prod.nombre}". Ajusta la cantidad.`;
+      }
+    }
+    return null;
+  } catch (e) {
+    // Ante un error de lectura no bloqueamos la compra (la validación es preventiva)
+    console.warn('No se pudo verificar el stock antes de la orden:', e.message);
+    return null;
   }
 }
 
@@ -822,7 +894,7 @@ function renderProductos() {
       `;
     }
 
-    const isOutOfStock = prod.outOfStock || false;
+    const isOutOfStock = isProductOutOfStock(prod);
     const outOfStockBadge = isOutOfStock ? '<span style="position:absolute;top:12px;right:12px;background:#fd7e14;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">AGOTADO</span>' : '';
     const disabledStyle = isOutOfStock ? 'opacity:0.6;pointer-events:none;' : '';
     const buttonText = isOutOfStock ? 'No Disponible' : 'Comprar';
@@ -1661,6 +1733,14 @@ async function onBuyClick(e) {
 
   // ---------- Aquí SÍ creamos la orden en Firestore (único punto) ----------
   try {
+    // Verificación de existencias en tiempo real para evitar vender sin inventario
+    const stockError = await checkStockBeforeOrder(prod, quantity);
+    if (stockError) {
+      alert(stockError);
+      try { await loadProductsFromFirestore(); renderProductos(); } catch (e) {}
+      return;
+    }
+
     const buyerDocSnap = await getDoc(doc(db, "usuarios", buyerUid));
     const buyerData = buyerDocSnap.exists() ? buyerDocSnap.data() : null;
     const buyerUsername = buyerData?.usuario || buyerData?.nombre || 'Usuario desconocido';
@@ -1923,6 +2003,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadShippingRates(); // Load UE shipping rates
   await loadPromoCodes(); // Load promotional codes
   renderProductos();
+
+  // Activar sincronización en tiempo real del inventario/estado de productos
+  subscribeToProductsRealtime();
 
   // Initialize shopping cart UI
   initializeCartUI(getDisplayPrice, getDisplayPoints);
@@ -2383,6 +2466,16 @@ window.proceedToCheckout = async function() {
   }).then(async (customerData) => {
     // Create orders for each item in cart
     try {
+      // Verificación de existencias en tiempo real para todo el carrito
+      for (const item of cartItems) {
+        const stockError = await checkStockBeforeOrder(item.product, item.quantity);
+        if (stockError) {
+          alert(stockError);
+          try { await loadProductsFromFirestore(); renderProductos(); } catch (e) {}
+          return;
+        }
+      }
+
       const orderIds = [];
       const shippingCost = customerData.shippingCost || 0;
       // Calculate MercadoPago fee for order records (only applies if MercadoPago selected)

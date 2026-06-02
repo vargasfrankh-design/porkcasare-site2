@@ -5414,6 +5414,8 @@ body {
   gap: 6px;
   padding: 8px 16px;
   border-top: 1px solid #f0f0f0;
+  max-height: 96px;
+  overflow-y: auto;
 }
 
 .quick-action-btn {
