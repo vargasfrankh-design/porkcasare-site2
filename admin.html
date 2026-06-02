@@ -1653,15 +1653,41 @@
 
     <!-- Tab: Inventario -->
     <div id="tab-inventory" class="tab-content">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
         <h2 style="margin:0;">Gestión de Inventario</h2>
-        <button id="addInventoryBtn" class="btn-success">+ Agregar Unidades</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button id="addInventoryBtn" class="btn-success">+ Registrar Entrada</button>
+          <button id="adjustInventoryBtn" class="btn-primary">Ajuste / Salida manual</button>
+          <button id="inventoryConfigBtn" class="btn-secondary">⚙ Umbral</button>
+          <button id="refreshInventoryBtn" class="btn-secondary">↻ Actualizar</button>
+          <button id="exportInventoryBtn" class="btn-secondary">⬇ Exportar CSV</button>
+        </div>
       </div>
-      
+
       <div class="stats-grid" style="margin-bottom:20px;">
         <div class="stat-card blue">
-          <h3>Total en Stock</h3>
+          <h3>Productos Registrados</h3>
+          <div class="value" id="invTotalProducts">0</div>
+        </div>
+        <div class="stat-card green">
+          <h3>Unidades Disponibles</h3>
           <div class="value" id="totalStockUnits">0</div>
+        </div>
+        <div class="stat-card purple">
+          <h3>Valor Total del Inventario</h3>
+          <div class="value" id="invTotalValue" style="font-size:22px;">$0</div>
+        </div>
+        <div class="stat-card red">
+          <h3>Productos Agotados</h3>
+          <div class="value" id="invOutOfStock">0</div>
+        </div>
+        <div class="stat-card orange">
+          <h3>Productos con Bajo Stock</h3>
+          <div class="value" id="invLowStock">0</div>
+        </div>
+        <div class="stat-card blue">
+          <h3>Total de Entradas</h3>
+          <div class="value" id="invTotalIn">0</div>
         </div>
         <div class="stat-card green">
           <h3>Unidades Vendidas</h3>
@@ -1673,24 +1699,86 @@
         </div>
       </div>
 
+      <!-- Alertas de reposición -->
+      <div id="inventoryAlerts" style="margin-bottom:20px;"></div>
+
+      <!-- Reportes visuales -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;margin-bottom:24px;">
+        <div style="background:#fff;border:1px solid #eee;border-radius:8px;padding:16px;">
+          <h3 style="margin-top:0;">Existencias por Producto (Top 10)</h3>
+          <div id="inventoryStockChart"></div>
+        </div>
+        <div style="background:#fff;border:1px solid #eee;border-radius:8px;padding:16px;">
+          <h3 style="margin-top:0;">Distribución por Estado</h3>
+          <div id="inventoryStatusChart"></div>
+        </div>
+      </div>
+
+      <!-- Filtros de inventario por producto -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        <input type="text" id="inventorySearch" placeholder="Buscar producto..." style="flex:1;min-width:200px;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+        <select id="inventoryStatusFilter" style="padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+          <option value="">Todos los estados</option>
+          <option value="available">Disponible</option>
+          <option value="low">Bajo stock</option>
+          <option value="out">Agotado</option>
+        </select>
+      </div>
+
       <h3>Inventario por Producto</h3>
       <table style="margin-bottom:30px;">
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Total de Unidades</th>
-            <th>Unidades Vendidas</th>
-            <th>Unidades en Existencia</th>
+            <th>Entradas</th>
+            <th>Vendidas</th>
+            <th>Disponible</th>
+            <th>Valor</th>
+            <th>Reposición</th>
             <th>Estado</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody id="productInventoryTable">
-          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td></tr>
-          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:30%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td></tr>
+        </tbody>
+      </table>
+
+      <!-- Kardex por producto -->
+      <h3>Kardex por Producto</h3>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+        <select id="kardexProductSelect" style="min-width:260px;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+          <option value="">Seleccione un producto...</option>
+        </select>
+        <span id="kardexSummary" style="color:#666;font-size:13px;"></span>
+      </div>
+      <table style="margin-bottom:30px;">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Entrada</th>
+            <th>Salida</th>
+            <th>Saldo</th>
+            <th>Usuario</th>
+            <th>Notas</th>
+          </tr>
+        </thead>
+        <tbody id="kardexTable">
+          <tr><td colspan="7" class="empty-state">Seleccione un producto para ver su kardex</td></tr>
         </tbody>
       </table>
 
       <h3>Historial de Movimientos</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        <input type="text" id="movementSearch" placeholder="Buscar producto o nota..." style="flex:1;min-width:200px;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+        <select id="movementTypeFilter" style="padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+          <option value="">Todos los movimientos</option>
+          <option value="addition">Entradas</option>
+          <option value="sale">Salidas / Ventas</option>
+          <option value="adjustment">Ajustes</option>
+        </select>
+      </div>
       <table>
         <thead>
           <tr>
@@ -1698,13 +1786,30 @@
             <th>Tipo</th>
             <th>Producto</th>
             <th>Unidades</th>
-            <th>Existencias Restantes</th>
+            <th>Saldo</th>
+            <th>Usuario</th>
             <th>Notas</th>
           </tr>
         </thead>
         <tbody id="inventoryHistoryTable">
-          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td></tr>
-          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:55%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:65%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:55%"></div></td></tr>
+          <tr class="skeleton-table-row"><td><div class="skeleton skeleton-cell" style="width:60%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:70%"></div></td><td><div class="skeleton skeleton-cell" style="width:35%"></div></td><td><div class="skeleton skeleton-cell" style="width:40%"></div></td><td><div class="skeleton skeleton-cell" style="width:45%"></div></td><td><div class="skeleton skeleton-cell" style="width:50%"></div></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Registro de Auditoría (eliminaciones y cambios de estado)</h3>
+      <p style="color:#666;font-size:13px;margin:0 0 12px 0;">Cada eliminación definitiva de un producto y cada cambio automático de estado (Activo / Oculto / Agotado) queda registrado con fecha, hora y usuario responsable.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Acción</th>
+            <th>Producto</th>
+            <th>Detalle</th>
+            <th>Usuario</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryAuditTable">
+          <tr><td colspan="5" class="empty-state">Sin registros de auditoría</td></tr>
         </tbody>
       </table>
     </div>
@@ -3728,6 +3833,60 @@
     </div>
   </div>
 
+  <!-- Modal para ajuste / salida manual de inventario -->
+  <div id="adjustInventoryModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:white;padding:30px;border-radius:8px;max-width:500px;width:90%;">
+      <h3 style="margin-top:0;">Ajuste / Salida manual de Inventario</h3>
+      <p style="color:#666;font-size:13px;margin-top:0;">Use ajustes para corregir existencias, registrar mermas, daños o salidas que no provienen de una venta.</p>
+      <form id="adjustInventoryForm">
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Producto</label>
+          <select id="adjustProductId" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+            <option value="">Seleccionar producto...</option>
+          </select>
+          <div id="adjustCurrentStock" style="font-size:12px;color:#666;margin-top:6px;"></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Tipo de ajuste</label>
+          <select id="adjustMode" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+            <option value="delta">Sumar / Restar unidades (use negativo para restar)</option>
+            <option value="set">Establecer existencias disponibles exactas</option>
+          </select>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;" id="adjustQtyLabel">Unidades (+ entra, - sale)</label>
+          <input type="number" id="adjustUnits" required step="1" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: -5">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Motivo del ajuste</label>
+          <textarea id="adjustNotes" rows="2" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: Merma por daño, conteo físico, corrección"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" id="adjustModalCancel" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Aplicar ajuste</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de configuración de umbral de inventario -->
+  <div id="inventoryConfigModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:white;padding:30px;border-radius:8px;max-width:460px;width:90%;">
+      <h3 style="margin-top:0;">Configuración de Inventario</h3>
+      <form id="inventoryConfigForm">
+        <div style="margin-bottom:20px;">
+          <label style="display:block;margin-bottom:6px;font-weight:500;">Umbral de bajo stock (alerta de reposición)</label>
+          <input type="number" id="lowStockThresholdInput" required min="0" step="1" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;" placeholder="Ej: 5">
+          <div style="font-size:12px;color:#666;margin-top:6px;">Cuando las existencias disponibles de un producto sean iguales o menores a este valor, se mostrará una alerta de reposición.</div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" id="inventoryConfigCancel" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal para seleccionar role -->
   <div id="roleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
     <div style="background:white;padding:30px;border-radius:8px;max-width:400px;width:90%;">
@@ -5649,6 +5808,8 @@
             removeOrderFromView(orderId);
             // Refresh stats
             loadStats();
+            // Recalcular existencias y estado del producto en tiempo real tras la venta
+            try { loadInventory(); } catch (e) {}
           }, 300);
         }, 800);
 
@@ -8048,360 +8209,726 @@
     // End Admin Sale Modal
     // ========================================
 
-    // Inventory management
+    // ============================================================
+    // Inventory management (entradas, salidas, kardex, ajustes)
+    // ============================================================
     const inventoryModal = document.getElementById('inventoryModal');
     const addInventoryBtn = document.getElementById('addInventoryBtn');
     const inventoryModalCancel = document.getElementById('inventoryModalCancel');
     const addInventoryForm = document.getElementById('addInventoryForm');
 
-    addInventoryBtn.addEventListener('click', async () => {
-      // Populate product dropdown with active products from database
-      const productSelect = document.getElementById('inventoryProductId');
-      productSelect.innerHTML = '<option value="">Seleccionar producto...</option>';
+    // Estado en memoria (recalculado en cada loadInventory) para filtros / kardex / export
+    let inventoryState = {
+      products: [],       // [{ key, name, entradas, vendidas, disponible, value, unitValue, reorderPoint, status }]
+      productsById: {},   // key -> row
+      movements: [],      // movimientos combinados (entradas, ajustes, ventas) ordenados desc
+      lowStockThreshold: 5,
+      productNames: {}
+    };
 
-      try {
-        const productsSnap = await getDocs(collection(db, "productos"));
-        const activeProducts = productsSnap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(p => !p.hidden && !p.deleted); // Only show active products
+    function invMoney(n) {
+      return '$' + Math.round(Number(n) || 0).toLocaleString('es-CO');
+    }
+    function invDateISO(value) {
+      const d = parseOrderDate(value);
+      return d ? d.toISOString() : null;
+    }
 
-        activeProducts.forEach(product => {
-          const option = document.createElement('option');
-          option.value = product.id;
-          option.textContent = product.nombre;
-          productSelect.appendChild(option);
+    // ===== Estado automático de productos (Activo / Oculto / Agotado) =====
+    // El estado se deriva de las existencias reales del inventario, sin intervención
+    // manual. 'oculto' si el producto está oculto; 'agotado' si no hay existencias
+    // disponibles (o marcado manualmente); 'activo' en cualquier otro caso.
+    function computeEstadoInventario(prod, disponible) {
+      if (prod && prod.hidden) return 'oculto';
+      if (typeof disponible === 'number' && disponible <= 0) return 'agotado';
+      if (prod && prod.outOfStock) return 'agotado';
+      return 'activo';
+    }
+
+    function estadoLabelBadge(estado, disponible) {
+      const stock = (typeof disponible === 'number') ? `<br><small style="color:#999;">${disponible} disp.</small>` : '';
+      if (estado === 'oculto') return '<span style="background:#6c757d;color:white;padding:2px 8px;border-radius:3px;font-size:11px;">OCULTO</span>' + stock;
+      if (estado === 'agotado') return '<span style="background:#fd7e14;color:white;padding:2px 8px;border-radius:3px;font-size:11px;">AGOTADO</span>' + stock;
+      return '<span style="color:#28a745;">✓ Activo</span>' + stock;
+    }
+
+    // Persiste stockDisponible + estadoInventario en cada documento de producto para
+    // que la oficina virtual los muestre en tiempo real, y registra en 'inventoryAudit'
+    // cualquier cambio de estado con fecha, hora y usuario responsable.
+    async function persistProductStatuses(rows, productByKey) {
+      const actorName = (currentUser && (currentUser.displayName || currentUser.email)) || 'admin';
+      const actorUid = currentUser ? currentUser.uid : null;
+      for (const r of rows) {
+        const prod = productByKey[r.key];
+        if (!prod || !prod.docId) continue; // sólo productos reales (no claves huérfanas)
+        const estado = computeEstadoInventario(prod, r.disponible);
+        const prevEstado = prod.estadoInventario || null;
+        const prevStock = (typeof prod.stockDisponible === 'number') ? prod.stockDisponible : null;
+        const estadoChanged = prevEstado !== estado;
+        const stockChanged = prevStock !== r.disponible;
+        if (!estadoChanged && !stockChanged) continue;
+        try {
+          await updateDoc(doc(db, 'productos', prod.docId), {
+            stockDisponible: r.disponible,
+            estadoInventario: estado,
+            estadoInventarioActualizadoEn: new Date().toISOString()
+          });
+          // mantener coherente la cache en memoria
+          prod.stockDisponible = r.disponible;
+          prod.estadoInventario = estado;
+          // Registrar sólo transiciones reales de estado (no la siembra inicial)
+          if (estadoChanged && prevEstado) {
+            await addDoc(collection(db, 'inventoryAudit'), {
+              type: 'status_change',
+              productId: r.key,
+              docId: prod.docId,
+              productName: prod.nombre || r.key,
+              from: prevEstado,
+              to: estado,
+              stockDisponible: r.disponible,
+              byUid: actorUid,
+              byName: actorName,
+              source: 'auto',
+              at: serverTimestamp(),
+              createdAt: new Date().toISOString()
+            });
+          }
+        } catch (e) {
+          console.warn('No se pudo persistir estado de', r.key, e.message);
+        }
+      }
+    }
+
+    // Carga los productos activos en un <select>
+    async function loadProductsIntoSelect(selectEl) {
+      selectEl.innerHTML = '<option value="">Seleccionar producto...</option>';
+      const snap = await getDocs(collection(db, "productos"));
+      snap.docs
+        .map(d => ({ docId: d.id, ...d.data() }))
+        .filter(p => !p.hidden && !p.deleted)
+        .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+        .forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id || p.docId;
+          opt.textContent = p.nombre || (p.id || p.docId);
+          selectEl.appendChild(opt);
         });
+    }
+
+    // Escribe un movimiento (entrada/ajuste) y actualiza el stock acumulado de forma atómica
+    async function applyInventoryMovement({ productId, delta, type, notes }) {
+      const inventoryRef = doc(db, 'inventory', productId);
+      const userName = (currentUser && (currentUser.displayName || currentUser.email)) || 'admin';
+      const result = await runTransaction(db, async (tx) => {
+        const snap = await tx.get(inventoryRef);
+        const before = snap.exists() ? (Number(snap.data().stock) || 0) : 0;
+        const after = before + delta;
+        tx.set(inventoryRef, {
+          productId,
+          stock: after,
+          lastUpdated: new Date().toISOString(),
+          updatedBy: currentUser.uid
+        }, { merge: true });
+        return { before, after };
+      });
+      await addDoc(collection(db, 'inventoryHistory'), {
+        productId,
+        type,
+        units: delta,
+        stockBefore: result.before,
+        stockAfter: result.after,
+        notes: notes || '',
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.uid,
+        createdByName: userName
+      });
+      return result;
+    }
+
+    // ---------- Entrada de inventario ----------
+    addInventoryBtn.addEventListener('click', async () => {
+      try {
+        await loadProductsIntoSelect(document.getElementById('inventoryProductId'));
       } catch (err) {
         console.error('Error loading products for inventory:', err);
         alert('Error cargando productos: ' + err.message);
       }
-
       inventoryModal.style.display = 'flex';
     });
-
     inventoryModalCancel.addEventListener('click', () => {
       inventoryModal.style.display = 'none';
       addInventoryForm.reset();
     });
-
     inventoryModal.addEventListener('click', (e) => {
-      if (e.target === inventoryModal) {
-        inventoryModal.style.display = 'none';
-        addInventoryForm.reset();
-      }
+      if (e.target === inventoryModal) { inventoryModal.style.display = 'none'; addInventoryForm.reset(); }
     });
-
     addInventoryForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!currentUser) return;
-
       const productId = document.getElementById('inventoryProductId').value;
-      const units = parseInt(document.getElementById('inventoryUnits').value);
+      const units = parseInt(document.getElementById('inventoryUnits').value, 10);
       const notes = document.getElementById('inventoryNotes').value.trim();
-
+      if (!productId || !Number.isFinite(units) || units <= 0) {
+        alert('Seleccione un producto e ingrese una cantidad válida.');
+        return;
+      }
       try {
-        const inventoryRef = doc(db, 'inventory', productId);
-        const inventorySnap = await getDoc(inventoryRef);
-        
-        let currentStock = 0;
-        if (inventorySnap.exists()) {
-          currentStock = inventorySnap.data().stock || 0;
-        }
-
-        const newStock = currentStock + units;
-
-        await setDoc(inventoryRef, {
-          productId,
-          stock: newStock,
-          lastUpdated: new Date().toISOString(),
-          updatedBy: currentUser.uid
-        }, { merge: true });
-
-        await addDoc(collection(db, 'inventoryHistory'), {
-          productId,
-          type: 'addition',
-          units,
-          stockBefore: currentStock,
-          stockAfter: newStock,
-          notes: notes || 'Adición manual de inventario',
-          createdAt: new Date().toISOString(),
-          createdBy: currentUser.uid
-        });
-
-        alert(`✅ Se agregaron ${units} unidades al inventario`);
+        await applyInventoryMovement({ productId, delta: units, type: 'addition', notes: notes || 'Entrada manual de inventario' });
+        alert('✅ Se registraron ' + units + ' unidades de entrada');
         inventoryModal.style.display = 'none';
         addInventoryForm.reset();
         await loadInventory();
       } catch (err) {
         console.error('Error adding inventory:', err);
-        alert('Error agregando inventario: ' + err.message);
+        alert('Error registrando entrada: ' + err.message);
       }
     });
 
+    // ---------- Ajuste / salida manual ----------
+    const adjustInventoryModal = document.getElementById('adjustInventoryModal');
+    const adjustInventoryBtn = document.getElementById('adjustInventoryBtn');
+    const adjustInventoryForm = document.getElementById('adjustInventoryForm');
+    const adjustModalCancel = document.getElementById('adjustModalCancel');
+    const adjustProductSel = document.getElementById('adjustProductId');
+    const adjustModeSel = document.getElementById('adjustMode');
+
+    function refreshAdjustCurrentStock() {
+      const key = adjustProductSel.value;
+      const el = document.getElementById('adjustCurrentStock');
+      if (!key || !inventoryState.productsById[key]) { el.textContent = ''; return; }
+      el.textContent = 'Existencias disponibles actuales: ' + inventoryState.productsById[key].disponible;
+    }
+
+    adjustInventoryBtn.addEventListener('click', async () => {
+      try { await loadProductsIntoSelect(adjustProductSel); } catch (err) { console.error(err); }
+      document.getElementById('adjustCurrentStock').textContent = '';
+      adjustInventoryModal.style.display = 'flex';
+    });
+    adjustProductSel.addEventListener('change', refreshAdjustCurrentStock);
+    adjustModeSel.addEventListener('change', () => {
+      document.getElementById('adjustQtyLabel').textContent =
+        adjustModeSel.value === 'set' ? 'Existencias disponibles deseadas' : 'Unidades (+ entra, - sale)';
+    });
+    adjustModalCancel.addEventListener('click', () => { adjustInventoryModal.style.display = 'none'; adjustInventoryForm.reset(); });
+    adjustInventoryModal.addEventListener('click', (e) => {
+      if (e.target === adjustInventoryModal) { adjustInventoryModal.style.display = 'none'; adjustInventoryForm.reset(); }
+    });
+    adjustInventoryForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+      const key = adjustProductSel.value;
+      const mode = adjustModeSel.value;
+      const value = parseInt(document.getElementById('adjustUnits').value, 10);
+      const notes = document.getElementById('adjustNotes').value.trim();
+      if (!key || !Number.isFinite(value)) { alert('Seleccione un producto e ingrese un valor válido.'); return; }
+      if (!notes) { alert('Indique el motivo del ajuste.'); return; }
+      let delta = value;
+      if (mode === 'set') {
+        const row = inventoryState.productsById[key];
+        const current = row ? row.disponible : 0;
+        delta = value - current;
+      }
+      if (delta === 0) { alert('El ajuste no cambia las existencias.'); return; }
+      try {
+        await applyInventoryMovement({ productId: key, delta, type: 'adjustment', notes });
+        alert('✅ Ajuste aplicado (' + (delta > 0 ? '+' : '') + delta + ' unidades)');
+        adjustInventoryModal.style.display = 'none';
+        adjustInventoryForm.reset();
+        await loadInventory();
+      } catch (err) {
+        console.error('Error adjusting inventory:', err);
+        alert('Error aplicando ajuste: ' + err.message);
+      }
+    });
+
+    // ---------- Configuración de umbral ----------
+    const inventoryConfigModal = document.getElementById('inventoryConfigModal');
+    const inventoryConfigBtn = document.getElementById('inventoryConfigBtn');
+    const inventoryConfigForm = document.getElementById('inventoryConfigForm');
+    const inventoryConfigCancel = document.getElementById('inventoryConfigCancel');
+
+    inventoryConfigBtn.addEventListener('click', () => {
+      document.getElementById('lowStockThresholdInput').value = inventoryState.lowStockThreshold;
+      inventoryConfigModal.style.display = 'flex';
+    });
+    inventoryConfigCancel.addEventListener('click', () => { inventoryConfigModal.style.display = 'none'; });
+    inventoryConfigModal.addEventListener('click', (e) => { if (e.target === inventoryConfigModal) inventoryConfigModal.style.display = 'none'; });
+    inventoryConfigForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const val = parseInt(document.getElementById('lowStockThresholdInput').value, 10);
+      if (!Number.isFinite(val) || val < 0) { alert('Ingrese un umbral válido.'); return; }
+      try {
+        await setDoc(doc(db, 'config', 'inventory'), {
+          lowStockThreshold: val,
+          updatedAt: new Date().toISOString(),
+          updatedBy: currentUser.uid
+        }, { merge: true });
+        inventoryState.lowStockThreshold = val;
+        inventoryConfigModal.style.display = 'none';
+        await loadInventory();
+      } catch (err) {
+        console.error('Error saving inventory config:', err);
+        alert('Error guardando configuración: ' + err.message);
+      }
+    });
+
+    // ---------- Controles de filtros / refresco / export ----------
+    const refreshInventoryBtn = document.getElementById('refreshInventoryBtn');
+    if (refreshInventoryBtn) refreshInventoryBtn.addEventListener('click', () => loadInventory());
+    const exportInventoryBtn = document.getElementById('exportInventoryBtn');
+    if (exportInventoryBtn) exportInventoryBtn.addEventListener('click', exportInventoryCsv);
+    const inventorySearchEl = document.getElementById('inventorySearch');
+    if (inventorySearchEl) inventorySearchEl.addEventListener('input', renderInventoryTable);
+    const inventoryStatusFilterEl = document.getElementById('inventoryStatusFilter');
+    if (inventoryStatusFilterEl) inventoryStatusFilterEl.addEventListener('change', renderInventoryTable);
+    const movementSearchEl = document.getElementById('movementSearch');
+    if (movementSearchEl) movementSearchEl.addEventListener('input', renderMovementsTable);
+    const movementTypeFilterEl = document.getElementById('movementTypeFilter');
+    if (movementTypeFilterEl) movementTypeFilterEl.addEventListener('change', renderMovementsTable);
+    const kardexProductSelectEl = document.getElementById('kardexProductSelect');
+    if (kardexProductSelectEl) kardexProductSelectEl.addEventListener('change', () => renderKardex(kardexProductSelectEl.value));
+
+    function statusOf(disponible, reorderPoint) {
+      if (disponible <= 0) return 'out';
+      if (disponible <= reorderPoint) return 'low';
+      return 'available';
+    }
+    function statusBadge(status) {
+      if (status === 'out') return '<span style="background:#dc3545;color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;">AGOTADO</span>';
+      if (status === 'low') return '<span style="background:#fd7e14;color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;">BAJO STOCK</span>';
+      return '<span style="background:#28a745;color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;">DISPONIBLE</span>';
+    }
+
     async function loadInventory() {
       try {
-        console.log("📦 Cargando inventario...");
-        console.log("🔍 Usuario autenticado:", currentUser?.uid);
-        console.log("🔍 Token de autenticación presente:", !!currentUser);
-
-        // Dynamically load product names from database
-        const productNames = {};
+        // 1) Productos
         const productsSnap = await getDocs(collection(db, "productos"));
-        productsSnap.docs.forEach(doc => {
-          const data = doc.data();
-          productNames[data.id] = data.nombre;
+        const products = productsSnap.docs
+          .map(d => ({ docId: d.id, ...d.data() }))
+          .filter(p => !p.deleted);
+        const productNames = {};
+        const productByKey = {};
+        products.forEach(p => {
+          const key = p.id || p.docId;
+          productNames[key] = p.nombre || key;
+          productByKey[key] = p;
         });
-        console.log("✅ Productos cargados:", Object.keys(productNames).length);
 
+        // 2) Configuración (umbral de bajo stock)
+        let lowStockThreshold = 5;
         try {
-          console.log("📦 Test 1: Intentando leer documento de usuario...");
-          const testUserDoc = await getDoc(doc(db, 'usuarios', currentUser.uid));
-          console.log("✅ Test 1 exitoso - Usuario doc existe:", testUserDoc.exists());
-          if (testUserDoc.exists()) {
-            console.log("📄 Datos del usuario:", testUserDoc.data());
+          const cfgSnap = await getDoc(doc(db, 'config', 'inventory'));
+          if (cfgSnap.exists() && Number.isFinite(Number(cfgSnap.data().lowStockThreshold))) {
+            lowStockThreshold = Number(cfgSnap.data().lowStockThreshold);
           }
-        } catch (testErr) {
-          console.error("❌ Test 1 falló:", testErr.code, testErr.message);
-        }
+        } catch (cfgErr) { console.warn('No se pudo leer config de inventario:', cfgErr.message); }
 
-        console.log("📦 Test 2: Leyendo colección 'inventory'...");
+        // 3) Entradas acumuladas por producto (colección inventory)
         const inventorySnap = await getDocs(collection(db, 'inventory'));
-        console.log("✅ Test 2 exitoso - Inventario leído:", inventorySnap.docs.length, "productos");
-        
-        let totalStock = 0;
-        inventorySnap.docs.forEach(doc => {
-          totalStock += doc.data().stock || 0;
+        const entradasByProduct = {};
+        const reorderByProduct = {};
+        inventorySnap.docs.forEach(d => {
+          const data = d.data();
+          const key = data.productId || d.id;
+          entradasByProduct[key] = Number(data.stock) || 0;
+          if (Number.isFinite(Number(data.reorderPoint))) reorderByProduct[key] = Number(data.reorderPoint);
         });
 
-        console.log("📦 Leyendo órdenes confirmadas...");
+        // 4) Ventas (salidas) en tiempo real desde órdenes confirmadas (excluye usuarios de prueba)
         const ordersSnap = await getDocs(collection(db, 'orders'));
-        const allOrders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const confirmedOrders = ordersSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(o => o.status === 'confirmed');
 
-        // Filter only confirmed orders and exclude test users
-        const confirmedOrders = allOrders.filter(order => order.status === 'confirmed');
-
-        // Fetch buyer information to filter out test users
         const usersCache = new Map();
-        const filteredOrders = [];
+        const saleMovements = [];
+        const soldByProduct = {};
+        let totalSoldUnits = 0;
 
         for (const order of confirmedOrders) {
+          let isTestUser = false;
           if (order.buyerUid) {
-            // Get user data from cache or fetch it
             if (!usersCache.has(order.buyerUid)) {
               try {
-                const userDoc = await getDoc(doc(db, "usuarios", order.buyerUid));
-                if (userDoc.exists()) {
-                  const userData = userDoc.data();
-                  usersCache.set(order.buyerUid, {
-                    nombre: userData.nombre || '',
-                    usuario: userData.usuario || ''
-                  });
-                }
-              } catch (err) {
-                console.warn('Error fetching user for order:', order.id, err);
-              }
+                const udoc = await getDoc(doc(db, "usuarios", order.buyerUid));
+                usersCache.set(order.buyerUid, udoc.exists() ? udoc.data() : null);
+              } catch (e) { usersCache.set(order.buyerUid, null); }
             }
-
-            // Check if user is a test user (starts with "prueba")
-            const userData = usersCache.get(order.buyerUid);
-            if (userData) {
-              const isTestUser = userData.nombre.toLowerCase().startsWith('prueba') ||
-                                userData.usuario.toLowerCase().startsWith('prueba');
-
-              if (!isTestUser) {
-                filteredOrders.push(order);
-              } else {
-                console.log(`🧪 Orden excluida de usuario de prueba: ${userData.usuario || userData.nombre}`);
-              }
-            } else {
-              // If we couldn't fetch user data, include the order to avoid data loss
-              filteredOrders.push(order);
+            const ud = usersCache.get(order.buyerUid);
+            if (ud) {
+              isTestUser = (ud.nombre || '').toLowerCase().startsWith('prueba') ||
+                           (ud.usuario || '').toLowerCase().startsWith('prueba');
             }
-          } else {
-            // If no buyerUid, include the order
-            filteredOrders.push(order);
           }
-        }
+          if (isTestUser) continue;
 
-        // Calculate total units sold and units sold per product
-        let totalSoldUnits = 0;
-        const unitsSoldByProduct = {};
-
-        filteredOrders.forEach(order => {
-          const quantity = Number(order.quantity) || 1;
-          const productId = order.productId || '';
-
-          // Initialize product counter if needed
-          if (!unitsSoldByProduct[productId]) {
-            unitsSoldByProduct[productId] = 0;
-          }
-
-          // Add quantity to product counter
-          unitsSoldByProduct[productId] += quantity;
-
-          // Calculate units based on product for total
-          if (productId === 'paquete-inicio') {
-            // Paquete de 300,000 = 10 unidades
-            totalSoldUnits += quantity * 10;
-          } else if (['chuletas-3kg', 'costillas-3kg', 'paticas-3kg', 'panceta-3kg', 'pulpa-3kg', 'goulast-3kg'].includes(productId)) {
-            // Paquetes de 60,000 = 2 unidades
-            totalSoldUnits += quantity * 2;
-          } else {
-            // Default: count as sold quantity
-            totalSoldUnits += quantity;
-          }
-        });
-
-        console.log("✅ Órdenes leídas:", ordersSnap.docs.length, "| Órdenes confirmadas (sin prueba):", filteredOrders.length, "| Unidades vendidas:", totalSoldUnits);
-
-        console.log("📦 Leyendo historial de inventario...");
-        const historySnap = await getDocs(query(
-          collection(db, 'inventoryHistory'),
-          orderBy('createdAt', 'desc'),
-          limit(50)
-        ));
-        console.log("✅ Historial leído:", historySnap.docs.length, "registros");
-
-        let lastUpdate = 'N/A';
-        if (!historySnap.empty) {
-          const lastDoc = historySnap.docs[0].data();
-          const date = new Date(lastDoc.createdAt);
-          lastUpdate = date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
-        }
-
-        document.getElementById('inventoryCount').textContent = totalStock;
-        document.getElementById('inventoryCount').classList.remove('loading-pulse');
-        document.getElementById('totalStockUnits').textContent = totalStock;
-        document.getElementById('totalSoldUnits').textContent = totalSoldUnits;
-        document.getElementById('lastInventoryUpdate').textContent = lastUpdate;
-
-        // Populate product inventory table
-        const productInventoryTable = document.getElementById('productInventoryTable');
-        productInventoryTable.innerHTML = '';
-
-        // Create a map of inventory by product ID
-        const inventoryByProduct = {};
-        inventorySnap.docs.forEach(doc => {
-          const data = doc.data();
-          inventoryByProduct[data.productId] = data.stock || 0;
-        });
-
-        // Get all unique product IDs from both inventory and orders
-        const allProductIds = new Set([
-          ...Object.keys(inventoryByProduct),
-          ...Object.keys(unitsSoldByProduct)
-        ]);
-
-        if (allProductIds.size === 0) {
-          productInventoryTable.innerHTML = '<tr><td colspan="5" class="empty-state">No hay productos en el inventario</td></tr>';
-        } else {
-          // Create rows for each product
-          const productRows = [];
-          allProductIds.forEach(productId => {
-            const totalUnits = inventoryByProduct[productId] || 0;
-            const soldUnits = unitsSoldByProduct[productId] || 0;
-            const remainingUnits = totalUnits - soldUnits;
-            const productName = productNames[productId] || productId;
-
-            // Determine status
-            let statusHtml = '';
-            if (remainingUnits <= 0) {
-              statusHtml = '<span style="background:#dc3545;color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;">AGOTADO</span>';
-            } else if (remainingUnits < 10) {
-              statusHtml = '<span style="background:#fd7e14;color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;">STOCK BAJO</span>';
-            } else {
-              statusHtml = '<span style="background:#28a745;color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;">DISPONIBLE</span>';
-            }
-
-            productRows.push({
-              productId,
-              productName,
-              totalUnits,
-              soldUnits,
-              remainingUnits,
-              statusHtml
+          const items = extractOrderItems(order);
+          items.forEach(item => {
+            const matched = findProductMatch({ productId: item.productId, productName: item.productName }, products);
+            const key = matched ? (matched.id || matched.docId) : (item.productId || 'desconocido');
+            const qty = Number(item.quantity) || 0;
+            if (qty <= 0) return;
+            soldByProduct[key] = (soldByProduct[key] || 0) + qty;
+            totalSoldUnits += qty;
+            saleMovements.push({
+              productId: key,
+              productName: (matched && matched.nombre) || item.productName || key,
+              type: 'sale',
+              units: -qty,
+              stockAfter: null,
+              createdAt: invDateISO(order.confirmedAt || order.createdAt),
+              createdByName: order.buyerUsername || (order.buyerInfo && order.buyerInfo.name) || 'Venta',
+              notes: 'Venta confirmada (orden ' + order.id + ')'
             });
           });
-
-          // Sort by product name
-          productRows.sort((a, b) => a.productName.localeCompare(b.productName));
-
-          // Render rows
-          productRows.forEach(row => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td><strong>${row.productName}</strong><br><small style="color:#999;">${row.productId}</small></td>
-              <td style="text-align:center;"><strong style="color:#007bff;font-size:16px;">${row.totalUnits}</strong></td>
-              <td style="text-align:center;"><strong style="color:#28a745;font-size:16px;">${row.soldUnits}</strong></td>
-              <td style="text-align:center;"><strong style="color:${row.remainingUnits < 0 ? '#dc3545' : '#6f42c1'};font-size:16px;">${row.remainingUnits}</strong></td>
-              <td style="text-align:center;">${row.statusHtml}</td>
-            `;
-            productInventoryTable.appendChild(tr);
-          });
         }
 
-        const historyTable = document.getElementById('inventoryHistoryTable');
-        historyTable.innerHTML = '';
-
-        if (historySnap.empty) {
-          historyTable.innerHTML = '<tr><td colspan="6" class="empty-state">No hay movimientos de inventario registrados</td></tr>';
-          return;
+        // 5) Historial de entradas / ajustes (colección inventoryHistory)
+        let historyDocs = [];
+        try {
+          const historySnap = await getDocs(query(collection(db, 'inventoryHistory'), orderBy('createdAt', 'desc'), limit(500)));
+          historyDocs = historySnap.docs.map(d => d.data());
+        } catch (histErr) {
+          const historySnap = await getDocs(collection(db, 'inventoryHistory'));
+          historyDocs = historySnap.docs.map(d => d.data());
         }
+        const manualMovements = historyDocs.map(data => ({
+          productId: data.productId,
+          productName: productNames[data.productId] || data.productId,
+          type: data.type || 'addition',
+          units: Number(data.units) || 0,
+          stockAfter: (data.stockAfter != null ? data.stockAfter : null),
+          createdAt: invDateISO(data.createdAt),
+          createdByName: data.createdByName || 'admin',
+          notes: data.notes || ''
+        }));
 
-        historySnap.docs.forEach(doc => {
-          const data = doc.data();
-          const row = document.createElement('tr');
-          const date = new Date(data.createdAt).toLocaleDateString('es-CO');
-          const typeText = data.type === 'addition' ? 'Entrada' : 'Venta';
-          const typeColor = data.type === 'addition' ? '#28a745' : '#dc3545';
-          
-          row.innerHTML = `
-            <td>${date}</td>
-            <td><span style="color:${typeColor};font-weight:600">${typeText}</span></td>
-            <td>${productNames[data.productId] || data.productId}</td>
-            <td>${data.units > 0 ? '+' : ''}${data.units}</td>
-            <td>${data.stockAfter || 0}</td>
-            <td>${data.notes || 'N/A'}</td>
-          `;
-          historyTable.appendChild(row);
+        // 6) Combinar movimientos y ordenar por fecha desc
+        const movements = manualMovements.concat(saleMovements)
+          .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+        // 7) Filas por producto
+        const allKeys = new Set([
+          ...Object.keys(entradasByProduct),
+          ...Object.keys(soldByProduct),
+          ...products.filter(p => !p.hidden).map(p => p.id || p.docId)
+        ]);
+        const rows = [];
+        const productsById = {};
+        allKeys.forEach(key => {
+          const prod = productByKey[key];
+          const entradas = entradasByProduct[key] || 0;
+          const vendidas = soldByProduct[key] || 0;
+          const disponible = entradas - vendidas;
+          const unitValue = prod ? (Number(prod.costo) || Number(prod.precioDistribuidor) || Number(prod.precio) || 0) : 0;
+          const value = Math.max(disponible, 0) * unitValue;
+          const reorderPoint = (key in reorderByProduct) ? reorderByProduct[key] : lowStockThreshold;
+          let status = statusOf(disponible, reorderPoint);
+          if (prod && prod.outOfStock && status !== 'out') status = 'out';
+          const row = { key, name: productNames[key] || key, entradas, vendidas, disponible, value, unitValue, reorderPoint, status };
+          rows.push(row);
+          productsById[key] = row;
         });
-        
-        console.log("✅ Inventario cargado exitosamente");
+        rows.sort((a, b) => a.name.localeCompare(b.name));
+
+        // 7b) Persistir estado automático en los productos (para la oficina virtual)
+        //     y registrar cambios de estado en la auditoría.
+        await persistProductStatuses(rows, productByKey);
+
+        // 7c) Registro de auditoría (eliminaciones y cambios de estado)
+        let auditDocs = [];
+        try {
+          const auditSnap = await getDocs(query(collection(db, 'inventoryAudit'), orderBy('createdAt', 'desc'), limit(200)));
+          auditDocs = auditSnap.docs.map(d => d.data());
+        } catch (auditErr) {
+          try { const s = await getDocs(collection(db, 'inventoryAudit')); auditDocs = s.docs.map(d => d.data()); } catch (_) {}
+        }
+
+        // 8) Guardar estado y renderizar
+        inventoryState = { products: rows, productsById, movements, lowStockThreshold, productNames, audit: auditDocs };
+        renderInventoryStats();
+        renderInventoryTable();
+        renderMovementsTable();
+        renderInventoryAlerts();
+        renderInventoryCharts();
+        renderInventoryAudit();
+        populateKardexSelect();
+        if (kardexProductSelectEl && kardexProductSelectEl.value) renderKardex(kardexProductSelectEl.value);
+        // Reflejar el estado automático actualizado en la tabla de productos
+        if (typeof allProducts !== 'undefined' && allProducts.length && typeof renderProductsManagementTable === 'function') {
+          try { renderProductsManagementTable(); } catch (e) {}
+        }
       } catch (err) {
         console.error('❌ Error loading inventory:', err);
-        console.error('Error code:', err.code);
-        console.error('Error message:', err.message);
-        
-        if (err.code === 'permission-denied') {
-          console.error("⚠️ PROBLEMA DE PERMISOS DETECTADO:");
-          console.error("Usuario actual UID:", currentUser?.uid);
-          console.error("Email:", currentUser?.email);
-          
-          console.error("\n🔧 SOLUCIÓN:");
-          console.error("Las reglas de Firestore NO están desplegadas o son diferentes de las locales.");
-          console.error("Ejecuta: firebase deploy --only firestore:rules");
-          console.error("\nSi el problema persiste, verifica en Firebase Console:");
-          console.error("1. Ve a Firestore Database > Rules");
-          console.error("2. Verifica que la regla para 'inventory' sea: allow read: if isAuthenticated();");
-          console.error("3. Verifica que isAdmin() incluya exists() check y get() del documento usuarios");
-          
-          alert("❌ ERROR DE PERMISOS\n\n" +
-                "El usuario tiene rol 'admin' localmente pero Firestore rechaza el acceso.\n\n" +
-                "CAUSA MÁS PROBABLE:\n" +
-                "Las reglas de Firestore NO están desplegadas en Firebase.\n\n" +
-                "SOLUCIÓN:\n" +
-                "1. Abre una terminal en la raíz del proyecto\n" +
-                "2. Ejecuta: firebase deploy --only firestore:rules\n" +
-                "3. Espera confirmación de despliegue\n" +
-                "4. Recarga esta página\n\n" +
-                "Si ya desplegaste las reglas y el error persiste:\n" +
-                "- Verifica en Firebase Console > Firestore > Rules\n" +
-                "- Confirma que las reglas publicadas coincidan con firestore.rules\n\n" +
-                "Usuario UID: " + currentUser?.uid);
+        const tbl = document.getElementById('productInventoryTable');
+        if (tbl) tbl.innerHTML = '<tr><td colspan="8" class="empty-state">Error cargando inventario: ' + (err.message || err) + '</td></tr>';
+      }
+    }
+
+    function renderInventoryStats() {
+      const rows = inventoryState.products;
+      const totalProducts = rows.length;
+      const totalAvailable = rows.reduce((s, r) => s + Math.max(r.disponible, 0), 0);
+      const totalValue = rows.reduce((s, r) => s + r.value, 0);
+      const totalIn = rows.reduce((s, r) => s + r.entradas, 0);
+      const totalSold = rows.reduce((s, r) => s + r.vendidas, 0);
+      const outCount = rows.filter(r => r.status === 'out').length;
+      const lowCount = rows.filter(r => r.status === 'low').length;
+      const set = (id, val) => { const el = document.getElementById(id); if (el) { el.textContent = val; if (el.classList) el.classList.remove('loading-pulse'); } };
+      set('invTotalProducts', totalProducts);
+      set('totalStockUnits', totalAvailable);
+      set('invTotalValue', invMoney(totalValue));
+      set('invOutOfStock', outCount);
+      set('invLowStock', lowCount);
+      set('invTotalIn', totalIn);
+      set('totalSoldUnits', totalSold);
+      const overviewCard = document.getElementById('inventoryCount');
+      if (overviewCard) { overviewCard.textContent = totalAvailable; overviewCard.classList.remove('loading-pulse'); }
+      let last = 'N/A';
+      const lastMov = inventoryState.movements.find(m => m.createdAt);
+      if (lastMov) last = new Date(lastMov.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+      set('lastInventoryUpdate', last);
+    }
+
+    function renderInventoryTable() {
+      const tbody = document.getElementById('productInventoryTable');
+      if (!tbody) return;
+      const q = (document.getElementById('inventorySearch') ? document.getElementById('inventorySearch').value : '').toLowerCase().trim();
+      const statusFilter = document.getElementById('inventoryStatusFilter') ? document.getElementById('inventoryStatusFilter').value : '';
+      let rows = inventoryState.products;
+      if (q) rows = rows.filter(r => r.name.toLowerCase().includes(q) || r.key.toLowerCase().includes(q));
+      if (statusFilter) rows = rows.filter(r => r.status === statusFilter);
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No hay productos que coincidan</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const dispColor = r.disponible <= 0 ? '#dc3545' : (r.status === 'low' ? '#fd7e14' : '#6f42c1');
+        const safeKey = String(r.key).replace(/'/g, "\\'");
+        tr.innerHTML =
+          '<td><strong>' + r.name + '</strong><br><small style="color:#999;">' + r.key + '</small></td>' +
+          '<td style="text-align:center;"><strong style="color:#007bff;">' + r.entradas + '</strong></td>' +
+          '<td style="text-align:center;"><strong style="color:#28a745;">' + r.vendidas + '</strong></td>' +
+          '<td style="text-align:center;"><strong style="color:' + dispColor + ';font-size:16px;">' + r.disponible + '</strong></td>' +
+          '<td style="text-align:right;">' + invMoney(r.value) + '</td>' +
+          '<td style="text-align:center;">' + r.reorderPoint + '</td>' +
+          '<td style="text-align:center;">' + statusBadge(r.status) + '</td>' +
+          '<td style="text-align:center;"><button class="btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="openInventoryAdjust(\'' + safeKey + '\')">Ajustar</button></td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.openInventoryAdjust = async function(key) {
+      try { await loadProductsIntoSelect(adjustProductSel); } catch (e) {}
+      adjustProductSel.value = key;
+      refreshAdjustCurrentStock();
+      document.getElementById('adjustInventoryModal').style.display = 'flex';
+    };
+
+    function renderMovementsTable() {
+      const tbody = document.getElementById('inventoryHistoryTable');
+      if (!tbody) return;
+      const q = (document.getElementById('movementSearch') ? document.getElementById('movementSearch').value : '').toLowerCase().trim();
+      const typeFilter = document.getElementById('movementTypeFilter') ? document.getElementById('movementTypeFilter').value : '';
+      let movements = inventoryState.movements;
+      if (typeFilter) movements = movements.filter(m => m.type === typeFilter);
+      if (q) movements = movements.filter(m =>
+        (m.productName || '').toLowerCase().includes(q) ||
+        (m.notes || '').toLowerCase().includes(q) ||
+        (m.createdByName || '').toLowerCase().includes(q));
+      movements = movements.slice(0, 200);
+      if (!movements.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay movimientos registrados</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '';
+      movements.forEach(m => {
+        const tr = document.createElement('tr');
+        const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString('es-CO') : 'N/A';
+        const label = m.type === 'addition' ? 'Entrada' : (m.type === 'sale' ? 'Salida' : 'Ajuste');
+        const color = m.type === 'addition' ? '#28a745' : (m.type === 'sale' ? '#dc3545' : '#6f42c1');
+        const units = (m.units > 0 ? '+' : '') + m.units;
+        tr.innerHTML =
+          '<td>' + date + '</td>' +
+          '<td><span style="color:' + color + ';font-weight:600">' + label + '</span></td>' +
+          '<td>' + (m.productName || m.productId) + '</td>' +
+          '<td style="text-align:center;color:' + color + ';font-weight:600;">' + units + '</td>' +
+          '<td style="text-align:center;">' + (m.stockAfter != null ? m.stockAfter : '—') + '</td>' +
+          '<td>' + (m.createdByName || '—') + '</td>' +
+          '<td>' + (m.notes || '—') + '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderInventoryAudit() {
+      const tbody = document.getElementById('inventoryAuditTable');
+      if (!tbody) return;
+      const rows = (inventoryState && inventoryState.audit) || [];
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Sin registros de auditoría</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(a => {
+        const when = a.createdAt
+          ? new Date(a.createdAt).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+          : '—';
+        let accion, detalle;
+        if (a.type === 'product_deleted') {
+          accion = '<span style="background:#dc3545;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">ELIMINADO</span>';
+          detalle = 'Eliminación definitiva'
+            + (a.hadSales ? ` · ${a.salesCount || 0} venta(s)` : '')
+            + (a.movementsCount ? ` · ${a.movementsCount} movimiento(s)` : '');
         } else {
-          alert('Error cargando inventario: ' + err.message);
+          accion = '<span style="background:#0d6efd;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">CAMBIO DE ESTADO</span>';
+          detalle = `${(a.from || '—')} → ${(a.to || '—')}`
+            + (typeof a.stockDisponible === 'number' ? ` · stock ${a.stockDisponible}` : '');
+        }
+        return '<tr>' +
+          '<td>' + when + '</td>' +
+          '<td>' + accion + '</td>' +
+          '<td>' + (a.productName || a.productId || '—') + '</td>' +
+          '<td>' + detalle + '</td>' +
+          '<td>' + (a.byName || '—') + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function renderInventoryAlerts() {
+      const el = document.getElementById('inventoryAlerts');
+      if (!el) return;
+      const alerts = inventoryState.products.filter(r => r.status === 'out' || r.status === 'low');
+      if (!alerts.length) {
+        el.innerHTML = '<div style="background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32;padding:12px 16px;border-radius:8px;">✅ Todos los productos tienen existencias suficientes.</div>';
+        return;
+      }
+      const items = alerts.sort((a, b) => a.disponible - b.disponible).map(r => {
+        const isOut = r.status === 'out';
+        const badge = isOut ? 'AGOTADO' : 'BAJO STOCK';
+        const bg = isOut ? '#dc3545' : '#fd7e14';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #ffe0b2;">' +
+          '<span><strong>' + r.name + '</strong> — disponible: <strong>' + r.disponible + '</strong> (reposición &le; ' + r.reorderPoint + ')</span>' +
+          '<span style="background:' + bg + ';color:white;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;">' + badge + '</span>' +
+          '</div>';
+      }).join('');
+      el.innerHTML = '<div style="background:#fff8e1;border:1px solid #ffd54f;border-radius:8px;overflow:hidden;">' +
+        '<div style="background:#ffb300;color:#fff;padding:10px 16px;font-weight:600;">🔔 Alertas de reposición (' + alerts.length + ')</div>' +
+        items + '</div>';
+    }
+
+    function renderInventoryCharts() {
+      const stockEl = document.getElementById('inventoryStockChart');
+      if (stockEl) {
+        const top = inventoryState.products
+          .filter(r => r.disponible > 0)
+          .sort((a, b) => b.disponible - a.disponible)
+          .slice(0, 10);
+        if (!top.length) {
+          stockEl.innerHTML = '<div class="empty-state">Sin existencias para mostrar</div>';
+        } else {
+          const max = Math.max.apply(null, top.map(r => r.disponible).concat([1]));
+          stockEl.innerHTML = top.map(r => {
+            const w = Math.round(r.disponible / max * 100);
+            const color = r.status === 'low' ? '#fd7e14' : '#28a745';
+            return '<div style="margin-bottom:10px;">' +
+              '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span>' + r.name + '</span><strong>' + r.disponible + '</strong></div>' +
+              '<div style="background:#f0f0f0;border-radius:4px;height:14px;overflow:hidden;"><div style="width:' + w + '%;height:100%;background:' + color + ';"></div></div>' +
+              '</div>';
+          }).join('');
         }
       }
+      const statusEl = document.getElementById('inventoryStatusChart');
+      if (statusEl) {
+        const rows = inventoryState.products;
+        const total = rows.length || 1;
+        const buckets = [
+          { label: 'Disponible', n: rows.filter(r => r.status === 'available').length, color: '#28a745' },
+          { label: 'Bajo stock', n: rows.filter(r => r.status === 'low').length, color: '#fd7e14' },
+          { label: 'Agotado', n: rows.filter(r => r.status === 'out').length, color: '#dc3545' }
+        ];
+        statusEl.innerHTML = buckets.map(b => {
+          const pct = Math.round(b.n / total * 100);
+          return '<div style="margin-bottom:12px;">' +
+            '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>' + b.label + '</span><strong>' + b.n + ' (' + pct + '%)</strong></div>' +
+            '<div style="background:#f0f0f0;border-radius:4px;height:18px;overflow:hidden;"><div style="width:' + pct + '%;height:100%;background:' + b.color + ';"></div></div>' +
+            '</div>';
+        }).join('');
+      }
+    }
+
+    function populateKardexSelect() {
+      const sel = document.getElementById('kardexProductSelect');
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = '<option value="">Seleccione un producto...</option>';
+      inventoryState.products.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.key; opt.textContent = r.name;
+        sel.appendChild(opt);
+      });
+      if (prev) sel.value = prev;
+    }
+
+    function renderKardex(key) {
+      const tbody = document.getElementById('kardexTable');
+      const summary = document.getElementById('kardexSummary');
+      if (!tbody) return;
+      if (!key) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Seleccione un producto para ver su kardex</td></tr>';
+        if (summary) summary.textContent = '';
+        return;
+      }
+      const movs = inventoryState.movements
+        .filter(m => m.productId === key)
+        .slice()
+        .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+      const row = inventoryState.productsById[key];
+      if (!movs.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Sin movimientos para este producto</td></tr>';
+        if (summary && row) summary.textContent = 'Disponible actual: ' + row.disponible;
+        return;
+      }
+      let saldo = 0;
+      const rowsHtml = movs.map(m => {
+        const entrada = m.units > 0 ? m.units : 0;
+        const salida = m.units < 0 ? -m.units : 0;
+        saldo += m.units;
+        const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString('es-CO') : 'N/A';
+        const label = m.type === 'addition' ? 'Entrada' : (m.type === 'sale' ? 'Salida' : 'Ajuste');
+        return '<tr>' +
+          '<td>' + date + '</td>' +
+          '<td>' + label + '</td>' +
+          '<td style="text-align:center;color:#28a745;">' + (entrada ? '+' + entrada : '—') + '</td>' +
+          '<td style="text-align:center;color:#dc3545;">' + (salida ? '-' + salida : '—') + '</td>' +
+          '<td style="text-align:center;font-weight:600;">' + saldo + '</td>' +
+          '<td>' + (m.createdByName || '—') + '</td>' +
+          '<td>' + (m.notes || '—') + '</td>' +
+          '</tr>';
+      });
+      tbody.innerHTML = rowsHtml.reverse().join('');
+      if (summary && row) summary.textContent = 'Disponible actual: ' + row.disponible + ' · Entradas: ' + row.entradas + ' · Vendidas: ' + row.vendidas;
+    }
+
+    function exportInventoryCsv() {
+      const rows = inventoryState.products;
+      if (!rows.length) { alert('No hay datos de inventario para exportar.'); return; }
+      const header = ['Producto', 'ID', 'Entradas', 'Vendidas', 'Disponible', 'Valor', 'PuntoReposicion', 'Estado'];
+      const statusText = { available: 'Disponible', low: 'Bajo stock', out: 'Agotado' };
+      const lines = [header.join(',')];
+      rows.forEach(r => {
+        lines.push([
+          '"' + String(r.name).replace(/"/g, '""') + '"',
+          '"' + String(r.key).replace(/"/g, '""') + '"',
+          r.entradas, r.vendidas, r.disponible, Math.round(r.value), r.reorderPoint, statusText[r.status] || r.status
+        ].join(','));
+      });
+      const blob = new Blob([String.fromCharCode(0xFEFF) + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'inventario-kpc.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     async function loadProducts() {
@@ -8597,7 +9124,13 @@
           unitLabel = prod.unitRestaurant || prod.unit || 'kilo';
         }
 
-        const badge = prod.outOfStock ? '<span class="product-badge outofstock">Agotado</span>' : '';
+        const previewInvRow = (typeof inventoryState !== 'undefined' && inventoryState.productsById)
+          ? (inventoryState.productsById[prod.id] || inventoryState.productsById[prod.docId])
+          : null;
+        const previewDispo = previewInvRow ? previewInvRow.disponible
+          : (typeof prod.stockDisponible === 'number' ? prod.stockDisponible : null);
+        const badge = computeEstadoInventario(prod, previewDispo) === 'agotado'
+          ? '<span class="product-badge outofstock">Agotado</span>' : '';
 
         // Format points with appropriate decimals
         const formattedPoints = previewType === 'restaurante'
@@ -8648,9 +9181,15 @@
       };
 
       table.innerHTML = allProducts.map(prod => {
+        // Estado automático según existencias reales del inventario
+        const invRow = (typeof inventoryState !== 'undefined' && inventoryState.productsById)
+          ? (inventoryState.productsById[prod.id] || inventoryState.productsById[prod.docId])
+          : null;
+        const dispo = invRow ? invRow.disponible
+          : (typeof prod.stockDisponible === 'number' ? prod.stockDisponible : null);
+        const estado = computeEstadoInventario(prod, dispo);
         const statusBadges = [];
-        if (prod.hidden) statusBadges.push('<span style="background:#6c757d;color:white;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">OCULTO</span>');
-        if (prod.outOfStock) statusBadges.push('<span style="background:#fd7e14;color:white;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">AGOTADO</span>');
+        statusBadges.push(estadoLabelBadge(estado, dispo));
 
         // Launch product status
         if (prod.isLaunchProduct && prod.launchDate) {
@@ -8660,11 +9199,11 @@
             const launchDateFormatted = new Date(prod.launchDate).toLocaleString('es-CO', {
               day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
             });
-            statusBadges.push(`<span style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;" title="Lanza: ${launchDateFormatted}">🚀 LANZAMIENTO</span>`);
+            statusBadges.push(`<span style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:2px 6px;border-radius:3px;font-size:11px;margin-left:4px;" title="Lanza: ${launchDateFormatted}">🚀 LANZAMIENTO</span>`);
           }
         }
 
-        const statusHtml = statusBadges.length > 0 ? statusBadges.join('') : '<span style="color:#28a745;">✓ Activo</span>';
+        const statusHtml = statusBadges.join('');
 
         const featuredHtml = prod.featured ? '<span style="font-size:20px;" title="Producto destacado">⭐</span>' : '<span style="color:#ccc;">—</span>';
 
@@ -8709,7 +9248,7 @@
             <td>${statusHtml}</td>
             <td>
               <button class="btn-primary" onclick="editProduct('${prod.docId}')">Editar</button>
-              <button class="btn-danger" onclick="deleteProduct('${prod.docId}', '${prod.nombre}')">Eliminar</button>
+              <button class="btn-danger" onclick="deleteProduct('${prod.docId}', '${(prod.nombre || '').replace(/'/g, "\\'")}', '${prod.id || ''}')">Eliminar</button>
             </td>
           </tr>
         `;
@@ -8940,6 +9479,9 @@
         
         document.getElementById('productModal').style.display = 'none';
         await loadProducts();
+        // Recalcular y persistir el estado automático (Activo/Oculto/Agotado) y
+        // registrar en auditoría cualquier cambio de estado provocado por esta edición.
+        try { await loadInventory(); } catch (e) { console.warn('No se pudo recalcular inventario:', e.message); }
       } catch (err) {
         console.error('Error saving product:', err);
         alert('Error al guardar el producto: ' + err.message);
@@ -8999,13 +9541,75 @@
       document.getElementById('productModal').style.display = 'flex';
     };
 
-    window.deleteProduct = async function(docId, productName) {
-      if (!confirm(`¿Estás seguro de eliminar el producto "${productName}"?`)) return;
-
+    window.deleteProduct = async function(docId, productName, productId) {
+      if (!currentUser) return;
       try {
-        await updateDoc(doc(db, "productos", docId), { deleted: true });
-        alert('Producto eliminado correctamente');
+        const key = productId || docId;
+
+        // Detectar ventas confirmadas y movimientos / registros históricos
+        let salesCount = 0;
+        let movementsCount = 0;
+        try {
+          const ordSnap = await getDocs(collection(db, 'orders'));
+          ordSnap.docs.forEach(d => {
+            const o = d.data();
+            if (o.status !== 'confirmed') return;
+            const items = extractOrderItems({ id: d.id, ...o });
+            items.forEach(it => {
+              const matched = findProductMatch({ productId: it.productId, productName: it.productName }, allProducts);
+              const k = matched ? (matched.id || matched.docId) : it.productId;
+              if (k === key || it.productId === docId || it.productId === productId) {
+                salesCount += Number(it.quantity) || 0;
+              }
+            });
+          });
+        } catch (e) { console.warn('No se pudieron contar ventas:', e.message); }
+        try {
+          const hSnap = await getDocs(collection(db, 'inventoryHistory'));
+          movementsCount = hSnap.docs.filter(d => d.data().productId === key).length;
+        } catch (e) { console.warn('No se pudieron contar movimientos:', e.message); }
+
+        const hasHistory = salesCount > 0 || movementsCount > 0;
+        const msg = `¿Eliminar DEFINITIVAMENTE el producto "${productName}"?\n\n` +
+          (hasHistory
+            ? `Este producto tiene ${salesCount} venta(s) confirmada(s) y ${movementsCount} movimiento(s) de inventario. ` +
+              `Se eliminará de forma permanente. El historial de ventas y movimientos se conserva para auditoría.`
+            : 'No tiene ventas ni movimientos registrados.') +
+          `\n\nEsta acción no se puede deshacer.`;
+        if (!confirm(msg)) return;
+
+        const prodObj = allProducts.find(p => p.docId === docId) || {};
+
+        // 1) Registrar la eliminación en auditoría ANTES de borrar
+        await addDoc(collection(db, 'inventoryAudit'), {
+          type: 'product_deleted',
+          productId: key,
+          docId,
+          productName,
+          hadSales: salesCount > 0,
+          salesCount,
+          movementsCount,
+          snapshot: {
+            id: prodObj.id || null,
+            nombre: prodObj.nombre || productName,
+            categoria: prodObj.categoria || null,
+            precioDistribuidor: prodObj.precioDistribuidor || null,
+            estadoInventario: prodObj.estadoInventario || null,
+            stockDisponible: (typeof prodObj.stockDisponible === 'number') ? prodObj.stockDisponible : null
+          },
+          byUid: currentUser.uid,
+          byName: (currentUser.displayName || currentUser.email || 'admin'),
+          at: serverTimestamp(),
+          createdAt: new Date().toISOString()
+        });
+
+        // 2) Eliminación definitiva del producto y de su existencia acumulada
+        await deleteDoc(doc(db, 'productos', docId));
+        try { await deleteDoc(doc(db, 'inventory', key)); } catch (e) { /* puede no existir */ }
+
+        alert('✅ Producto eliminado definitivamente. La acción quedó registrada en la auditoría.');
         await loadProducts();
+        await loadInventory();
       } catch (err) {
         console.error('Error deleting product:', err);
         alert('Error al eliminar el producto: ' + err.message);
