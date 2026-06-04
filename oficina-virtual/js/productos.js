@@ -351,18 +351,7 @@ async function loadProductsFromFirestore() {
     productos = productsSnap.docs
       .map(d => ({ ...d.data(), docId: d.id, id: d.id }))
       .filter(p => !p.deleted && !p.hidden)
-      .sort((a, b) => {
-        // Priority 1: Launch products (Super Destacados) go first
-        const aIsLaunch = a.isLaunchProduct && a.launchDate && new Date(a.launchDate).getTime() > Date.now();
-        const bIsLaunch = b.isLaunchProduct && b.launchDate && new Date(b.launchDate).getTime() > Date.now();
-        if (aIsLaunch && !bIsLaunch) return -1;
-        if (!aIsLaunch && bIsLaunch) return 1;
-
-        // Priority 2: Featured products come next
-        if (a.featured && !b.featured) return -1;
-        if (!a.featured && b.featured) return 1;
-        return 0;
-      });
+      .sort(compareProductsForDisplay);
 
     console.log('Productos cargados desde Firestore:', productos.length);
     // Guardar en cache para la próxima navegación
@@ -387,6 +376,60 @@ function isProductOutOfStock(prod) {
   return prod.outOfStock === true;
 }
 
+// Umbral por defecto para considerar un producto con "bajo stock". Coincide con el
+// umbral por defecto del panel administrativo (lowStockThreshold). Un producto con
+// pocas unidades sigue siendo comprable, pero pierde prioridad frente a los que
+// tienen inventario holgado.
+const LOW_STOCK_THRESHOLD = 5;
+
+// Determina si un producto tiene bajo stock: hay unidades disponibles, pero por
+// debajo (o igual) del umbral. Un producto agotado nunca se considera de bajo stock.
+function isLowStock(prod) {
+  if (!prod) return false;
+  if (isProductOutOfStock(prod)) return false;
+  return typeof prod.stockDisponible === 'number'
+    && prod.stockDisponible > 0
+    && prod.stockDisponible <= LOW_STOCK_THRESHOLD;
+}
+
+// Rango de inventario para el orden de visualización (menor = aparece primero):
+//   0 = inventario disponible (holgado)
+//   1 = bajo stock
+//   2 = agotado (se envía al final del catálogo)
+function getInventoryDisplayRank(prod) {
+  if (isProductOutOfStock(prod)) return 2;
+  if (isLowStock(prod)) return 1;
+  return 0;
+}
+
+// Comparador único de visualización aplicado en listados, categorías, búsquedas y
+// páginas de productos. Garantiza el siguiente orden de prioridad:
+//   1. Favoritos (featured) con inventario disponible
+//   2. Productos normales con inventario disponible
+//   3. Productos con bajo stock
+//   4. Productos agotados (al final, sólo para consulta)
+// Los productos de lanzamiento (Super Destacados) conservan la cabecera mientras
+// no estén agotados. Como el rango se calcula desde estadoInventario/stockDisponible,
+// el orden se actualiza automáticamente en tiempo real cuando cambia el inventario.
+function compareProductsForDisplay(a, b) {
+  // 1) Disponibilidad de inventario: disponibles primero, agotados al final
+  const rankA = getInventoryDisplayRank(a);
+  const rankB = getInventoryDisplayRank(b);
+  if (rankA !== rankB) return rankA - rankB;
+
+  // 2) Productos de lanzamiento (Super Destacados) primero dentro del mismo nivel
+  const aIsLaunch = isLaunchProduct(a);
+  const bIsLaunch = isLaunchProduct(b);
+  if (aIsLaunch && !bIsLaunch) return -1;
+  if (!aIsLaunch && bIsLaunch) return 1;
+
+  // 3) Favoritos del administrador mantienen prioridad dentro del mismo nivel
+  if (a.featured && !b.featured) return -1;
+  if (!a.featured && b.featured) return 1;
+
+  return 0;
+}
+
 // Suscripción en tiempo real a la colección de productos. Cuando el inventario o el
 // estado de un producto cambian en el panel administrativo, la tienda se actualiza
 // automáticamente sin recargar, evitando vender productos sin existencias.
@@ -398,15 +441,7 @@ function subscribeToProductsRealtime() {
       const fresh = snap.docs
         .map(d => ({ ...d.data(), docId: d.id, id: d.id }))
         .filter(p => !p.deleted && !p.hidden)
-        .sort((a, b) => {
-          const aIsLaunch = a.isLaunchProduct && a.launchDate && new Date(a.launchDate).getTime() > Date.now();
-          const bIsLaunch = b.isLaunchProduct && b.launchDate && new Date(b.launchDate).getTime() > Date.now();
-          if (aIsLaunch && !bIsLaunch) return -1;
-          if (!aIsLaunch && bIsLaunch) return 1;
-          if (a.featured && !b.featured) return -1;
-          if (!a.featured && b.featured) return 1;
-          return 0;
-        });
+        .sort(compareProductsForDisplay);
       productos = fresh;
       setSessionCache(PRODUCTS_CACHE_KEY, fresh);
       // Volver a renderizar sólo si la grilla de productos está presente
@@ -767,19 +802,7 @@ function getFilteredProducts(){
     }
 
     return matchesType && matchesCategory;
-  }).sort((a, b) => {
-    // Priority 1: Launch products (Super Destacados) go first
-    const aIsLaunch = isLaunchProduct(a);
-    const bIsLaunch = isLaunchProduct(b);
-    if (aIsLaunch && !bIsLaunch) return -1;
-    if (!aIsLaunch && bIsLaunch) return 1;
-
-    // Priority 2: Featured products come next
-    if (a.featured && !b.featured) return -1;
-    if (!a.featured && b.featured) return 1;
-
-    return 0;
-  });
+  }).sort(compareProductsForDisplay);
 }
 
 async function findUserByUsername(username) {
